@@ -197,7 +197,6 @@ export default function LoginPage() {
 		<>
 			<Toaster position="top-right" />
 			<div className="flex min-h-screen bg-gray-50">
-				{/* Left side: Image - Only visible on medium screens and up */}
 				<div className="hidden relative flex-col justify-center items-center w-1/2 text-white bg-gradient-to-br md:flex from-slate-900 to-slate-800">
 					<div className="flex flex-col justify-center items-center w-full h-full">
 						<div className="flex flex-col items-center">
