@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Label } from "@radix-ui/react-label";
+import { Label } from "./ui/label";
 
 export default function Captcha({ onVerify, error }) {
 	const [captchaText, setCaptchaText] = useState("");
@@ -120,7 +120,7 @@ export default function Captcha({ onVerify, error }) {
 
 	return (
 		<div className="space-y-3">
-			<Label className="text-sm font-medium text-gray-200">
+			<Label className="text-sm font-medium text-gray-700">
 				CAPTCHA Verification
 			</Label>
 
@@ -131,7 +131,7 @@ export default function Captcha({ onVerify, error }) {
 						ref={canvasRef}
 						width={180}
 						height={60}
-						className="bg-green-500 rounded border border-gray-300"
+						className="bg-gray-50 rounded border border-gray-300"
 					/>
 				</div>
 				<Button
@@ -153,7 +153,7 @@ export default function Captcha({ onVerify, error }) {
 					value={userInput}
 					onChange={handleInputChange}
 					placeholder="Enter the characters shown above"
-					className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-green-200 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition-all duration-200"
+					className="px-3 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					maxLength={6}
 				/>
 				{error && <p className="text-sm text-red-600">{error}</p>}

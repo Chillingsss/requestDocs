@@ -3,8 +3,8 @@ import { Navigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import CryptoJS from "crypto-js";
 
-const COOKIE_KEY = "cite_user";
-const SECRET_KEY = "cite_secret_key";
+const COOKIE_KEY = "mogchs_user";
+const SECRET_KEY = "mogchs_secret_key";
 
 export default function PrivateRoute({ children, allowedRole }) {
 	const encrypted = Cookies.get(COOKIE_KEY);

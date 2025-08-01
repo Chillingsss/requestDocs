@@ -1,9 +1,9 @@
 import CryptoJS from "crypto-js";
 
 // Secret key for encryption - in production, this should be more secure
-const SECRET_KEY = "sociatrac_api_secret_key";
-const SESSION_KEY = "sociatrac_encrypted_api_url";
-const FALLBACK_API_URL = "http://localhost/sociatrack/backend";
+const SECRET_KEY = "mogchs_api_secret_key";
+const SESSION_KEY = "mogchs_encrypted_api_url";
+const FALLBACK_API_URL = "http://localhost/mogchs-main/backend";
 
 /**
  * Set the encrypted API URL in session storage
@@ -84,7 +84,7 @@ export const initializeApiUrl = () => {
 				setEncryptedApiUrl(FALLBACK_API_URL);
 				console.log("API URL initialized in session storage");
 			} else {
-				// console.log("API URL already exists in session storage");
+				console.log("API URL already exists in session storage");
 			}
 		}
 	} catch (error) {

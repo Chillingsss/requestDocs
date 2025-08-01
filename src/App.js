@@ -1,11 +1,12 @@
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import LoginPage from "./pages/Login";
-import { initializeApiUrl } from "./utils/apiConfig";
-import PrivateRoute from "./components/PrivateRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import PrivateRoute from "./components/PrivateRoute";
+import RegistrarDashboard from "./pages/registrar/RegistrarDashboard";
 import StudentDashboard from "./pages/student/StudentDashboard";
-import FacultyDashboard from "./pages/faculty/FacultyDashboard";
+import { initializeApiUrl } from "./utils/apiConfig";
+import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 
 function App() {
 	// Initialize encrypted API URL in session storage when app starts
@@ -15,11 +16,19 @@ function App() {
 	return (
 		<Routes>
 			<Route path="/" element={<LoginPage />} />
-			{/* <Route
+			<Route
 				path="/AdminDashboard"
 				element={
 					<PrivateRoute allowedRole="Admin">
 						<AdminDashboard />
+					</PrivateRoute>
+				}
+			/>
+			<Route
+				path="/RegistrarDashboard"
+				element={
+					<PrivateRoute allowedRole="Registrar">
+						<RegistrarDashboard />
 					</PrivateRoute>
 				}
 			/>
@@ -30,12 +39,12 @@ function App() {
 						<StudentDashboard />
 					</PrivateRoute>
 				}
-			/> */}
+			/>
 			<Route
-				path="/FacultyDashboard"
+				path="/TeacherDashboard"
 				element={
-					<PrivateRoute allowedRole="Faculty">
-						<FacultyDashboard />
+					<PrivateRoute allowedRole="Teacher">
+						<TeacherDashboard />
 					</PrivateRoute>
 				}
 			/>
