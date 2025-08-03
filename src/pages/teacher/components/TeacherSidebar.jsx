@@ -27,8 +27,8 @@ export default function TeacherSidebar({
 				className={`fixed top-0 left-0 z-30 flex flex-col bg-slate-900 dark:bg-slate-900 text-white dark:text-white transition-all duration-300 h-screen overflow-y-auto ${
 					sidebarOpen
 						? "w-64 translate-x-0"
-						: "w-64 -translate-x-full lg:translate-x-0"
-				} ${sidebarOpen ? "lg:w-64" : "lg:w-20"}`}
+						: "w-64 -translate-x-full lg:translate-x-0 lg:w-20"
+				}`}
 				style={{ backgroundColor: "#0f172a", color: "white" }}
 			>
 				{/* Top Section */}

@@ -1,6 +1,6 @@
 import React from "react";
 import { FileText, Paperclip } from "lucide-react";
-import { getDecryptedApiUrl } from "../../../../utils/apiConfig";
+import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
 const AttachmentsSection = ({
 	attachments,

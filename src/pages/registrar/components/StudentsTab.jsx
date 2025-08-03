@@ -167,10 +167,10 @@ export default function StudentsTab() {
 
 	return (
 		<>
-			<Card>
+			<Card className="dark:bg-slate-800 dark:border-slate-700">
 				<CardContent className="p-4 lg:p-6">
 					<div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-						<div className="text-lg font-semibold text-slate-900">
+						<div className="text-lg font-semibold text-slate-900 dark:text-white">
 							Students ({filteredStudents.length})
 						</div>
 						<Button
@@ -184,11 +184,11 @@ export default function StudentsTab() {
 					{/* Filter Controls */}
 					<div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center">
 						<div className="flex gap-2 items-center">
-							<Filter className="w-4 h-4 text-slate-500" />
+							<Filter className="w-4 h-4 text-slate-500 dark:text-slate-400" />
 							<select
 								value={selectedSection}
 								onChange={(e) => handleSectionChange(e.target.value)}
-								className="px-3 py-2 text-sm bg-white rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								className="px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
 							>
 								<option value="">All Sections</option>
 								{sections.map((section) => (
@@ -200,7 +200,7 @@ export default function StudentsTab() {
 						</div>
 
 						{selectedSection && (
-							<div className="text-sm text-slate-600">
+							<div className="text-sm text-slate-600 dark:text-slate-400">
 								Showing students from section:{" "}
 								<span className="font-medium">{selectedSection}</span>
 							</div>
@@ -209,13 +209,13 @@ export default function StudentsTab() {
 
 					{studentsLoading ? (
 						<div className="py-6 text-center lg:py-8">
-							<p className="text-sm text-slate-500 lg:text-base">
+							<p className="text-sm text-slate-500 dark:text-slate-400 lg:text-base">
 								Loading students...
 							</p>
 						</div>
 					) : filteredStudents.length === 0 ? (
 						<div className="py-6 text-center lg:py-8">
-							<p className="text-sm text-slate-500 lg:text-base">
+							<p className="text-sm text-slate-500 dark:text-slate-400 lg:text-base">
 								{selectedSection
 									? `No students found in section "${selectedSection}".`
 									: "No students found. Import students to get started."}
@@ -224,7 +224,7 @@ export default function StudentsTab() {
 					) : (
 						<>
 							{/* Pagination Info */}
-							<div className="mb-4 text-sm text-slate-600">
+							<div className="mb-4 text-sm text-slate-600 dark:text-slate-400">
 								Showing {indexOfFirstStudent + 1} to{" "}
 								{Math.min(indexOfLastStudent, filteredStudents.length)} of{" "}
 								{filteredStudents.length} students
@@ -233,9 +233,9 @@ export default function StudentsTab() {
 
 							{/* Students Table */}
 							<div className="overflow-x-auto -mx-4 mb-6 lg:mx-0">
-								<table className="min-w-full text-xs lg:text-sm text-slate-700">
+								<table className="min-w-full text-xs lg:text-sm text-slate-700 dark:text-slate-300">
 									<thead>
-										<tr className="border-b border-slate-200">
+										<tr className="border-b border-slate-200 dark:border-slate-700">
 											<th className="px-3 py-2 font-semibold text-left lg:px-4">
 												Student
 											</th>
@@ -257,43 +257,43 @@ export default function StudentsTab() {
 										{currentStudents.map((student) => (
 											<tr
 												key={student.id}
-												className="border-b transition-colors border-slate-100 hover:bg-slate-50"
+												className="border-b transition-colors border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
 											>
 												<td className="px-3 py-3 lg:px-4 lg:py-2">
 													<div className="flex items-center">
 														<div className="flex-shrink-0 mr-3 w-8 h-8">
-															<div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-full">
-																<span className="text-xs font-medium text-blue-600">
+															<div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-full dark:bg-blue-900">
+																<span className="text-xs font-medium text-blue-600 dark:text-blue-300">
 																	{student.firstname?.[0]}
 																	{student.lastname?.[0]}
 																</span>
 															</div>
 														</div>
 														<div>
-															<div className="font-medium">
+															<div className="font-medium dark:text-white">
 																{student.firstname} {student.middlename}{" "}
 																{student.lastname}
 															</div>
 														</div>
 													</div>
 												</td>
-												<td className="px-3 py-3 lg:px-4 lg:py-2">
+												<td className="px-3 py-3 lg:px-4 lg:py-2 dark:text-white">
 													{student.lrn || "N/A"}
 												</td>
-												<td className="hidden px-3 py-3 lg:px-4 lg:py-2 sm:table-cell">
+												<td className="hidden px-3 py-3 lg:px-4 lg:py-2 sm:table-cell dark:text-white">
 													{student.email || "N/A"}
 												</td>
 												<td className="px-3 py-3 lg:px-4 lg:py-2">
-													<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full">
+													<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-300 dark:bg-blue-900/20">
 														{student.name || "N/A"}
 													</span>
 												</td>
 												<td className="px-3 py-3 lg:px-4 lg:py-2">
 													<div>
-														<div className="text-xs font-medium">
+														<div className="text-xs font-medium dark:text-white">
 															{student.track || "N/A"}
 														</div>
-														<div className="text-xs text-slate-500">
+														<div className="text-xs text-slate-500 dark:text-slate-400">
 															{student.strand || "N/A"}
 														</div>
 													</div>
@@ -307,7 +307,7 @@ export default function StudentsTab() {
 							{/* Pagination Controls */}
 							{totalPages > 1 && (
 								<div className="flex flex-col gap-4 justify-between items-center sm:flex-row">
-									<div className="text-sm text-slate-600">
+									<div className="text-sm text-slate-600 dark:text-slate-400">
 										Page {currentPage} of {totalPages}
 									</div>
 
@@ -329,7 +329,7 @@ export default function StudentsTab() {
 											{getPageNumbers().map((pageNum, index) => (
 												<React.Fragment key={index}>
 													{pageNum === "..." ? (
-														<span className="px-3 py-1 text-sm text-slate-400">
+														<span className="px-3 py-1 text-sm text-slate-400 dark:text-slate-500">
 															...
 														</span>
 													) : (

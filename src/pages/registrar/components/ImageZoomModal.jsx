@@ -1,6 +1,6 @@
 import React from "react";
 import { X, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
-import { getDecryptedApiUrl } from "../../../../utils/apiConfig";
+import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
 const ImageZoomModal = ({
 	selectedImage,

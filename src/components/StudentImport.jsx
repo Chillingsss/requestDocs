@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
 	Upload,
 	FileSpreadsheet,
-	CheckCircle,
-	AlertCircle,
 	X,
 	Save,
 	Trash2,

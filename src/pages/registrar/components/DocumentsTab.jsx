@@ -200,10 +200,10 @@ export default function DocumentsTab() {
 
 	return (
 		<>
-			<Card>
+			<Card className="dark:bg-slate-800 dark:border-slate-700">
 				<CardContent className="p-4 lg:p-6">
 					<div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-						<div className="text-lg font-semibold text-slate-900">
+						<div className="text-lg font-semibold text-slate-900 dark:text-white">
 							Student Documents ({filteredDocuments.length})
 						</div>
 						<Button
@@ -223,17 +223,17 @@ export default function DocumentsTab() {
 								placeholder="Search by name, LRN, or document type..."
 								value={searchTerm}
 								onChange={(e) => setSearchTerm(e.target.value)}
-								className="px-3 py-2 text-sm bg-white rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[250px]"
+								className="px-3 py-2 text-sm bg-white dark:bg-slate-800 rounded-md border border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white min-w-[250px]"
 							/>
 						</div>
 
 						{/* Document Type Filter */}
 						<div className="flex gap-2 items-center">
-							<Filter className="w-4 h-4 text-slate-500" />
+							<Filter className="w-4 h-4 text-slate-500 dark:text-slate-400" />
 							<select
 								value={selectedDocumentType}
 								onChange={(e) => setSelectedDocumentType(e.target.value)}
-								className="px-3 py-2 text-sm bg-white rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								className="px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
 							>
 								<option value="">All Document Types</option>
 								{documentTypes.map((type) => (
@@ -249,7 +249,7 @@ export default function DocumentsTab() {
 							<select
 								value={selectedTrack}
 								onChange={(e) => setSelectedTrack(e.target.value)}
-								className="px-3 py-2 text-sm bg-white rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								className="px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
 							>
 								<option value="">All Tracks</option>
 								{tracks.map((track) => (
@@ -263,20 +263,20 @@ export default function DocumentsTab() {
 
 					{/* Active Filters Display */}
 					{(selectedDocumentType || selectedTrack || searchTerm) && (
-						<div className="flex flex-wrap gap-2 mb-4 text-sm text-slate-600">
+						<div className="flex flex-wrap gap-2 mb-4 text-sm text-slate-600 dark:text-slate-400">
 							<span>Active filters:</span>
 							{selectedDocumentType && (
-								<span className="px-2 py-1 text-blue-800 bg-blue-100 rounded">
+								<span className="px-2 py-1 text-blue-800 bg-blue-100 rounded dark:text-blue-300 dark:bg-blue-900/20">
 									Type: {selectedDocumentType}
 								</span>
 							)}
 							{selectedTrack && (
-								<span className="px-2 py-1 text-green-800 bg-green-100 rounded">
+								<span className="px-2 py-1 text-green-800 bg-green-100 rounded dark:text-green-300 dark:bg-green-900/20">
 									Track: {selectedTrack}
 								</span>
 							)}
 							{searchTerm && (
-								<span className="px-2 py-1 text-purple-800 bg-purple-100 rounded">
+								<span className="px-2 py-1 text-purple-800 bg-purple-100 rounded dark:text-purple-300 dark:bg-purple-900/20">
 									Search: "{searchTerm}"
 								</span>
 							)}
@@ -285,13 +285,13 @@ export default function DocumentsTab() {
 
 					{documentsLoading ? (
 						<div className="py-6 text-center lg:py-8">
-							<p className="text-sm text-slate-500 lg:text-base">
+							<p className="text-sm text-slate-500 dark:text-slate-400 lg:text-base">
 								Loading documents...
 							</p>
 						</div>
 					) : filteredDocuments.length === 0 ? (
 						<div className="py-6 text-center lg:py-8">
-							<p className="text-sm text-slate-500 lg:text-base">
+							<p className="text-sm text-slate-500 dark:text-slate-400 lg:text-base">
 								{documents.length === 0
 									? "No documents found in the system."
 									: "No documents match the current filters."}
@@ -300,7 +300,7 @@ export default function DocumentsTab() {
 					) : (
 						<>
 							{/* Pagination Info */}
-							<div className="mb-4 text-sm text-slate-600">
+							<div className="mb-4 text-sm text-slate-600 dark:text-slate-400">
 								Showing {indexOfFirstDocument + 1} to{" "}
 								{Math.min(indexOfLastDocument, filteredDocuments.length)} of{" "}
 								{filteredDocuments.length} documents
@@ -309,9 +309,9 @@ export default function DocumentsTab() {
 
 							{/* Documents Table */}
 							<div className="overflow-x-auto -mx-4 mb-6 lg:mx-0">
-								<table className="min-w-full text-xs lg:text-sm text-slate-700">
+								<table className="min-w-full text-xs lg:text-sm text-slate-700 dark:text-slate-300">
 									<thead>
-										<tr className="border-b border-slate-200">
+										<tr className="border-b border-slate-200 dark:border-slate-700">
 											<th className="px-3 py-2 font-semibold text-left lg:px-4">
 												Student Name
 											</th>
@@ -336,37 +336,41 @@ export default function DocumentsTab() {
 										{currentDocuments.map((doc, index) => (
 											<tr
 												key={`${doc.fileName}-${index}`}
-												className="border-b transition-colors border-slate-100 hover:bg-slate-50"
+												className="border-b transition-colors border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
 											>
 												<td className="px-3 py-3 lg:px-4 lg:py-2">
-													<div className="font-medium">
+													<div className="font-medium dark:text-white">
 														{`${doc.firstname} ${
 															doc.middlename ? doc.middlename + " " : ""
 														}${doc.lastname}`}
 													</div>
 												</td>
-												<td className="px-3 py-3 lg:px-4 lg:py-2">
+												<td className="px-3 py-3 lg:px-4 lg:py-2 dark:text-white">
 													{doc.lrn || "N/A"}
 												</td>
 												<td className="hidden px-3 py-3 lg:px-4 lg:py-2 sm:table-cell">
 													<div className="text-xs">
 														{doc.track && (
-															<div className="font-medium">{doc.track}</div>
+															<div className="font-medium dark:text-white">
+																{doc.track}
+															</div>
 														)}
 														{doc.strand && (
-															<div className="text-slate-500">{doc.strand}</div>
+															<div className="text-slate-500 dark:text-slate-400">
+																{doc.strand}
+															</div>
 														)}
 													</div>
 												</td>
 												<td className="px-3 py-3 lg:px-4 lg:py-2">
-													<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full">
+													<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-300 dark:bg-blue-900/20">
 														{doc.documentType}
 													</span>
 												</td>
 												<td className="px-3 py-3 lg:px-4 lg:py-2">
 													<div className="flex gap-1 items-center max-w-[150px]">
-														<FileText className="flex-shrink-0 w-4 h-4 text-slate-400" />
-														<span className="text-xs truncate">
+														<FileText className="flex-shrink-0 w-4 h-4 text-slate-400 dark:text-slate-500" />
+														<span className="text-xs truncate dark:text-white">
 															{doc.fileName}
 														</span>
 													</div>
@@ -402,7 +406,7 @@ export default function DocumentsTab() {
 							{/* Pagination */}
 							{totalPages > 1 && (
 								<div className="flex flex-col gap-4 items-center sm:flex-row sm:justify-between">
-									<div className="text-sm text-slate-600">
+									<div className="text-sm text-slate-600 dark:text-slate-400">
 										Page {currentPage} of {totalPages}
 									</div>
 									<div className="flex gap-2 items-center">
@@ -421,7 +425,7 @@ export default function DocumentsTab() {
 											{getPageNumbers().map((pageNum, index) => (
 												<React.Fragment key={index}>
 													{pageNum === "..." ? (
-														<span className="px-3 py-1 text-slate-400">
+														<span className="px-3 py-1 text-slate-400 dark:text-slate-500">
 															...
 														</span>
 													) : (

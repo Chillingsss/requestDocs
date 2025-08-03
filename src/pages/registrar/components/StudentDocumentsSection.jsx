@@ -1,6 +1,6 @@
 import React from "react";
 import { FileText } from "lucide-react";
-import { getDecryptedApiUrl } from "../../../../utils/apiConfig";
+import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
 const StudentDocumentsSection = ({ studentDocuments, request }) => {
 	const apiUrl = getDecryptedApiUrl();

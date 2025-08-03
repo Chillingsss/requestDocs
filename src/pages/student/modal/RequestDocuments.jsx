@@ -98,24 +98,6 @@ export default function RequestDocuments({
 		);
 	};
 
-	// Check if CAV is selected and no Diploma attachment is provided
-	const isCavWithoutDiploma = () => {
-		const selectedDocName = getSelectedDocumentName().toLowerCase();
-		if (selectedDocName.includes("cav")) {
-			// Check if any file has Diploma as requirement type
-			const hasDiplomaAttachment = selectedFiles.some((fileObj) => {
-				const reqType = requestTypes.find((type) => type.id === fileObj.typeId);
-				return (
-					reqType &&
-					reqType.nameType &&
-					reqType.nameType.toLowerCase().includes("diploma")
-				);
-			});
-			return !hasDiplomaAttachment;
-		}
-		return false;
-	};
-
 	// Check if submit button should be disabled
 	const isSubmitDisabled = () => {
 		console.log("=== isSubmitDisabled Debug ===");
@@ -444,15 +426,15 @@ export default function RequestDocuments({
 
 	return (
 		<div className="flex fixed inset-0 z-50 justify-center items-center backdrop-blur-sm bg-black/40">
-			<div className="relative mx-2 w-full max-w-xs bg-white rounded-2xl border shadow-2xl md:max-w-md border-slate-200">
+			<div className="relative mx-2 w-full max-w-xs bg-white rounded-2xl border shadow-2xl dark:bg-slate-800 dark:border-slate-700 md:max-w-md border-slate-200">
 				{/* Title Bar */}
-				<div className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl border-b border-slate-100">
-					<h3 className="text-lg font-semibold text-slate-900">
+				<div className="flex justify-between items-center px-6 py-4 rounded-t-2xl border-b bg-slate-50 border-slate-100 dark:bg-slate-700 dark:border-slate-600">
+					<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
 						Request Document
 					</h3>
 					<button
 						onClick={handleClose}
-						className="p-1 rounded-full transition-colors text-slate-400 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+						className="p-1 rounded-full transition-colors text-slate-400 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:text-slate-200 dark:hover:text-slate-400"
 						aria-label="Close"
 					>
 						<svg
@@ -475,7 +457,7 @@ export default function RequestDocuments({
 					<div>
 						<Label
 							htmlFor="document-type"
-							className="block mb-1 text-sm font-medium text-slate-700"
+							className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-500"
 						>
 							Document Type
 						</Label>
@@ -483,7 +465,7 @@ export default function RequestDocuments({
 							id="document-type"
 							value={selectedDocument}
 							onChange={(e) => handleDocumentChange(e.target.value)}
-							className="block px-3 py-2 w-full rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 text-slate-900"
+							className="block px-3 py-2 w-full rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
 							required
 							disabled={loadingDocs}
 						>
@@ -504,14 +486,14 @@ export default function RequestDocuments({
 							<div>
 								<Label
 									htmlFor="purpose"
-									className="block mb-1 text-sm font-medium text-slate-700"
+									className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-500"
 								>
 									Purpose
 								</Label>
 								<Input
 									id="purpose"
 									placeholder=""
-									className="px-3 py-2 w-full rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 text-slate-900"
+									className="px-3 py-2 w-full rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
 									value={purpose}
 									onChange={(e) => setPurpose(e.target.value)}
 									required
@@ -523,12 +505,14 @@ export default function RequestDocuments({
 									<div>
 										<Label
 											htmlFor="file-upload"
-											className="block mb-1 text-sm font-medium text-slate-700"
+											className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-500"
 										>
 											Document Attachments
 											{!isSF10Document() &&
 												(requiresAttachments() ? (
-													<span className="text-red-500">*</span>
+													<span className="text-red-500 dark:text-red-500">
+														*
+													</span>
 												) : (
 													" (Optional)"
 												))}
@@ -539,7 +523,7 @@ export default function RequestDocuments({
 											id="file-upload"
 											accept=".jpg, .jpeg, .png, .gif, .pdf"
 											onChange={handleFileChange}
-											className="block w-full text-sm rounded-lg border cursor-pointer text-slate-900 border-slate-300 bg-slate-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+											className="block w-full text-sm rounded-lg border cursor-pointer text-slate-900 border-slate-300 bg-slate-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:text-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:file:bg-blue-600 dark:file:text-white dark:hover:file:bg-blue-700"
 											multiple
 										/>
 										<p className="mt-1 text-xs text-slate-500">
@@ -548,8 +532,8 @@ export default function RequestDocuments({
 										</p>
 										{/* Show message when no files selected for required documents */}
 										{requiresAttachments() && selectedFiles.length === 0 && (
-											<div className="p-2 mt-2 bg-red-50 rounded border border-red-200">
-												<p className="text-xs text-red-600">
+											<div className="p-2 mt-2 bg-red-50 rounded border border-red-200 dark:bg-red-900 dark:border-red-800">
+												<p className="text-xs text-red-600 dark:text-red-400">
 													⚠️ This document type requires file attachments.
 													Please upload the required document:{" "}
 													<b>
@@ -572,7 +556,7 @@ export default function RequestDocuments({
 										{getSelectedDocumentName()
 											.toLowerCase()
 											.includes("cav") && (
-											<div className="p-3 mt-2 bg-blue-50 rounded border border-blue-200">
+											<div className="p-3 mt-2 bg-blue-50 rounded border border-blue-200 dark:bg-blue-900 dark:border-blue-800">
 												<div className="flex items-start space-x-2">
 													<input
 														type="checkbox"
@@ -581,16 +565,16 @@ export default function RequestDocuments({
 														onChange={(e) =>
 															setRequestBothDocuments(e.target.checked)
 														}
-														className="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+														className="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-400"
 													/>
 													<div className="flex-1">
 														<label
 															htmlFor="requestBothDocuments"
-															className="text-sm font-medium text-blue-800 cursor-pointer"
+															className="text-sm font-medium text-blue-800 cursor-pointer dark:text-blue-400"
 														>
 															Request both Diploma and CAV together
 														</label>
-														<p className="mt-1 text-xs text-blue-600">
+														<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
 															If you don't have a Diploma yet, check this option
 															to request both documents in a single request. The
 															Diploma will be processed first, then the CAV will
@@ -605,8 +589,8 @@ export default function RequestDocuments({
 
 								{/* SF10: Only show the request letter note, no label or other notes */}
 								{isSF10Document() && (
-									<div className="p-3 mb-3 bg-green-50 rounded-lg border border-green-200">
-										<p className="text-sm text-green-800">
+									<div className="p-3 mb-3 bg-green-50 rounded-lg border border-green-200 dark:bg-green-900 dark:border-green-800">
+										<p className="text-sm text-green-800 dark:text-green-200">
 											Please bring a <strong>Request Letter</strong> to the
 											office when you collect your document.
 										</p>
@@ -629,7 +613,7 @@ export default function RequestDocuments({
 										{selectedFiles.length > 0 && (
 											<div className="mt-3">
 												<div className="flex justify-between items-center mb-2">
-													<p className="text-xs font-medium text-slate-600">
+													<p className="text-xs font-medium text-slate-600 dark:text-slate-400">
 														Selected files ({selectedFiles.length}):
 													</p>
 													<button
@@ -637,24 +621,24 @@ export default function RequestDocuments({
 														onClick={() =>
 															document.getElementById("add-more-files").click()
 														}
-														className="text-xs font-medium text-blue-600 hover:text-blue-800"
+														className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-600"
 													>
 														+ Add More Files
 													</button>
 												</div>
-												<div className="overflow-y-auto p-2 space-y-3 max-h-64 rounded-lg border border-slate-200 bg-slate-50">
+												<div className="overflow-y-auto p-2 space-y-3 max-h-64 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
 													{selectedFiles.map((fileObj, index) => (
 														<div
 															key={index}
-															className="p-3 bg-white rounded-lg border border-slate-300"
+															className="p-3 bg-white rounded-lg border border-slate-300 dark:bg-slate-800 dark:border-slate-700"
 														>
 															{/* File Info */}
 															<div className="flex justify-between items-start mb-2">
 																<div className="flex-1 min-w-0">
-																	<p className="text-xs font-medium truncate text-slate-700">
+																	<p className="text-xs font-medium truncate text-slate-700 dark:text-slate-400">
 																		{fileObj.file.name}
 																	</p>
-																	<p className="text-xs text-slate-500">
+																	<p className="text-xs text-slate-500 dark:text-slate-400">
 																		{(fileObj.file.size / 1024 / 1024).toFixed(
 																			2
 																		)}{" "}
@@ -664,7 +648,7 @@ export default function RequestDocuments({
 																<button
 																	type="button"
 																	onClick={() => removeFile(index)}
-																	className="flex-shrink-0 ml-2 text-xs text-red-500 hover:text-red-700"
+																	className="flex-shrink-0 ml-2 text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600"
 																	title="Remove file"
 																>
 																	✕
@@ -675,22 +659,24 @@ export default function RequestDocuments({
 															<div>
 																<Label
 																	htmlFor={`requirement-type-${index}`}
-																	className="block mb-1 text-xs font-medium text-slate-700"
+																	className="block mb-1 text-xs font-medium text-slate-700 dark:text-slate-50"
 																>
 																	Requirement Type{" "}
-																	<span className="text-red-500">*</span>
+																	<span className="text-red-500 dark:text-red-400">
+																		*
+																	</span>
 																</Label>
 																{getSelectedDocumentName()
 																	.toLowerCase()
 																	.includes("diploma") ? (
-																	<div className="text-xs font-semibold text-slate-700">
+																	<div className="text-xs font-semibold text-slate-700 dark:text-slate-400">
 																		Requirement Type:{" "}
 																		{getRequiredTypeForDiploma()}
 																	</div>
 																) : getSelectedDocumentName()
 																		.toLowerCase()
 																		.includes("cav") ? (
-																	<div className="text-xs font-semibold text-slate-700">
+																	<div className="text-xs font-semibold text-slate-700 dark:text-slate-400">
 																		Requirement Type: {getRequiredTypeForCAV()}
 																	</div>
 																) : (
@@ -700,7 +686,7 @@ export default function RequestDocuments({
 																		onChange={(e) =>
 																			updateFileTypeId(index, e.target.value)
 																		}
-																		className="block px-2 py-1 w-full text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-slate-50 text-slate-900"
+																		className="block px-2 py-1 w-full text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
 																		required
 																		disabled={loadingRequestTypes}
 																	>
@@ -735,8 +721,8 @@ export default function RequestDocuments({
 							type="submit"
 							className={`flex-1 h-11 text-base font-semibold rounded-lg shadow-md ${
 								isSubmitDisabled()
-									? "text-gray-600 bg-gray-400 cursor-not-allowed"
-									: "text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+									? "text-gray-600 bg-gray-400 cursor-not-allowed dark:text-gray-400 dark:bg-gray-600"
+									: "text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 dark:from-blue-400 dark:to-indigo-400 dark:hover:from-blue-500 dark:hover:to-indigo-500"
 							}`}
 							disabled={isSubmitDisabled()}
 						>
@@ -745,7 +731,7 @@ export default function RequestDocuments({
 						<Button
 							type="button"
 							variant="outline"
-							className="flex-1 h-11 text-base font-semibold text-white bg-gradient-to-r from-red-600 to-red-600 rounded-lg shadow-md border-slate-300 hover:from-red-700 hover:to-red-700"
+							className="flex-1 h-11 text-base font-semibold text-white bg-gradient-to-r from-red-600 to-red-600 rounded-lg shadow-md border-slate-300 hover:from-red-700 hover:to-red-700 dark:from-red-400 dark:to-red-400 dark:hover:from-red-500 dark:hover:to-red-500"
 							onClick={handleClose}
 						>
 							Cancel

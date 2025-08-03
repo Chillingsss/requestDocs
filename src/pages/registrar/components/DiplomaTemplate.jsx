@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Button } from "../../../../components/ui/button";
-import { Input } from "../../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
 import { Edit3, Save, X, Download, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 import html2canvas from "html2canvas";
@@ -9,9 +9,7 @@ import jsPDF from "jspdf";
 export default function DiplomaTemplate({
 	studentInfo,
 	onSave,
-	onCancel,
 	isEditable = true,
-	fetchStudentInfo,
 }) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -142,7 +140,6 @@ export default function DiplomaTemplate({
 			return;
 		}
 		const printWindow = window.open("", "_blank");
-		const content = diplomaRef.current.innerHTML;
 		printWindow.document.write(`
         <html>
           <head>

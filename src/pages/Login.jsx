@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { LockKeyhole, Mail, ArrowRight, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Label } from "@radix-ui/react-label";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -11,6 +11,7 @@ import Cookies from "js-cookie";
 import { loginUser } from "../utils/security";
 import PinVerification from "../components/PinVerification";
 import Captcha from "../components/Captcha";
+import ThemeToggle from "../components/ThemeToggle";
 import toast, { Toaster } from "react-hot-toast";
 
 const COOKIE_KEY = "mogchs_user";
@@ -196,7 +197,7 @@ export default function LoginPage() {
 	return (
 		<>
 			<Toaster position="top-right" />
-			<div className="flex min-h-screen bg-gray-50">
+			<div className="flex min-h-screen bg-gray-50 dark:bg-slate-900">
 				<div className="hidden relative flex-col justify-center items-center w-1/2 text-white bg-gradient-to-br md:flex from-slate-900 to-slate-800">
 					<div className="flex flex-col justify-center items-center w-full h-full">
 						<div className="flex flex-col items-center">
@@ -224,8 +225,13 @@ export default function LoginPage() {
 				</div>
 
 				{/* Right side: Login form */}
-				<div className="flex flex-col justify-center px-8 py-12 w-full bg-white md:w-1/2">
+				<div className="flex flex-col justify-center px-8 py-12 w-full bg-white dark:bg-slate-900 md:w-1/2">
 					<div className="mx-auto w-full max-w-sm">
+						{/* Theme Toggle - Top Right */}
+						<div className="flex justify-end mb-4">
+							<ThemeToggle />
+						</div>
+
 						{/* Mobile header with logo - Only visible on small screens */}
 						<div className="flex flex-col items-center mb-8 md:hidden">
 							<img
@@ -234,8 +240,8 @@ export default function LoginPage() {
 								className="object-contain mb-4 w-24 h-24 bg-white rounded-full border-2 border-gray-300 shadow-lg"
 							/>
 							<div className="text-center">
-								<div className="px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
-									<p className="text-sm font-semibold text-gray-800">
+								<div className="px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 dark:bg-slate-800 dark:border-slate-700">
+									<p className="text-sm font-semibold text-gray-800 dark:text-white">
 										Senior High School Online Document Requisition System
 									</p>
 								</div>
@@ -243,21 +249,25 @@ export default function LoginPage() {
 						</div>
 
 						<div className="mb-8 text-center">
-							<h1 className="mb-2 text-3xl font-bold text-gray-900">Login</h1>
-							<p className="text-gray-600">
+							<h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">
+								Login
+							</h1>
+							<p className="text-gray-600 dark:text-gray-300">
 								Enter your credentials below to login to your account
 							</p>
 						</div>
 
 						{/* Error Message Display */}
 						{error && (
-							<div className="flex items-start p-3 mb-4 space-x-2 bg-red-50 rounded-md border border-red-200">
+							<div className="flex items-start p-3 mb-4 space-x-2 bg-red-50 rounded-md border border-red-200 dark:bg-red-900/20 dark:border-red-800">
 								<AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
 								<div>
-									<p className="text-sm font-medium text-red-700">
+									<p className="text-sm font-medium text-red-700 dark:text-red-300">
 										Login Failed
 									</p>
-									<p className="text-sm text-red-600">{error}</p>
+									<p className="text-sm text-red-600 dark:text-red-400">
+										{error}
+									</p>
 								</div>
 							</div>
 						)}
@@ -266,7 +276,7 @@ export default function LoginPage() {
 							<div className="space-y-2">
 								<Label
 									htmlFor="username"
-									className="text-sm font-medium text-gray-700"
+									className="text-sm font-medium text-gray-700 dark:text-gray-300"
 								>
 									Username (Employee ID or School ID)
 								</Label>
@@ -279,7 +289,7 @@ export default function LoginPage() {
 										setError(""); // Clear error when user starts typing
 									}}
 									placeholder="Enter your Employee ID or School ID"
-									className="px-3 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+									className="px-3 py-2 w-full rounded-md border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:text-white"
 									required
 								/>
 							</div>
@@ -288,13 +298,13 @@ export default function LoginPage() {
 								<div className="flex justify-between items-center">
 									<Label
 										htmlFor="password"
-										className="text-sm font-medium text-gray-700"
+										className="text-sm font-medium text-gray-700 dark:text-gray-300"
 									>
 										Password
 									</Label>
 									<a
 										href="#"
-										className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+										className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
 									>
 										Forgot your password?
 									</a>
@@ -307,7 +317,7 @@ export default function LoginPage() {
 										setPassword(e.target.value);
 										setError(""); // Clear error when user starts typing
 									}}
-									className="px-3 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+									className="px-3 py-2 w-full rounded-md border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:text-white"
 									required
 								/>
 							</div>

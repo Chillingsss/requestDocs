@@ -21,6 +21,7 @@ import {
 } from "../../utils/admin";
 import AddUserModal from "./modal/AddUserModal";
 import toast, { Toaster } from "react-hot-toast";
+import ThemeToggle from "../../components/ThemeToggle";
 import {
 	Chart as ChartJS,
 	CategoryScale,
@@ -152,7 +153,7 @@ export default function AdminDashboard() {
 
 	const logout = () => {
 		Cookies.remove("mogchs_user");
-		navigate("/");
+		navigate("/mogchs");
 	};
 
 	const handleAddUserSuccess = () => {
@@ -207,12 +208,12 @@ export default function AdminDashboard() {
 			<>
 				{/* Stats Cards */}
 				<div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6 lg:mb-8">
-					<Card>
+					<Card className="dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-4 lg:p-6">
-							<div className="text-xs lg:text-sm text-slate-500">
+							<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
 								Total Users
 							</div>
-							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900">
+							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
 								{dashboardLoading ? "..." : dashboardData.totalUsers.totalUsers}
 							</div>
 							<div className="mt-1 text-xs text-green-600">
@@ -221,12 +222,12 @@ export default function AdminDashboard() {
 							</div>
 						</CardContent>
 					</Card>
-					<Card>
+					<Card className="dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-4 lg:p-6">
-							<div className="text-xs lg:text-sm text-slate-500">
+							<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
 								Total Requests
 							</div>
-							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900">
+							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
 								{dashboardLoading
 									? "..."
 									: dashboardData.requestStats.reduce(
@@ -239,12 +240,12 @@ export default function AdminDashboard() {
 							</div>
 						</CardContent>
 					</Card>
-					<Card>
+					<Card className="dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-4 lg:p-6">
-							<div className="text-xs lg:text-sm text-slate-500">
+							<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
 								Completed Requests
 							</div>
-							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900">
+							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
 								{dashboardLoading
 									? "..."
 									: dashboardData.completedRequests.length}
@@ -254,12 +255,12 @@ export default function AdminDashboard() {
 							</div>
 						</CardContent>
 					</Card>
-					<Card>
+					<Card className="dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-4 lg:p-6">
-							<div className="text-xs lg:text-sm text-slate-500">
+							<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
 								Pending Requests
 							</div>
-							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900">
+							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
 								{dashboardLoading
 									? "..."
 									: dashboardData.requestStats.find(
@@ -275,13 +276,13 @@ export default function AdminDashboard() {
 
 				{/* Charts Section */}
 				<div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
-					<Card>
+					<Card className="dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-4 lg:p-6">
-							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900">
+							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
 								Request Status Distribution
 							</div>
 							{dashboardLoading ? (
-								<div className="py-8 text-center text-slate-500">
+								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 									Loading chart...
 								</div>
 							) : (
@@ -303,13 +304,13 @@ export default function AdminDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card>
+					<Card className="dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-4 lg:p-6">
-							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900">
+							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
 								User Distribution
 							</div>
 							{dashboardLoading ? (
-								<div className="py-8 text-center text-slate-500">
+								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 									Loading chart...
 								</div>
 							) : (
@@ -334,17 +335,17 @@ export default function AdminDashboard() {
 
 				{/* Recent Activity and Completed Requests */}
 				<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-					<Card>
+					<Card className="dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-4 lg:p-6">
-							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900">
+							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
 								Recent Activity
 							</div>
 							{dashboardLoading ? (
-								<div className="py-8 text-center text-slate-500">
+								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 									Loading activities...
 								</div>
 							) : dashboardData.recentActivity.length === 0 ? (
-								<div className="py-8 text-center text-slate-500">
+								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 									No recent activity
 								</div>
 							) : (
@@ -352,30 +353,26 @@ export default function AdminDashboard() {
 									{dashboardData.recentActivity.map((activity, index) => (
 										<div
 											key={index}
-											className="flex justify-between items-start p-3 rounded-lg bg-slate-50"
+											className="flex justify-between items-start p-3 rounded-lg bg-slate-50 dark:bg-slate-700"
 										>
 											<div className="flex-1">
-												<div className="text-sm font-medium text-slate-900">
+												<div className="text-sm font-medium text-slate-900 dark:text-white">
 													{activity.student}
 												</div>
-												<div className="text-xs text-slate-600">
+												<div className="text-xs text-slate-600 dark:text-slate-300">
 													{activity.document}
 												</div>
-												<div className="mt-1 text-xs text-slate-500">
+												<div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
 													{activity.formattedDate}
 												</div>
 											</div>
 											<span
 												className={`px-2 py-1 rounded-full text-xs font-medium ml-2 ${
 													activity.status === "Released"
-														? "bg-green-100 text-green-800"
+														? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
 														: activity.status === "Pending"
-														? "bg-yellow-100 text-yellow-800"
-														: activity.status === "Processed"
-														? "bg-blue-100 text-blue-800"
-														: activity.status === "Signatory"
-														? "bg-purple-100 text-purple-800"
-														: "bg-gray-100 text-gray-800"
+														? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+														: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
 												}`}
 											>
 												{activity.status}
@@ -387,17 +384,17 @@ export default function AdminDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card>
+					<Card className="dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-4 lg:p-6">
-							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900">
+							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
 								Recently Completed Requests
 							</div>
 							{dashboardLoading ? (
-								<div className="py-8 text-center text-slate-500">
+								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 									Loading completed requests...
 								</div>
 							) : dashboardData.completedRequests.length === 0 ? (
-								<div className="py-8 text-center text-slate-500">
+								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 									No completed requests
 								</div>
 							) : (
@@ -435,10 +432,10 @@ export default function AdminDashboard() {
 		return (
 			<>
 				{/* Users List */}
-				<Card>
+				<Card className="dark:bg-slate-800 dark:border-slate-700">
 					<CardContent className="p-4 lg:p-6">
 						<div className="flex justify-between items-center mb-4">
-							<div className="text-base font-semibold lg:text-lg text-slate-900">
+							<div className="text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
 								Users Management
 							</div>
 							<Button
@@ -451,11 +448,11 @@ export default function AdminDashboard() {
 						</div>
 
 						{loading ? (
-							<div className="py-8 text-center text-slate-500">
+							<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 								Loading users...
 							</div>
 						) : users.length === 0 ? (
-							<div className="py-8 text-center text-slate-500">
+							<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 								No users found
 							</div>
 						) : (
@@ -517,9 +514,9 @@ export default function AdminDashboard() {
 				return renderUsersContent();
 			case "Reports":
 				return (
-					<Card>
+					<Card className="dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-4 lg:p-6">
-							<div className="py-8 text-center text-slate-500">
+							<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 								Reports section coming soon...
 							</div>
 						</CardContent>
@@ -527,9 +524,9 @@ export default function AdminDashboard() {
 				);
 			case "Settings":
 				return (
-					<Card>
+					<Card className="dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-4 lg:p-6">
-							<div className="py-8 text-center text-slate-500">
+							<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 								Settings section coming soon...
 							</div>
 						</CardContent>
@@ -541,7 +538,7 @@ export default function AdminDashboard() {
 	};
 
 	return (
-		<div className="flex min-h-screen bg-slate-50">
+		<div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
 			<Toaster position="top-right" />
 
 			{/* Mobile Overlay */}
@@ -638,32 +635,41 @@ export default function AdminDashboard() {
 				<div className="flex justify-between items-center mb-4 lg:hidden">
 					<button
 						onClick={() => setSidebarOpen(true)}
-						className="p-2 bg-white rounded-lg border shadow-sm text-slate-600 border-slate-200"
+						className="p-2 bg-white rounded-lg border shadow-sm dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
 					>
 						<Menu className="w-5 h-5" />
 					</button>
-					<h1 className="text-xl font-bold text-slate-900">
+					<h1 className="text-xl font-bold text-slate-900 dark:text-white">
 						Admin {activeSection}
 					</h1>
 				</div>
 
 				{/* Desktop Header */}
 				<header className="hidden justify-between items-center mb-8 lg:flex">
-					<h1 className="text-3xl font-bold text-slate-900">
+					<h1 className="text-3xl font-bold text-slate-900 dark:text-white">
 						Admin {activeSection}
 					</h1>
-					{activeSection === "Dashboard" && (
-						<Button
-							className="text-white bg-blue-600 hover:bg-blue-700"
-							onClick={fetchDashboardData}
-						>
-							Refresh Data
-						</Button>
-					)}
+					<div className="flex gap-4 items-center">
+						<ThemeToggle />
+						{activeSection === "Dashboard" && (
+							<Button
+								className="text-white bg-blue-600 hover:bg-blue-700"
+								onClick={fetchDashboardData}
+							>
+								Refresh Data
+							</Button>
+						)}
+					</div>
 				</header>
 
 				{/* Mobile Header */}
 				<header className="flex flex-col gap-4 mb-6 lg:hidden">
+					<div className="flex justify-between items-center">
+						<h1 className="text-xl font-bold text-slate-900 dark:text-white">
+							Admin {activeSection}
+						</h1>
+						<ThemeToggle />
+					</div>
 					{activeSection === "Dashboard" && (
 						<Button
 							className="flex gap-2 items-center w-full bg-blue-600 hover:bg-blue-700"

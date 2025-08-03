@@ -9,10 +9,10 @@ import {
 	updateStudentInfo,
 } from "../../../utils/registrar";
 import toast from "react-hot-toast";
-import StudentDocumentsSection from "./components/StudentDocumentsSection";
-import AttachmentsSection from "./components/AttachmentsSection";
-import ImageZoomModal from "./components/ImageZoomModal";
-import DiplomaTemplateModal from "./components/DiplomaTemplateModal";
+import StudentDocumentsSection from "../components/StudentDocumentsSection";
+import AttachmentsSection from "../components/AttachmentsSection";
+import ImageZoomModal from "../components/ImageZoomModal";
+import DiplomaTemplateModal from "../components/DiplomaTemplateModal";
 
 export default function ProcessedRequest({
 	request,
@@ -49,11 +49,6 @@ export default function ProcessedRequest({
 	const isImageFile = (filename) => {
 		const imageExtensions = ["jpg", "jpeg", "png", "gif"];
 		return imageExtensions.includes(getFileExtension(filename));
-	};
-
-	// Function to check if file is a PDF
-	const isPdfFile = (filename) => {
-		return getFileExtension(filename) === "pdf";
 	};
 
 	// Image zoom handlers - updated to work with attachment objects

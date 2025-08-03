@@ -9,7 +9,7 @@ class User {
     $json = json_decode($json, true);
 
     // Check in tbluser
-    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.pinCode, b.name AS userLevel FROM tbluser a
+    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.pinCode, a.gradeLevelId, b.name AS userLevel FROM tbluser a
             INNER JOIN tbluserlevel b ON a.userLevel = b.id
             WHERE BINARY a.id = :username";
     $stmt = $conn->prepare($sql);
@@ -24,7 +24,8 @@ class User {
                 'userLevel' => $user['userLevel'],
                 'firstname' => $user['firstname'],
                 'lastname' => $user['lastname'],
-                'email' => $user['email']
+                'email' => $user['email'],
+                'gradeLevelId' => $user['gradeLevelId']
             ]);
         }
     }

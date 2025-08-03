@@ -18,9 +18,14 @@ export async function getStudent() {
 	}
 }
 
-export async function getStudentRecords() {
+export async function getStudentRecords(teacherGradeLevelId = null) {
 	const formData = new FormData();
 	formData.append("operation", "getStudentRecords");
+
+	// Add teacher's grade level if provided
+	if (teacherGradeLevelId) {
+		formData.append("teacherGradeLevelId", teacherGradeLevelId);
+	}
 
 	// Get the encrypted API URL from session storage
 	const apiUrl = getDecryptedApiUrl();
@@ -35,9 +40,14 @@ export async function getStudentRecords() {
 	}
 }
 
-export async function getSectionsByGradeLevel() {
+export async function getSectionsByGradeLevel(teacherGradeLevelId = null) {
 	const formData = new FormData();
 	formData.append("operation", "getSectionsByGradeLevel");
+
+	// Add teacher's grade level if provided
+	if (teacherGradeLevelId) {
+		formData.append("teacherGradeLevelId", teacherGradeLevelId);
+	}
 
 	// Get the encrypted API URL from session storage
 	const apiUrl = getDecryptedApiUrl();

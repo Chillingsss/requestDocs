@@ -21,6 +21,7 @@ import CryptoJS from "crypto-js";
 import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import RequestDocuments from "./modal/RequestDocuments";
+import ThemeToggle from "../../components/ThemeToggle";
 
 // Enhanced Progress Component with complete timeline
 const InlineTrackingProgress = ({ requestId }) => {
@@ -55,16 +56,18 @@ const InlineTrackingProgress = ({ requestId }) => {
 				<div className="flex overflow-x-auto items-center pb-1 space-x-1">
 					{STATUS_STEPS.map((_, idx) => (
 						<div key={idx} className="flex flex-shrink-0 items-center">
-							<div className="flex justify-center items-center w-7 h-7 bg-gray-200 rounded-full animate-pulse sm:w-8 sm:h-8">
-								<div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+							<div className="flex justify-center items-center w-7 h-7 bg-gray-200 rounded-full animate-pulse dark:bg-slate-800 sm:w-8 sm:h-8">
+								<div className="w-2 h-2 bg-gray-300 rounded-full dark:bg-slate-700"></div>
 							</div>
 							{idx < STATUS_STEPS.length - 1 && (
-								<div className="w-3 sm:w-4 h-0.5 bg-gray-200 animate-pulse flex-shrink-0"></div>
+								<div className="w-3 sm:w-4 h-0.5 bg-gray-200 animate-pulse flex-shrink-0 dark:bg-slate-700"></div>
 							)}
 						</div>
 					))}
 				</div>
-				<div className="text-xs text-gray-400">Loading timeline...</div>
+				<div className="text-xs text-gray-400 dark:text-slate-400">
+					Loading timeline...
+				</div>
 			</div>
 		);
 	}
@@ -208,14 +211,14 @@ const InlineTrackingProgress = ({ requestId }) => {
 
 			{/* Full Timeline View */}
 			{showFullTimeline && (
-				<div className="p-3 space-y-3 bg-gray-50 rounded-lg border sm:p-4">
+				<div className="p-3 space-y-3 bg-gray-50 rounded-lg border dark:bg-slate-800 sm:p-4">
 					<div className="flex justify-between items-center mb-3">
-						<h4 className="text-sm font-semibold text-gray-700">
+						<h4 className="text-sm font-semibold text-gray-700 dark:text-white">
 							Document Processing Timeline
 						</h4>
 						<button
 							onClick={() => setShowFullTimeline(false)}
-							className="text-gray-400 hover:text-gray-600"
+							className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-600"
 						>
 							<ChevronUp className="w-4 h-4" />
 						</button>
@@ -234,9 +237,9 @@ const InlineTrackingProgress = ({ requestId }) => {
 											className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
 												stepData.completed
 													? idx === STATUS_STEPS.length - 1
-														? "bg-green-600 text-white"
-														: "bg-blue-600 text-white"
-													: "bg-gray-300 text-gray-500"
+														? "bg-green-600 text-white dark:bg-green-600 dark:text-white"
+														: "bg-blue-600 text-white dark:bg-blue-600 dark:text-white"
+													: "bg-gray-300 text-gray-500 dark:bg-slate-700 dark:text-slate-400"
 											}`}
 										>
 											{stepData.completed ? "✓" : idx + 1}
@@ -246,23 +249,23 @@ const InlineTrackingProgress = ({ requestId }) => {
 												<span
 													className={`text-sm font-medium ${
 														stepData.isCurrent
-															? "text-blue-700"
+															? "text-blue-700 dark:text-blue-400"
 															: stepData.completed
-															? "text-gray-700"
-															: "text-gray-400"
+															? "text-gray-700 dark:text-slate-400"
+															: "text-gray-400 dark:text-slate-400"
 													}`}
 												>
 													{step.label}
 												</span>
 												{stepData.isCurrent && (
-													<span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+													<span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full whitespace-nowrap dark:bg-blue-900/20 dark:text-blue-400">
 														Current
 													</span>
 												)}
 											</div>
 										</div>
 									</div>
-									<div className="flex-shrink-0 text-xs text-right text-gray-500 sm:text-sm">
+									<div className="flex-shrink-0 text-xs text-right text-gray-500 dark:text-slate-400 sm:text-sm">
 										{stepData.date
 											? formatDate(stepData.date)
 											: stepData.completed
@@ -341,7 +344,7 @@ export default function StudentDashboard() {
 
 	const logout = () => {
 		Cookies.remove("mogchs_user");
-		navigate("/");
+		navigate("/mogchs");
 	};
 
 	const handleRequestSuccess = () => {
@@ -349,7 +352,7 @@ export default function StudentDashboard() {
 	};
 
 	return (
-		<div className="flex min-h-screen bg-gray-50">
+		<div className="flex min-h-screen bg-gray-50 dark:bg-slate-900">
 			<Toaster position="top-right" />
 
 			{/* Mobile Overlay */}
@@ -444,11 +447,11 @@ export default function StudentDashboard() {
 				<div className="flex justify-between items-center mb-4 lg:hidden">
 					<button
 						onClick={() => setSidebarOpen(true)}
-						className="p-2 bg-white rounded-lg border shadow-sm transition-colors text-slate-600 border-slate-200 hover:bg-gray-50"
+						className="p-2 bg-white rounded-lg border shadow-sm transition-colors dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
 					>
 						<Menu className="w-5 h-5" />
 					</button>
-					<h1 className="text-lg font-bold sm:text-xl text-slate-900">
+					<h1 className="text-lg font-bold sm:text-xl text-slate-900 dark:text-white">
 						Student Portal
 					</h1>
 				</div>
@@ -456,39 +459,45 @@ export default function StudentDashboard() {
 				{/* Desktop Header */}
 				<header className="hidden justify-between items-center mb-8 lg:flex">
 					<div>
-						<h1 className="text-3xl font-bold text-slate-900">
+						<h1 className="text-3xl font-bold text-slate-900 dark:text-white">
 							Student Portal
 						</h1>
-						<p className="text-base text-slate-600">
+						<p className="text-base text-slate-600 dark:text-slate-300">
 							Request and track your documents
 						</p>
 					</div>
-					<div className="flex gap-2">
-						<Button
-							className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700"
-							onClick={() => setShowRequestForm(true)}
-						>
-							<Plus className="w-4 h-4" /> Request Document
-						</Button>
-						<Button
-							onClick={fetchUserRequests}
-							disabled={loadingRequests}
-							className="flex gap-2 items-center text-white bg-gray-600 hover:bg-gray-700 disabled:opacity-75 disabled:cursor-not-allowed"
-						>
-							<RefreshCw
-								className={`w-4 h-4 ${loadingRequests ? "animate-spin" : ""}`}
-							/>
-							Refresh
-						</Button>
+					<div className="flex gap-4 items-center">
+						<ThemeToggle />
+						<div className="flex gap-2">
+							<Button
+								className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700"
+								onClick={() => setShowRequestForm(true)}
+							>
+								<Plus className="w-4 h-4" /> Request Document
+							</Button>
+							<Button
+								onClick={fetchUserRequests}
+								disabled={loadingRequests}
+								className="flex gap-2 items-center text-white bg-gray-600 hover:bg-gray-700 disabled:opacity-75 disabled:cursor-not-allowed"
+							>
+								<RefreshCw
+									className={`w-4 h-4 ${loadingRequests ? "animate-spin" : ""}`}
+								/>
+								Refresh
+							</Button>
+						</div>
 					</div>
 				</header>
 
 				{/* Mobile Header */}
 				<header className="flex flex-col gap-4 mb-6 lg:hidden">
-					<div>
-						<p className="text-sm text-slate-600">
-							Request and track your documents
-						</p>
+					<div className="flex justify-between items-center">
+						<div>
+							<p className="text-sm text-slate-600 dark:text-slate-300">
+								Request and track your documents
+							</p>
+						</div>
+						<ThemeToggle />
 					</div>
 					<div className="flex gap-2">
 						<Button
@@ -512,13 +521,13 @@ export default function StudentDashboard() {
 
 				{/* Enhanced Stats Cards */}
 				<div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-4 sm:gap-4 lg:gap-6 lg:mb-8">
-					<Card className="transition-shadow hover:shadow-md">
+					<Card className="transition-shadow hover:shadow-md dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-3 sm:p-4 lg:p-6">
-							<div className="flex gap-2 items-center text-xs lg:text-sm text-slate-500">
+							<div className="flex gap-2 items-center text-xs lg:text-sm text-slate-500 dark:text-slate-400">
 								<Clock className="flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4" />
 								<span className="truncate">Pending</span>
 							</div>
-							<div className="mt-2 text-lg font-bold sm:text-xl lg:text-2xl text-slate-900">
+							<div className="mt-2 text-lg font-bold sm:text-xl lg:text-2xl text-slate-900 dark:text-white">
 								{userRequests.filter((req) => req.status === "Pending").length}
 							</div>
 							<div className="mt-1 text-xs text-yellow-600">
@@ -527,13 +536,13 @@ export default function StudentDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card className="transition-shadow hover:shadow-md">
+					<Card className="transition-shadow hover:shadow-md dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-3 sm:p-4 lg:p-6">
-							<div className="flex gap-2 items-center text-xs lg:text-sm text-slate-500">
+							<div className="flex gap-2 items-center text-xs lg:text-sm text-slate-500 dark:text-slate-400">
 								<FileText className="flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4" />
 								<span className="truncate">Processing</span>
 							</div>
-							<div className="mt-2 text-lg font-bold sm:text-xl lg:text-2xl text-slate-900">
+							<div className="mt-2 text-lg font-bold sm:text-xl lg:text-2xl text-slate-900 dark:text-white">
 								{
 									userRequests.filter((req) =>
 										["Processing", "Processed", "Signatory"].includes(
@@ -546,13 +555,13 @@ export default function StudentDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card className="transition-shadow hover:shadow-md">
+					<Card className="transition-shadow hover:shadow-md dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-3 sm:p-4 lg:p-6">
-							<div className="flex gap-2 items-center text-xs lg:text-sm text-slate-500">
+							<div className="flex gap-2 items-center text-xs lg:text-sm text-slate-500 dark:text-slate-400">
 								<CheckCircle2 className="flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4" />
 								<span className="truncate">Completed</span>
 							</div>
-							<div className="mt-2 text-lg font-bold sm:text-xl lg:text-2xl text-slate-900">
+							<div className="mt-2 text-lg font-bold sm:text-xl lg:text-2xl text-slate-900 dark:text-white">
 								{
 									userRequests.filter((req) => req.status === "Completed")
 										.length
@@ -564,16 +573,18 @@ export default function StudentDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card className="transition-shadow hover:shadow-md">
+					<Card className="transition-shadow hover:shadow-md dark:bg-slate-800 dark:border-slate-700">
 						<CardContent className="p-3 sm:p-4 lg:p-6">
-							<div className="flex gap-2 items-center text-xs lg:text-sm text-slate-500">
+							<div className="flex gap-2 items-center text-xs lg:text-sm text-slate-500 dark:text-slate-400">
 								<FileText className="flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4" />
 								<span className="truncate">Total</span>
 							</div>
-							<div className="mt-2 text-lg font-bold sm:text-xl lg:text-2xl text-slate-900">
+							<div className="mt-2 text-lg font-bold sm:text-xl lg:text-2xl text-slate-900 dark:text-white">
 								{userRequests.length}
 							</div>
-							<div className="mt-1 text-xs text-slate-600">All time</div>
+							<div className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+								All time
+							</div>
 						</CardContent>
 					</Card>
 				</div>
@@ -589,10 +600,10 @@ export default function StudentDashboard() {
 				)}
 
 				{/* My Requests Table */}
-				<Card className="shadow-sm">
+				<Card className="shadow-sm dark:bg-slate-800 dark:border-slate-700">
 					<CardContent className="p-0">
 						<div className="p-4 border-b border-gray-100 sm:p-6">
-							<h2 className="text-lg font-semibold lg:text-xl text-slate-900">
+							<h2 className="text-lg font-semibold lg:text-xl">
 								My Document Requests
 							</h2>
 						</div>
@@ -648,12 +659,12 @@ export default function StudentDashboard() {
 								{/* Desktop Table Layout */}
 								<div className="hidden overflow-x-auto sm:block">
 									<table className="min-w-full text-sm lg:text-base text-slate-700">
-										<thead className="bg-gray-50">
+										<thead className="bg-gray-50 dark:bg-slate-800">
 											<tr className="border-b border-slate-200">
-												<th className="px-4 py-3 font-semibold text-left text-slate-900">
+												<th className="px-4 py-3 font-semibold text-left text-slate-900 dark:text-white">
 													Document
 												</th>
-												<th className="px-4 py-3 font-semibold text-left text-slate-900">
+												<th className="px-4 py-3 font-semibold text-left text-slate-900 dark:text-white">
 													Progress
 												</th>
 											</tr>
@@ -662,14 +673,14 @@ export default function StudentDashboard() {
 											{userRequests.map((req, index) => (
 												<tr
 													key={req.id}
-													className={`hover:bg-slate-50 transition-colors ${
+													className={`hover:bg-slate-50 transition-colors dark:hover:bg-slate-700 ${
 														index !== userRequests.length - 1
 															? "border-b border-slate-100"
 															: ""
 													}`}
 												>
 													<td className="px-4 py-4">
-														<div className="font-medium text-slate-900">
+														<div className="font-medium text-slate-900 dark:text-white">
 															{req.document}
 														</div>
 													</td>

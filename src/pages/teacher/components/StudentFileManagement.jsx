@@ -9,6 +9,7 @@ import {
 	DownloadCloud,
 	GraduationCap,
 	BookOpen,
+	Eye,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -16,12 +17,17 @@ import {
 	downloadFile,
 	getSectionsByGradeLevel,
 } from "../../../utils/teacher";
+import StudentModal from "./StudentModal";
 
-export default function StudentFileManagement() {
+export default function StudentFileManagement({ teacherGradeLevelId }) {
 	const [students, setStudents] = useState([]);
 	const [filteredStudents, setFilteredStudents] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [downloadingAll, setDownloadingAll] = useState(false);
+
+	// Modal state
+	const [selectedStudent, setSelectedStudent] = useState(null);
+	const [isModalOpen, setIsModalOpen] = useState(false);
 
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
@@ -35,9 +41,11 @@ export default function StudentFileManagement() {
 
 	// Fetch data on component mount
 	useEffect(() => {
-		fetchStudents();
-		fetchSectionsByGradeLevel();
-	}, []);
+		if (teacherGradeLevelId) {
+			fetchStudents();
+			fetchSectionsByGradeLevel();
+		}
+	}, [teacherGradeLevelId]);
 
 	// Apply section filter when selectedSection changes
 	useEffect(() => {
@@ -49,9 +57,19 @@ export default function StudentFileManagement() {
 		setCurrentPage(1);
 	}, [selectedSection, selectedGradeLevel]);
 
+	// Set default grade level when sections are loaded
+	useEffect(() => {
+		if (Object.keys(sectionsByGradeLevel).length > 0 && !selectedGradeLevel) {
+			const availableGradeLevels = Object.keys(sectionsByGradeLevel);
+			if (availableGradeLevels.length > 0) {
+				setSelectedGradeLevel(availableGradeLevels[0]);
+			}
+		}
+	}, [sectionsByGradeLevel, selectedGradeLevel]);
+
 	const fetchStudents = async () => {
 		try {
-			const data = await getStudentRecords();
+			const data = await getStudentRecords(teacherGradeLevelId);
 			console.log("API data:", data);
 			let studentsArray = data;
 			if (typeof data === "string") {
@@ -83,7 +101,7 @@ export default function StudentFileManagement() {
 
 	const fetchSectionsByGradeLevel = async () => {
 		try {
-			const data = await getSectionsByGradeLevel();
+			const data = await getSectionsByGradeLevel(teacherGradeLevelId);
 			let sectionsData = data;
 			if (typeof data === "string") {
 				try {
@@ -93,13 +111,16 @@ export default function StudentFileManagement() {
 				}
 			}
 
-			// Group sections by grade level
+			// Group sections by grade level (combine teacher and section grade levels)
 			const grouped = sectionsData.reduce((acc, item) => {
-				const gradeLevel = item.gradeLevel;
-				if (!acc[gradeLevel]) {
+				// Use teacher grade level if available, otherwise use section grade level
+				const gradeLevel = item.teacherGradeLevel || item.sectionGradeLevel;
+				if (gradeLevel && !acc[gradeLevel]) {
 					acc[gradeLevel] = [];
 				}
-				acc[gradeLevel].push(item.sectionName);
+				if (gradeLevel && item.sectionName) {
+					acc[gradeLevel].push(item.sectionName);
+				}
 				return acc;
 			}, {});
 
@@ -112,10 +133,12 @@ export default function StudentFileManagement() {
 	const applyFilters = () => {
 		let filtered = [...students];
 
-		// Apply grade level filter
+		// Always apply grade level filter since teachers are restricted to their grade level
 		if (selectedGradeLevel && selectedGradeLevel !== "") {
 			filtered = filtered.filter(
-				(student) => student.gradeLevel === selectedGradeLevel
+				(student) =>
+					student.teacherGradeLevel === selectedGradeLevel ||
+					student.sectionGradeLevel === selectedGradeLevel
 			);
 		}
 
@@ -130,12 +153,16 @@ export default function StudentFileManagement() {
 	};
 
 	const handleGradeLevelChange = (gradeLevel) => {
-		setSelectedGradeLevel(gradeLevel);
-		setSelectedSection(""); // Reset section when grade level changes
+		if (gradeLevel && gradeLevel !== "") {
+			setSelectedGradeLevel(gradeLevel);
+			setSelectedSection(""); // Reset section when grade level changes
+		}
 	};
 
 	const handleSectionChange = (sectionValue) => {
-		setSelectedSection(sectionValue);
+		if (sectionValue && sectionValue !== "") {
+			setSelectedSection(sectionValue);
+		}
 	};
 
 	const handleFileDownload = async (fileName) => {
@@ -216,14 +243,15 @@ export default function StudentFileManagement() {
 				lastname: record.lastname,
 				email: record.email,
 				sectionName: record.sectionName,
-				gradeLevel: record.gradeLevel,
+				teacherGradeLevel: record.teacherGradeLevel,
+				sectionGradeLevel: record.sectionGradeLevel,
 				files: [],
 			};
 		}
 		if (record.fileName && record.fileName.trim() !== "") {
 			acc[id].files.push({
 				fileName: record.fileName,
-				sfType: record.gradeLevel, // This is the Grade Level (Grade 11 or Grade 12)
+				sfType: record.teacherGradeLevel, // This is the Teacher's Grade Level (Grade 11 or Grade 12)
 			});
 		}
 		return acc;
@@ -231,13 +259,6 @@ export default function StudentFileManagement() {
 
 	const groupedStudents = Object.values(studentGroups);
 	const totalStudents = groupedStudents.length;
-	const studentsWithFiles = groupedStudents.filter(
-		(s) => s.files.length > 0
-	).length;
-	const totalFiles = groupedStudents.reduce(
-		(acc, s) => acc + s.files.length,
-		0
-	);
 
 	// Calculate pagination
 	const indexOfLastStudent = currentPage * studentsPerPage;
@@ -263,6 +284,23 @@ export default function StudentFileManagement() {
 		if (currentPage < totalPages) {
 			setCurrentPage(currentPage + 1);
 		}
+	};
+
+	// Modal handlers
+	const handleOpenModal = (student) => {
+		setSelectedStudent(student);
+		setIsModalOpen(true);
+	};
+
+	const handleCloseModal = () => {
+		setIsModalOpen(false);
+		setSelectedStudent(null);
+	};
+
+	const handleFileUpdate = () => {
+		// Refresh the data after file update
+		fetchStudents();
+		fetchSectionsByGradeLevel();
 	};
 
 	// Generate page numbers for pagination
@@ -302,10 +340,10 @@ export default function StudentFileManagement() {
 	};
 
 	return (
-		<Card>
+		<Card className="dark:bg-slate-800 dark:border-slate-700">
 			<CardContent className="p-4 lg:p-6">
 				<div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-					<div className="text-lg font-semibold text-slate-900">
+					<div className="text-lg font-semibold text-slate-900 dark:text-white">
 						Student File Management ({totalStudents})
 					</div>
 				</div>
@@ -313,18 +351,6 @@ export default function StudentFileManagement() {
 				{/* Grade Level Tabs */}
 				<div className="mb-6">
 					<div className="flex flex-wrap gap-2 mb-4">
-						<Button
-							variant="outline"
-							onClick={() => handleGradeLevelChange("")}
-							className={`flex gap-2 items-center ${
-								selectedGradeLevel === ""
-									? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white"
-									: "hover:bg-slate-100"
-							}`}
-						>
-							<GraduationCap className="w-4 h-4" />
-							All Grade Levels
-						</Button>
 						{Object.keys(sectionsByGradeLevel).map((gradeLevel) => (
 							<Button
 								key={gradeLevel}
@@ -332,8 +358,8 @@ export default function StudentFileManagement() {
 								onClick={() => handleGradeLevelChange(gradeLevel)}
 								className={`flex gap-2 items-center ${
 									selectedGradeLevel === gradeLevel
-										? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white"
-										: "hover:bg-slate-100"
+										? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:text-white"
+										: "hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:text-white"
 								}`}
 							>
 								<BookOpen className="w-4 h-4" />
@@ -346,24 +372,12 @@ export default function StudentFileManagement() {
 					{selectedGradeLevel && sectionsByGradeLevel[selectedGradeLevel] && (
 						<div className="mb-4">
 							<div className="flex gap-2 items-center mb-2">
-								<Filter className="w-4 h-4 text-slate-500" />
-								<span className="text-sm font-medium text-slate-700">
+								<Filter className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+								<span className="text-sm font-medium text-slate-700 dark:text-slate-300">
 									Sections in {selectedGradeLevel}:
 								</span>
 							</div>
 							<div className="flex flex-wrap gap-2">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => handleSectionChange("")}
-									className={`${
-										selectedSection === ""
-											? "bg-green-600 text-white border-green-600 hover:bg-green-700 hover:text-white"
-											: "hover:bg-slate-100"
-									}`}
-								>
-									All Sections
-								</Button>
 								{sectionsByGradeLevel[selectedGradeLevel].map((section) => (
 									<Button
 										key={section}
@@ -372,8 +386,8 @@ export default function StudentFileManagement() {
 										onClick={() => handleSectionChange(section)}
 										className={`${
 											selectedSection === section
-												? "bg-green-600 text-white border-green-600 hover:bg-green-700 hover:text-white"
-												: "hover:bg-slate-100"
+												? "bg-green-600 text-white border-green-600 hover:bg-green-700 hover:text-white dark:bg-green-600 dark:text-white dark:border-green-600 dark:hover:bg-green-700 dark:hover:text-white"
+												: "hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:text-white"
 										}`}
 									>
 										{section}
@@ -385,32 +399,26 @@ export default function StudentFileManagement() {
 				</div>
 
 				{/* Filter Summary */}
-				{(selectedGradeLevel || selectedSection) && (
-					<div className="p-3 mb-4 bg-blue-50 rounded-lg">
-						<div className="text-sm text-blue-800">
+				{selectedSection && (
+					<div className="p-3 mb-4 bg-blue-50 rounded-lg dark:bg-blue-900/20">
+						<div className="text-sm text-blue-800 dark:text-blue-200">
 							<strong>Current Filters:</strong>
-							{selectedGradeLevel && (
-								<span className="ml-2">
-									Grade Level:{" "}
-									<span className="font-medium">{selectedGradeLevel}</span>
-								</span>
-							)}
-							{selectedSection && (
-								<span className="ml-2">
-									Section:{" "}
-									<span className="font-medium">{selectedSection}</span>
-								</span>
-							)}
+							<span className="ml-2">
+								Grade Level:{" "}
+								<span className="font-medium">{selectedGradeLevel}</span>
+							</span>
+							<span className="ml-2">
+								Section: <span className="font-medium">{selectedSection}</span>
+							</span>
 							<Button
 								variant="outline"
 								size="sm"
 								onClick={() => {
-									setSelectedGradeLevel("");
 									setSelectedSection("");
 								}}
 								className="ml-4"
 							>
-								Clear Filters
+								Clear Section Filter
 							</Button>
 						</div>
 					</div>
@@ -425,7 +433,7 @@ export default function StudentFileManagement() {
 							<Button
 								onClick={handleDownloadAllFiles}
 								disabled={downloadingAll}
-								className="flex gap-2 items-center text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+								className="flex gap-2 items-center text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 dark:bg-green-600 dark:text-white dark:border-green-600 dark:hover:bg-green-700 dark:hover:text-white"
 							>
 								{downloadingAll ? (
 									<>
@@ -444,26 +452,22 @@ export default function StudentFileManagement() {
 
 				{loading ? (
 					<div className="py-6 text-center lg:py-8">
-						<p className="text-sm text-slate-500 lg:text-base">
+						<p className="text-sm text-slate-500 lg:text-base dark:text-slate-400">
 							Loading students...
 						</p>
 					</div>
 				) : groupedStudents.length === 0 ? (
 					<div className="py-6 text-center lg:py-8">
-						<p className="text-sm text-slate-500 lg:text-base">
-							{selectedGradeLevel && selectedSection
+						<p className="text-sm text-slate-500 lg:text-base dark:text-slate-400">
+							{selectedSection
 								? `No students found in ${selectedGradeLevel} - ${selectedSection}.`
-								: selectedGradeLevel
-								? `No students found in ${selectedGradeLevel}.`
-								: selectedSection
-								? `No students found in section "${selectedSection}".`
-								: "No students found."}
+								: `No students found in ${selectedGradeLevel}.`}
 						</p>
 					</div>
 				) : (
 					<>
 						{/* Pagination Info */}
-						<div className="mb-4 text-sm text-slate-600">
+						<div className="mb-4 text-sm text-slate-600 dark:text-slate-400">
 							Showing {indexOfFirstStudent + 1} to{" "}
 							{Math.min(indexOfLastStudent, groupedStudents.length)} of{" "}
 							{groupedStudents.length} students
@@ -471,9 +475,9 @@ export default function StudentFileManagement() {
 						</div>
 
 						<div className="overflow-x-auto -mx-4 lg:mx-0">
-							<table className="min-w-full text-xs lg:text-sm text-slate-700">
+							<table className="min-w-full text-xs lg:text-sm text-slate-700 dark:text-slate-300">
 								<thead>
-									<tr className="border-b border-slate-200">
+									<tr className="border-b border-slate-200 dark:border-slate-700">
 										<th className="px-3 py-2 font-semibold text-left lg:px-4">
 											First Name
 										</th>
@@ -482,9 +486,6 @@ export default function StudentFileManagement() {
 										</th>
 										<th className="px-3 py-2 font-semibold text-left lg:px-4">
 											Email
-										</th>
-										<th className="px-3 py-2 font-semibold text-left lg:px-4">
-											Grade Level
 										</th>
 										<th className="px-3 py-2 font-semibold text-left lg:px-4">
 											Section
@@ -498,7 +499,8 @@ export default function StudentFileManagement() {
 									{currentStudents.map((student, idx) => (
 										<tr
 											key={student.id || idx}
-											className="border-b transition-colors border-slate-100 hover:bg-slate-50"
+											className="border-b transition-colors cursor-pointer border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+											onClick={() => handleOpenModal(student)}
 										>
 											<td className="px-3 py-3 lg:px-4 lg:py-2">
 												<div className="font-medium">{student.firstname}</div>
@@ -511,13 +513,9 @@ export default function StudentFileManagement() {
 													{student.email}
 												</div>
 											</td>
+
 											<td className="px-3 py-3 lg:px-4 lg:py-2">
-												<span className="inline-flex px-2 py-1 text-xs font-medium text-purple-800 bg-purple-100 rounded-full">
-													{student.gradeLevel || "N/A"}
-												</span>
-											</td>
-											<td className="px-3 py-3 lg:px-4 lg:py-2">
-												<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full">
+												<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-200 dark:bg-blue-900">
 													{student.sectionName || "N/A"}
 												</span>
 											</td>
@@ -527,13 +525,13 @@ export default function StudentFileManagement() {
 														student.files.map((file, fileIdx) => (
 															<div
 																key={`${student.id}-${fileIdx}`}
-																className="flex justify-between items-center p-2 mb-2 bg-gray-50 rounded-md"
+																className="flex justify-between items-center p-2 mb-2 bg-gray-50 rounded-md dark:bg-gray-800"
 															>
 																<div className="flex-1 mr-2">
-																	<div className="mb-1 text-xs font-medium text-blue-600">
+																	<div className="mb-1 text-xs font-medium text-blue-600 dark:text-blue-400">
 																		{file.sfType}
 																	</div>
-																	<div className="text-xs text-gray-700 truncate">
+																	<div className="text-xs text-gray-700 truncate dark:text-slate-400">
 																		{file.fileName}
 																	</div>
 																</div>
@@ -568,7 +566,7 @@ export default function StudentFileManagement() {
 						{/* Pagination Controls */}
 						{totalPages > 1 && (
 							<div className="flex flex-col gap-4 justify-between items-center mt-6 sm:flex-row">
-								<div className="text-sm text-slate-600">
+								<div className="text-sm text-slate-600 dark:text-slate-400">
 									Page {currentPage} of {totalPages}
 								</div>
 
@@ -590,7 +588,7 @@ export default function StudentFileManagement() {
 										{getPageNumbers().map((pageNum, index) => (
 											<React.Fragment key={index}>
 												{pageNum === "..." ? (
-													<span className="px-3 py-1 text-sm text-slate-400">
+													<span className="px-3 py-1 text-sm text-slate-400 dark:text-slate-500">
 														...
 													</span>
 												) : (
@@ -625,6 +623,14 @@ export default function StudentFileManagement() {
 						)}
 					</>
 				)}
+
+				{/* Student Modal */}
+				<StudentModal
+					isOpen={isModalOpen}
+					onClose={handleCloseModal}
+					student={selectedStudent}
+					onFileUpdate={handleFileUpdate}
+				/>
 			</CardContent>
 		</Card>
 	);
