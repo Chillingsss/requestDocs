@@ -7,6 +7,7 @@ import {
 	Trash2,
 	Edit3,
 	Users,
+	Calendar,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
@@ -14,7 +15,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import CryptoJS from "crypto-js";
 import { getDecryptedApiUrl } from "../utils/apiConfig";
-import { getSection } from "../utils/registrar";
+import { getSection, getSchoolYear } from "../utils/registrar";
 
 const StudentImport = ({ onClose, onImportComplete }) => {
 	const [file, setFile] = useState(null);
@@ -28,6 +29,9 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 	const [sections, setSections] = useState([]);
 	const [selectedSection, setSelectedSection] = useState("");
 	const [loadingSections, setLoadingSections] = useState(false);
+	const [schoolYears, setSchoolYears] = useState([]);
+	const [selectedSchoolYear, setSelectedSchoolYear] = useState("");
+	const [loadingSchoolYears, setLoadingSchoolYears] = useState(false);
 
 	// Constants for authentication
 	const COOKIE_KEY = "mogchs_user";
@@ -46,6 +50,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 	// Load sections when component mounts
 	useEffect(() => {
 		loadSections();
+		loadSchoolYears();
 	}, []);
 
 	const loadSections = async () => {
@@ -58,6 +63,19 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 			toast.error("Failed to load sections");
 		} finally {
 			setLoadingSections(false);
+		}
+	};
+
+	const loadSchoolYears = async () => {
+		setLoadingSchoolYears(true);
+		try {
+			const schoolYearsData = await getSchoolYear();
+			setSchoolYears(schoolYearsData);
+		} catch (error) {
+			console.error("Failed to load school years:", error);
+			toast.error("Failed to load school years");
+		} finally {
+			setLoadingSchoolYears(false);
 		}
 	};
 
@@ -194,6 +212,10 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 			toast.error("Please select a section for the students.");
 			return;
 		}
+		if (!selectedSchoolYear) {
+			toast.error("Please select a school year for the students.");
+			return;
+		}
 		setIsSaving(true);
 		setSaveResult(null);
 		const apiUrl = getDecryptedApiUrl();
@@ -203,12 +225,17 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 				data: previewData,
 				headers,
 				sectionId: selectedSection,
+				schoolYearId: selectedSchoolYear,
 				userId: userId,
 			});
 			setSaveResult(response.data);
 			if (response.data.success) {
 				toast.success(
-					`Successfully imported ${response.data.imported} students`
+					`Successfully imported ${response.data.imported} students${
+						response.data.schoolYear
+							? ` for School Year ${response.data.schoolYear}`
+							: ""
+					}`
 				);
 				if (onImportComplete) onImportComplete(response.data);
 			} else {
@@ -230,6 +257,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 		setIsSaving(false);
 		setSaveResult(null);
 		setSelectedSection("");
+		setSelectedSchoolYear("");
 	};
 
 	const removeRow = (rowIndex) => {
@@ -265,18 +293,18 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 
 	return (
 		<div className="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50">
-			<div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+			<div className="bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
 				{/* Header */}
-				<div className="flex justify-between items-center p-6 border-b">
+				<div className="flex justify-between items-center p-6 border-b border-gray-700">
 					<div className="flex items-center space-x-2">
-						<FileSpreadsheet className="w-6 h-6 text-green-600" />
-						<h2 className="text-xl font-semibold text-gray-900">
+						<FileSpreadsheet className="w-6 h-6 text-green-500" />
+						<h2 className="text-xl font-semibold text-white">
 							Import Students from CSV/Excel
 						</h2>
 					</div>
 					<button
 						onClick={onClose}
-						className="text-gray-400 transition-colors hover:text-gray-600"
+						className="text-gray-400 transition-colors hover:text-gray-200"
 					>
 						<X className="w-6 h-6" />
 					</button>
@@ -286,11 +314,11 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 					{!file ? (
 						<>
 							{/* Instructions */}
-							<div className="p-4 mb-6 bg-blue-50 rounded-lg">
-								<h3 className="mb-2 font-medium text-blue-900">
+							<div className="p-4 mb-6 rounded-lg border bg-blue-900/20 border-blue-800/30">
+								<h3 className="mb-2 font-medium text-blue-200">
 									File Requirements:
 								</h3>
-								<ul className="space-y-1 text-sm text-blue-800">
+								<ul className="space-y-1 text-sm text-blue-100">
 									<li>
 										• <strong>CSV format (.csv) is recommended</strong> for best
 										compatibility
@@ -302,6 +330,10 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 									<li>
 										• Required columns: LRN, Name, Birth Date, Age, Religion,
 										Address
+									</li>
+									<li>
+										• <strong>School Year and Section</strong> will be selected
+										via dropdown after file upload
 									</li>
 									<li>
 										• Names should be in "LAST NAME, FIRST NAME MIDDLE NAME"
@@ -316,10 +348,10 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							<div
 								className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
 									dragActive
-										? "bg-green-50 border-green-400"
+										? "border-green-500 bg-green-900/20"
 										: file
-										? "bg-green-50 border-green-300"
-										: "border-gray-300 hover:border-gray-400"
+										? "border-green-600 bg-green-900/20"
+										: "border-gray-600 hover:border-gray-500 bg-gray-800/50"
 								}`}
 								onDragEnter={handleDrag}
 								onDragLeave={handleDrag}
@@ -337,16 +369,16 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 								<div className="space-y-4">
 									<Upload className="mx-auto w-12 h-12 text-gray-400" />
 									<div>
-										<p className="text-lg font-medium text-gray-900">
+										<p className="text-lg font-medium text-white">
 											Drop your CSV or Excel file here, or{" "}
 											<label
 												htmlFor="file-input"
-												className="text-green-600 cursor-pointer hover:text-green-500"
+												className="text-green-400 cursor-pointer hover:text-green-300"
 											>
 												browse
 											</label>
 										</p>
-										<p className="mt-1 text-sm text-gray-500">
+										<p className="mt-1 text-sm text-gray-400">
 											Supports .csv, .xls, and .xlsx files up to 10MB
 										</p>
 									</div>
@@ -358,15 +390,15 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							{/* Section Selection */}
 							<div className="mb-4">
 								<div className="flex items-center mb-2 space-x-2">
-									<Users className="w-5 h-5 text-blue-600" />
-									<label className="font-medium text-gray-900">
+									<Users className="w-5 h-5 text-blue-400" />
+									<label className="font-medium text-white">
 										Select Section for All Students:
 									</label>
 								</div>
 								<select
 									value={selectedSection}
 									onChange={(e) => setSelectedSection(e.target.value)}
-									className="px-3 py-2 w-full bg-white rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									className="px-3 py-2 w-full text-white bg-gray-800 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 									disabled={loadingSections}
 								>
 									<option value="">
@@ -380,38 +412,70 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 										</option>
 									))}
 								</select>
-								<p className="mt-1 text-sm text-gray-600">
+								<p className="mt-1 text-sm text-gray-400">
 									All imported students will be assigned to the selected
 									section.
+								</p>
+							</div>
+
+							{/* School Year Selection */}
+							<div className="mb-4">
+								<div className="flex items-center mb-2 space-x-2">
+									<Calendar className="w-5 h-5 text-blue-400" />
+									<label className="font-medium text-white">
+										Select School Year for All Students:
+									</label>
+								</div>
+								<select
+									value={selectedSchoolYear}
+									onChange={(e) => setSelectedSchoolYear(e.target.value)}
+									className="px-3 py-2 w-full text-white bg-gray-800 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									disabled={loadingSchoolYears}
+								>
+									<option value="">
+										{loadingSchoolYears
+											? "Loading school years..."
+											: "Select a school year"}
+									</option>
+									{schoolYears.map((schoolYear) => (
+										<option key={schoolYear.id} value={schoolYear.id}>
+											{schoolYear.year}
+										</option>
+									))}
+								</select>
+								<p className="mt-1 text-sm text-gray-400">
+									All imported students will be assigned to the selected school
+									year.
 								</p>
 							</div>
 
 							{/* Preview Table */}
 							<div className="mb-4">
 								<div className="flex justify-between items-center mb-2">
-									<h3 className="font-medium text-green-900">
+									<h3 className="font-medium text-green-300">
 										Preview Data ({previewData.length} rows)
 									</h3>
-									<div className="text-sm text-gray-600">
+									<div className="text-sm text-gray-400">
 										Click on cells to edit • Click trash icon to remove rows
 									</div>
 								</div>
+
 								{isParsing ? (
-									<div className="text-center text-gray-500">
+									<div className="text-center text-gray-400">
 										Parsing file...
 									</div>
 								) : (
-									<div className="overflow-x-auto max-h-[50vh] border rounded-lg">
-										<table className="min-w-full text-xs lg:text-sm text-slate-700">
+									<div className="overflow-x-auto max-h-[50vh] border border-gray-700 rounded-lg">
+										<table className="min-w-full text-xs text-gray-200 lg:text-sm">
 											<thead>
 												<tr>
-													<th className="px-3 py-2 w-16 font-semibold text-left bg-gray-100">
+													<th className="px-3 py-2 w-16 font-semibold text-left bg-gray-800">
 														Actions
 													</th>
 													{headers.map((header, idx) => (
 														<th
 															key={idx}
-															className="px-3 py-2 font-semibold text-left bg-gray-100"
+															className="px-3 py-2 font-semibold text-left bg-gray-800"
 														>
 															{header}
 														</th>
@@ -423,13 +487,13 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 													<tr
 														key={rIdx}
 														className={
-															rIdx % 2 === 0 ? "bg-white" : "bg-gray-50"
+															rIdx % 2 === 0 ? "bg-gray-900" : "bg-gray-800"
 														}
 													>
 														<td className="px-3 py-2">
 															<button
 																onClick={() => removeRow(rIdx)}
-																className="p-1 text-red-500 rounded transition-colors hover:text-red-700 hover:bg-red-50"
+																className="p-1 text-red-400 rounded transition-colors hover:text-red-300 hover:bg-red-900/20"
 																title="Remove this row"
 															>
 																<Trash2 className="w-4 h-4" />
@@ -456,19 +520,19 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 																		onKeyPress={(e) =>
 																			handleCellKeyPress(e, rIdx, cIdx)
 																		}
-																		className="px-2 py-1 w-full text-sm rounded border border-blue-300 focus:outline-none focus:border-blue-500"
+																		className="px-2 py-1 w-full text-sm text-white bg-gray-800 rounded border border-blue-500 focus:outline-none focus:border-blue-400"
 																		autoFocus
 																	/>
 																) : (
 																	<div
 																		onClick={() => startEditing(rIdx, cIdx)}
-																		className="min-h-[24px] cursor-pointer hover:bg-blue-50 rounded px-1 py-1 flex items-center group"
+																		className="min-h-[24px] cursor-pointer hover:bg-blue-900/20 rounded px-1 py-1 flex items-center group"
 																		title="Click to edit"
 																	>
 																		<span className="overflow-hidden flex-1 whitespace-nowrap text-ellipsis">
 																			{row[cIdx] || ""}
 																		</span>
-																		<Edit3 className="ml-1 w-3 h-3 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100" />
+																		<Edit3 className="ml-1 w-3 h-3 text-gray-500 opacity-0 transition-opacity group-hover:opacity-100" />
 																	</div>
 																)}
 															</td>
@@ -480,7 +544,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 									</div>
 								)}
 								{previewData.length === 0 && !isParsing && (
-									<div className="py-8 text-center text-gray-500">
+									<div className="py-8 text-center text-gray-400">
 										No data to preview. All rows may have been removed.
 									</div>
 								)}
@@ -490,7 +554,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							<div className="flex justify-end mt-6 space-x-3">
 								<button
 									onClick={resetForm}
-									className="px-4 py-2 text-gray-700 rounded-md border border-gray-300 transition-colors hover:bg-gray-50"
+									className="px-4 py-2 text-gray-300 rounded-md border border-gray-600 transition-colors hover:bg-gray-800"
 								>
 									Cancel
 								</button>
@@ -500,7 +564,8 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 										isSaving ||
 										isParsing ||
 										!previewData.length ||
-										!selectedSection
+										!selectedSection ||
+										!selectedSchoolYear
 									}
 									className="flex items-center px-6 py-2 space-x-2 text-white bg-green-600 rounded-md transition-colors hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
 								>
@@ -513,8 +578,8 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 										<>
 											<Save className="w-4 h-4" />
 											<span>
-												{!selectedSection
-													? "Select Section to Save"
+												{!selectedSection || !selectedSchoolYear
+													? "Select Section and School Year to Save"
 													: "Save to Database"}
 											</span>
 										</>
@@ -526,11 +591,11 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							{saveResult && (
 								<div className="mt-6">
 									{saveResult.success ? (
-										<div className="font-semibold text-green-700">
+										<div className="font-semibold text-green-400">
 											{saveResult.message}
 										</div>
 									) : (
-										<div className="font-semibold text-red-700">
+										<div className="font-semibold text-red-400">
 											{saveResult.error}
 										</div>
 									)}

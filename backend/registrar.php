@@ -417,6 +417,21 @@ class User {
     return json_encode([]);
   }
 
+  function getSchoolYear()
+  {
+    include "connection.php";
+
+    $sql = "SELECT * FROM tblschoolyear";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+
+    if ($stmt->rowCount() > 0) {
+      $schoolYears = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      return json_encode($schoolYears);
+    }
+    return json_encode([]);
+  }
+
   function getDocumentAllStudent(){
     include "connection.php";
 
@@ -570,6 +585,9 @@ switch ($operation) {
     break;
   case "getSection":
     echo $user->getSection();
+    break;
+  case "getSchoolYear":
+    echo $user->getSchoolYear();
     break;
   case "getDocumentAllStudent":
     echo $user->getDocumentAllStudent();

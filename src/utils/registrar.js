@@ -185,6 +185,23 @@ export async function getSection() {
 	}
 }
 
+export async function getSchoolYear() {
+	const formData = new FormData();
+	formData.append("operation", "getSchoolYear");
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 export async function getDocumentAllStudent() {
 	const formData = new FormData();
 	formData.append("operation", "getDocumentAllStudent");

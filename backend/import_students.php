@@ -47,6 +47,26 @@ class StudentImporter {
             return null;
         }
     }
+    
+    function findSchoolYearId($conn, $schoolYear) {
+        if (empty($schoolYear)) return null;
+        
+        try {
+            $sql = "SELECT id FROM tblschoolyear WHERE year = :year";
+            $stmt = $conn->prepare($sql);
+            $stmt->bindParam(':year', $schoolYear);
+            $stmt->execute();
+            
+            if ($stmt->rowCount() > 0) {
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                return $result['id'];
+            }
+        } catch (Exception $e) {
+            error_log("Error finding school year: " . $e->getMessage());
+        }
+        
+        return null;
+    }
 }
 
 // Get operation from multiple sources
@@ -73,6 +93,7 @@ if ($operation === 'savePreviewedStudents') {
     $data = $json['data'] ?? [];
     $headers = $json['headers'] ?? [];
     $sectionId = $json['sectionId'] ?? '';
+    $schoolYearId = $json['schoolYearId'] ?? '';
     $importUserId = $json['userId'] ?? '';
     
     if (empty($data) || empty($headers)) {
@@ -87,6 +108,14 @@ if ($operation === 'savePreviewedStudents') {
         echo json_encode([
             'success' => false,
             'error' => 'Section ID is required'
+        ]);
+        exit;
+    }
+    
+    if (empty($schoolYearId)) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'School Year ID is required'
         ]);
         exit;
     }
@@ -121,6 +150,9 @@ if ($operation === 'savePreviewedStudents') {
         // Default values for tblsfrecord
         $defaultFileName = 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx';
         $defaultGradeLevelId = 1;
+        
+        // Use the selected school year ID directly
+        $schoolYearId = $schoolYearId;
         
         foreach ($data as $rowIndex => $row) {
             // Map columns by header name (flexible)
@@ -174,17 +206,17 @@ if ($operation === 'savePreviewedStudents') {
                 continue;
             }
             
-            // Insert student data
+            // Insert student data with schoolyearId
             $sql = "INSERT INTO tblstudent (
                 id, firstname, middlename, lastname, lrn, email, password, 
                 userLevel, track, strand, birthDate, age, religion, 
                 completeAddress, fatherName, motherName, guardianName, 
-                guardianRelationship, sectionId, createdAt
+                guardianRelationship, sectionId, schoolyearId, createdAt
             ) VALUES (
                 :id, :firstname, :middlename, :lastname, :lrn, :email, :password,
                 :userLevel, :track, :strand, :birthDate, :age, :religion,
                 :completeAddress, :fatherName, :motherName, :guardianName,
-                :guardianRelationship, :sectionId, NOW()
+                :guardianRelationship, :sectionId, :schoolyearId, NOW()
             )";
             
             $stmt = $conn->prepare($sql);
@@ -208,6 +240,7 @@ if ($operation === 'savePreviewedStudents') {
             $stmt->bindParam(':guardianName', $guardianName);
             $stmt->bindParam(':guardianRelationship', $relationship);
             $stmt->bindParam(':sectionId', $sectionId);
+            $stmt->bindParam(':schoolyearId', $schoolYearId);
             
             if ($stmt->execute()) {
                 // Insert into tblsfrecord after successful student insertion
@@ -235,11 +268,32 @@ if ($operation === 'savePreviewedStudents') {
         }
         
         $conn->commit();
+        
+        // Get school year name for the response
+        $schoolYearName = '';
+        if ($schoolYearId) {
+            try {
+                $schoolYearSql = "SELECT year FROM tblschoolyear WHERE id = :id";
+                $schoolYearStmt = $conn->prepare($schoolYearSql);
+                $schoolYearStmt->bindParam(':id', $schoolYearId);
+                $schoolYearStmt->execute();
+                
+                if ($schoolYearStmt->rowCount() > 0) {
+                    $schoolYearResult = $schoolYearStmt->fetch(PDO::FETCH_ASSOC);
+                    $schoolYearName = $schoolYearResult['year'];
+                }
+            } catch (Exception $e) {
+                error_log("Error getting school year name: " . $e->getMessage());
+            }
+        }
+        
         echo json_encode([
             'success' => true,
             'imported' => $importedCount,
             'errors' => $errors,
-            'message' => "Successfully imported $importedCount students"
+            'message' => "Successfully imported $importedCount students",
+            'schoolYear' => $schoolYearName,
+            'schoolYearId' => $schoolYearId
         ]);
     } catch (Exception $e) {
         $conn->rollback();
