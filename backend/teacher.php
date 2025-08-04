@@ -31,6 +31,7 @@ class User {
               a.id, 
               a.firstname, 
               a.lastname, 
+              a.lrn,
               a.email, 
               b.fileName, 
               c.name as teacherGradeLevel,
@@ -148,13 +149,9 @@ class User {
       $fileName = $uploadedFile['name'];
       $filePath = $uploadDir . $fileName;
 
-      // Check if file already exists and add timestamp if needed
+      // Check if a file with the same name already exists and delete it
       if (file_exists($filePath)) {
-        $timestamp = date('Y-m-d_H-i-s');
-        $nameWithoutExt = pathinfo($fileName, PATHINFO_FILENAME);
-        $extension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $fileName = $nameWithoutExt . "_" . $timestamp . "." . $extension;
-        $filePath = $uploadDir . $fileName;
+        unlink($filePath); // Delete the existing file
       }
 
       // Move uploaded file

@@ -10,6 +10,9 @@ import {
 	GraduationCap,
 	BookOpen,
 	Eye,
+	Upload,
+	CheckSquare,
+	Square,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -18,6 +21,7 @@ import {
 	getSectionsByGradeLevel,
 } from "../../../utils/teacher";
 import StudentModal from "./StudentModal";
+import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
 export default function StudentFileManagement({ teacherGradeLevelId }) {
 	const [students, setStudents] = useState([]);
@@ -28,6 +32,14 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 	// Modal state
 	const [selectedStudent, setSelectedStudent] = useState(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
+
+	// Selection state
+	const [selectedStudents, setSelectedStudents] = useState(new Set());
+	const [selectAll, setSelectAll] = useState(false);
+	const [bulkUploadMode, setBulkUploadMode] = useState(false);
+	const [bulkFiles, setBulkFiles] = useState({});
+	const [uploadingBulk, setUploadingBulk] = useState(false);
+	const [modalSelectedStudents, setModalSelectedStudents] = useState([]); // For modal display
 
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
@@ -241,6 +253,7 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 				id: record.id,
 				firstname: record.firstname,
 				lastname: record.lastname,
+				lrn: record.lrn,
 				email: record.email,
 				sectionName: record.sectionName,
 				teacherGradeLevel: record.teacherGradeLevel,
@@ -288,6 +301,16 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 
 	// Modal handlers
 	const handleOpenModal = (student) => {
+		// If bulk upload mode is active, use selected students
+		if (bulkUploadMode && selectedStudents.size > 0) {
+			const selectedStudentList = groupedStudents.filter((s) =>
+				selectedStudents.has(s.id)
+			);
+			setModalSelectedStudents(selectedStudentList);
+		} else {
+			// Individual mode - just the clicked student
+			setModalSelectedStudents([student]);
+		}
 		setSelectedStudent(student);
 		setIsModalOpen(true);
 	};
@@ -301,6 +324,142 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 		// Refresh the data after file update
 		fetchStudents();
 		fetchSectionsByGradeLevel();
+
+		// Clear student selection after successful upload
+		setSelectedStudents(new Set());
+		setSelectAll(false);
+		setBulkUploadMode(false);
+		setBulkFiles({});
+	};
+
+	// Selection handlers
+	const handleSelectStudent = (studentId) => {
+		const newSelected = new Set(selectedStudents);
+		if (newSelected.has(studentId)) {
+			newSelected.delete(studentId);
+		} else {
+			newSelected.add(studentId);
+		}
+		setSelectedStudents(newSelected);
+		setSelectAll(newSelected.size === groupedStudents.length);
+	};
+
+	const handleSelectAll = () => {
+		if (selectAll) {
+			setSelectedStudents(new Set());
+			setSelectAll(false);
+		} else {
+			const allStudentIds = groupedStudents.map((student) => student.id);
+			setSelectedStudents(new Set(allStudentIds));
+			setSelectAll(true);
+		}
+	};
+
+	const handleBulkFileSelect = (studentId, file) => {
+		if (file) {
+			// Validate file type
+			const allowedTypes = [
+				"application/vnd.ms-excel",
+				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				".xlsx",
+				".xls",
+			];
+
+			const fileExtension = file.name.toLowerCase().split(".").pop();
+			const isValidType =
+				allowedTypes.includes(file.type) ||
+				file.name.toLowerCase().endsWith(".xlsx") ||
+				file.name.toLowerCase().endsWith(".xls");
+
+			if (!isValidType) {
+				toast.error("Please select a valid Excel file (.xlsx or .xls)");
+				return;
+			}
+
+			// Check file size (max 10MB)
+			if (file.size > 10 * 1024 * 1024) {
+				toast.error("File size too large. Maximum size is 10MB.");
+				return;
+			}
+
+			setBulkFiles((prev) => ({
+				...prev,
+				[studentId]: file,
+			}));
+		}
+	};
+
+	const handleBulkUpload = async () => {
+		const selectedIds = Array.from(selectedStudents);
+		const filesToUpload = selectedIds.filter((id) => bulkFiles[id]);
+
+		if (filesToUpload.length === 0) {
+			toast.error("Please select files for at least one student");
+			return;
+		}
+
+		setUploadingBulk(true);
+
+		try {
+			const uploadPromises = filesToUpload.map(async (studentId) => {
+				const file = bulkFiles[studentId];
+				const student = groupedStudents.find((s) => s.id === studentId);
+
+				const formData = new FormData();
+				formData.append("operation", "updateStudentFile");
+				formData.append("studentId", studentId);
+				formData.append("file", file);
+
+				const apiUrl = getDecryptedApiUrl();
+				const response = await fetch(`${apiUrl}/teacher.php`, {
+					method: "POST",
+					body: formData,
+				});
+
+				const result = await response.json();
+				return {
+					studentId,
+					studentName: student
+						? `${student.firstname} ${student.lastname}`
+						: studentId,
+					success: result.success,
+					error: result.error,
+				};
+			});
+
+			const results = await Promise.all(uploadPromises);
+			const successful = results.filter((r) => r.success).length;
+			const failed = results.filter((r) => !r.success).length;
+
+			if (successful > 0) {
+				toast.success(`Successfully uploaded ${successful} files`);
+			}
+			if (failed > 0) {
+				toast.error(`Failed to upload ${failed} files`);
+			}
+
+			// Reset states
+			setBulkUploadMode(false);
+			setSelectedStudents(new Set());
+			setSelectAll(false);
+			setBulkFiles({});
+
+			// Refresh data
+			fetchStudents();
+			fetchSectionsByGradeLevel();
+		} catch (error) {
+			console.error("Bulk upload error:", error);
+			toast.error("Failed to upload files");
+		} finally {
+			setUploadingBulk(false);
+		}
+	};
+
+	const clearBulkSelection = () => {
+		setSelectedStudents(new Set());
+		setSelectAll(false);
+		setBulkFiles({});
+		setBulkUploadMode(false);
 	};
 
 	// Generate page numbers for pagination
@@ -345,6 +504,67 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 				<div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
 					<div className="text-lg font-semibold text-slate-900 dark:text-white">
 						Student File Management ({totalStudents})
+					</div>
+					<div className="flex gap-2 items-center">
+						{selectedStudents.size > 0 && (
+							<Button
+								variant="outline"
+								onClick={clearBulkSelection}
+								className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+							>
+								Clear Selection ({selectedStudents.size})
+							</Button>
+						)}
+						{selectedStudents.size > 0 && (
+							<Button
+								onClick={() => setBulkUploadMode(!bulkUploadMode)}
+								className={`flex gap-2 items-center ${
+									bulkUploadMode
+										? "text-white bg-blue-600 hover:bg-blue-700"
+										: "text-white bg-green-600 hover:bg-green-700"
+								}`}
+							>
+								<Upload className="w-4 h-4" />
+								{bulkUploadMode ? "Cancel Bulk Upload" : "Bulk Upload"}
+							</Button>
+						)}
+						{bulkUploadMode && selectedStudents.size > 0 && (
+							<Button
+								onClick={() => {
+									const selectedStudentList = groupedStudents.filter((s) =>
+										selectedStudents.has(s.id)
+									);
+									setModalSelectedStudents(selectedStudentList);
+									setSelectedStudent(selectedStudentList[0]); // Set first student as default
+									setIsModalOpen(true);
+								}}
+								className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700"
+							>
+								<Upload className="w-4 h-4" />
+								Upload Selected ({selectedStudents.size})
+							</Button>
+						)}
+						{bulkUploadMode &&
+							selectedStudents.size > 0 &&
+							Object.keys(bulkFiles).length > 0 && (
+								<Button
+									onClick={handleBulkUpload}
+									disabled={uploadingBulk}
+									className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+								>
+									{uploadingBulk ? (
+										<>
+											<div className="w-4 h-4 rounded-full border-b-2 border-white animate-spin"></div>
+											Uploading...
+										</>
+									) : (
+										<>
+											<Upload className="w-4 h-4" />
+											Upload Files ({Object.keys(bulkFiles).length})
+										</>
+									)}
+								</Button>
+							)}
 					</div>
 				</div>
 
@@ -479,10 +699,28 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 								<thead>
 									<tr className="border-b border-slate-200 dark:border-slate-700">
 										<th className="px-3 py-2 font-semibold text-left lg:px-4">
+											<div className="flex gap-2 items-center">
+												<button
+													onClick={handleSelectAll}
+													className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+												>
+													{selectAll ? (
+														<CheckSquare className="w-4 h-4 text-blue-600" />
+													) : (
+														<Square className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+													)}
+												</button>
+												Select All
+											</div>
+										</th>
+										<th className="px-3 py-2 font-semibold text-left lg:px-4">
 											First Name
 										</th>
 										<th className="px-3 py-2 font-semibold text-left lg:px-4">
 											Last Name
+										</th>
+										<th className="px-3 py-2 font-semibold text-left lg:px-4">
+											LRN
 										</th>
 										<th className="px-3 py-2 font-semibold text-left lg:px-4">
 											Email
@@ -499,27 +737,66 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 									{currentStudents.map((student, idx) => (
 										<tr
 											key={student.id || idx}
-											className="border-b transition-colors cursor-pointer border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-											onClick={() => handleOpenModal(student)}
+											className="border-b transition-colors border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
 										>
 											<td className="px-3 py-3 lg:px-4 lg:py-2">
+												<div className="flex gap-2 items-center">
+													<button
+														onClick={(e) => {
+															e.stopPropagation(); // Prevent row click
+															handleSelectStudent(student.id);
+														}}
+														className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+													>
+														{selectedStudents.has(student.id) ? (
+															<CheckSquare className="w-4 h-4 text-blue-600" />
+														) : (
+															<Square className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+														)}
+													</button>
+												</div>
+											</td>
+											<td
+												className="px-3 py-3 cursor-pointer lg:px-4 lg:py-2"
+												onClick={() => handleOpenModal(student)}
+											>
 												<div className="font-medium">{student.firstname}</div>
 											</td>
-											<td className="px-3 py-3 lg:px-4 lg:py-2">
+											<td
+												className="px-3 py-3 cursor-pointer lg:px-4 lg:py-2"
+												onClick={() => handleOpenModal(student)}
+											>
 												<div className="font-medium">{student.lastname}</div>
 											</td>
-											<td className="px-3 py-3 lg:px-4 lg:py-2">
+											<td
+												className="px-3 py-3 cursor-pointer lg:px-4 lg:py-2"
+												onClick={() => handleOpenModal(student)}
+											>
+												<div className="truncate max-w-[120px] lg:max-w-none">
+													{student.lrn}
+												</div>
+											</td>
+											<td
+												className="px-3 py-3 cursor-pointer lg:px-4 lg:py-2"
+												onClick={() => handleOpenModal(student)}
+											>
 												<div className="truncate max-w-[120px] lg:max-w-none">
 													{student.email}
 												</div>
 											</td>
 
-											<td className="px-3 py-3 lg:px-4 lg:py-2">
+											<td
+												className="px-3 py-3 cursor-pointer lg:px-4 lg:py-2"
+												onClick={() => handleOpenModal(student)}
+											>
 												<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-200 dark:bg-blue-900">
 													{student.sectionName || "N/A"}
 												</span>
 											</td>
-											<td className="px-3 py-3 lg:px-4 lg:py-2">
+											<td
+												className="px-3 py-3 cursor-pointer lg:px-4 lg:py-2"
+												onClick={() => handleOpenModal(student)}
+											>
 												<div className="max-w-xs">
 													{student.files && student.files.length > 0 ? (
 														student.files.map((file, fileIdx) => (
@@ -540,9 +817,10 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 																		size="sm"
 																		variant="outline"
 																		className="p-1 w-6 h-6"
-																		onClick={() =>
-																			handleFileDownload(file.fileName)
-																		}
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			handleFileDownload(file.fileName);
+																		}}
 																		title="Download file"
 																	>
 																		<Download className="w-3 h-3" />
@@ -630,6 +908,7 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 					onClose={handleCloseModal}
 					student={selectedStudent}
 					onFileUpdate={handleFileUpdate}
+					allStudents={modalSelectedStudents}
 				/>
 			</CardContent>
 		</Card>
