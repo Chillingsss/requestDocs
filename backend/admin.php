@@ -282,6 +282,147 @@ class User {
       return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
    }
+
+   function addStudent($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+
+    try {
+        // Hash the password before storing
+        $hashedPassword = password_hash($json['password'], PASSWORD_DEFAULT);
+        $defaultUserLevel = 4; // Student user level
+        $studentId = $json['id'];
+        $sectionId = $json['sectionId'];
+        $schoolYearId = $json['schoolYearId'];
+        $fileName = 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx';
+
+        // Get the section's grade level ID
+        $sectionGradeLevelId = 1;
+        $sectionSql = "SELECT gradeLevelId FROM tblsection WHERE id = :sectionId";
+        $sectionStmt = $conn->prepare($sectionSql);
+        $sectionStmt->bindParam(':sectionId', $sectionId);
+        $sectionStmt->execute();
+        if ($sectionStmt->rowCount() > 0) {
+            $sectionResult = $sectionStmt->fetch(PDO::FETCH_ASSOC);
+            $sectionGradeLevelId = $sectionResult['gradeLevelId'] ?? 1;
+        }
+
+        // Insert into tblstudent
+        $sql = "INSERT INTO tblstudent (
+            id, firstname, middlename, lastname, lrn, email, password, userLevel, track, strand, birthDate, age, religion, completeAddress, fatherName, motherName, guardianName, guardianRelationship, sectionId, schoolyearId, createdAt
+        ) VALUES (
+            :id, :firstname, :middlename, :lastname, :lrn, :email, :password, :userLevel, :track, :strand, :birthDate, :age, :religion, :completeAddress, :fatherName, :motherName, :guardianName, :guardianRelationship, :sectionId, :schoolyearId, NOW()
+        )";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $studentId);
+        $stmt->bindParam(':firstname', $json['firstname']);
+        $stmt->bindParam(':middlename', $json['middlename']);
+        $stmt->bindParam(':lastname', $json['lastname']);
+        $stmt->bindParam(':lrn', $json['lrn']);
+        $stmt->bindParam(':email', $json['email']);
+        $stmt->bindParam(':password', $hashedPassword);
+        $stmt->bindParam(':userLevel', $defaultUserLevel);
+        $stmt->bindParam(':track', $json['track']);
+        $stmt->bindParam(':strand', $json['strand']);
+        $stmt->bindParam(':birthDate', $json['birthDate']);
+        $stmt->bindParam(':age', $json['age']);
+        $stmt->bindParam(':religion', $json['religion']);
+        $stmt->bindParam(':completeAddress', $json['completeAddress']);
+        $stmt->bindParam(':fatherName', $json['fatherName']);
+        $stmt->bindParam(':motherName', $json['motherName']);
+        $stmt->bindParam(':guardianName', $json['guardianName']);
+        $stmt->bindParam(':guardianRelationship', $json['guardianRelationship']);
+        $stmt->bindParam(':sectionId', $sectionId);
+        $stmt->bindParam(':schoolyearId', $schoolYearId);
+
+        if ($stmt->execute()) {
+            // Insert into tblsfrecord
+            $sfRecordSql = "INSERT INTO tblsfrecord (fileName, studentId, gradeLevelId, userId, createdAt) VALUES (:fileName, :studentId, :gradeLevelId, :userId, NOW())";
+            $sfRecordStmt = $conn->prepare($sfRecordSql);
+            $sfRecordStmt->bindParam(':fileName', $fileName);
+            $sfRecordStmt->bindParam(':studentId', $studentId);
+            $sfRecordStmt->bindParam(':gradeLevelId', $sectionGradeLevelId);
+            $sfRecordStmt->bindParam(':userId', $json['createdBy']);
+            $sfRecordStmt->execute();
+            return json_encode(["status" => "success"]);
+        } else {
+            return json_encode(["status" => "error", "message" => "Failed to insert student"]);
+        }
+    } catch (Exception $e) {
+        return json_encode(["status" => "error", "message" => $e->getMessage()]);
+    }
+   }
+
+   function getStudentsWithFilters($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $sectionId = isset($json['sectionId']) ? $json['sectionId'] : null;
+    $schoolYearId = isset($json['schoolYearId']) ? $json['schoolYearId'] : null;
+
+    try {
+      $sql = "SELECT 
+                s.id,
+                s.firstname,
+                s.middlename,
+                s.lastname,
+                s.lrn,
+                s.email,
+                s.track,
+                s.strand,
+                s.birthDate,
+                s.age,
+                s.religion,
+                s.completeAddress,
+                s.fatherName,
+                s.motherName,
+                s.guardianName,
+                s.guardianRelationship,
+                s.sectionId,
+                s.schoolyearId,
+                sec.name as sectionName,
+                sy.year as schoolYear
+              FROM tblstudent s
+              LEFT JOIN tblsection sec ON s.sectionId = sec.id
+              LEFT JOIN tblschoolyear sy ON s.schoolyearId = sy.id
+              WHERE 1=1";
+
+      // Add section filter if provided
+      if ($sectionId && $sectionId !== '') {
+        $sql .= " AND s.sectionId = :sectionId";
+      }
+
+      // Add school year filter if provided
+      if ($schoolYearId && $schoolYearId !== '') {
+        $sql .= " AND s.schoolyearId = :schoolYearId";
+      }
+
+      $sql .= " ORDER BY s.lastname, s.firstname";
+
+      $stmt = $conn->prepare($sql);
+      
+      // Bind parameters if provided
+      if ($sectionId && $sectionId !== '') {
+        $stmt->bindParam(':sectionId', $sectionId);
+      }
+      if ($schoolYearId && $schoolYearId !== '') {
+        $stmt->bindParam(':schoolYearId', $schoolYearId);
+      }
+
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return json_encode($students);
+      }
+      return json_encode([]);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -323,6 +464,12 @@ switch ($operation) {
     break;
   case "getTotalUsers":
     echo $user->getTotalUsers();
+    break;
+  case "addStudent":
+    echo $user->addStudent($json);
+    break;
+  case "getStudentsWithFilters":
+    echo $user->getStudentsWithFilters($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../../components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, FileText, Users, FolderOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
 import { getStudentRecords } from "../../utils/teacher";
-import TeacherSidebar from "./components/TeacherSidebar";
 import DashboardStats from "./components/DashboardStats";
 import StudentFileManagement from "./components/StudentFileManagement";
 import ThemeToggle from "../../components/ThemeToggle";
+import Sidebar from "../../components/shared/Sidebar";
 import CryptoJS from "crypto-js";
 
 export default function TeacherDashboard() {
@@ -21,6 +21,26 @@ export default function TeacherDashboard() {
 	const COOKIE_KEY = "mogchs_user";
 	const SECRET_KEY = "mogchs_secret_key";
 
+	const navItems = [
+		{
+			icon: <FolderOpen className="w-5 h-5" />,
+			label: "Dashboard",
+			key: "dashboard",
+		},
+		{
+			icon: <Users className="w-5 h-5" />,
+			label: "Students",
+			key: "students",
+		},
+		{
+			icon: <FileText className="w-5 h-5" />,
+			label: "Files",
+			key: "files",
+		},
+	];
+
+	const [activeTab, setActiveTab] = useState("dashboard");
+
 	// Get teacher's grade level and section from stored user data
 	useEffect(() => {
 		const encrypted = Cookies.get(COOKIE_KEY);
@@ -32,11 +52,6 @@ export default function TeacherDashboard() {
 				// Check if decrypted text is not empty
 				if (decryptedText && decryptedText.trim() !== "") {
 					const decrypted = JSON.parse(decryptedText);
-					console.log("Decrypted user data:", decrypted);
-					console.log("Debug - User ID:", decrypted.id);
-					console.log("Debug - User Level:", decrypted.userLevel);
-					console.log("Debug - Grade Level ID:", decrypted.gradeLevelId);
-					console.log("Debug - Section ID:", decrypted.sectionId);
 
 					// Check if user is a teacher and has gradeLevelId
 					if (
@@ -130,6 +145,10 @@ export default function TeacherDashboard() {
 		navigate("/mogchs");
 	};
 
+	const handleNavClick = (key) => {
+		setActiveTab(key);
+	};
+
 	// Calculate stats - need to group by student id first
 	const studentGroups = students.reduce((acc, record) => {
 		const id = record.id;
@@ -169,27 +188,19 @@ export default function TeacherDashboard() {
 		<div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
 			<Toaster position="top-right" />
 
-			{/* Mobile Overlay */}
-			{sidebarOpen && (
-				<div
-					className="fixed inset-0 z-20 bg-black/50 lg:hidden"
-					onClick={() => setSidebarOpen(false)}
-				/>
-			)}
-
 			{/* Sidebar */}
-			<TeacherSidebar
+			<Sidebar
 				sidebarOpen={sidebarOpen}
 				setSidebarOpen={setSidebarOpen}
 				onLogout={logout}
+				navItems={navItems}
+				activeSection={activeTab}
+				handleNavClick={handleNavClick}
+				userType="Teacher"
 			/>
 
 			{/* Main Content */}
-			<main
-				className={`flex-1 p-4 w-full min-w-0 lg:p-8 transition-all duration-300 ${
-					sidebarOpen ? "lg:ml-64" : "lg:ml-20"
-				}`}
-			>
+			<main className="flex-1 p-4 w-full min-w-0 lg:p-8">
 				{/* Mobile Menu Button */}
 				<div className="flex justify-between items-center mb-4 lg:hidden">
 					<button
@@ -199,14 +210,14 @@ export default function TeacherDashboard() {
 						<Menu className="w-5 h-5" />
 					</button>
 					<h1 className="text-xl font-bold text-slate-900 dark:text-white">
-						Teacher Dashboard
+						Teacher {activeTab}
 					</h1>
 				</div>
 
 				{/* Desktop Header */}
 				<header className="hidden justify-between items-center mb-8 lg:flex">
 					<h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-						Teacher Dashboard
+						Teacher {activeTab}
 					</h1>
 					<div className="flex gap-4 items-center">
 						<ThemeToggle />
@@ -223,7 +234,7 @@ export default function TeacherDashboard() {
 				<header className="flex flex-col gap-4 mb-6 lg:hidden">
 					<div className="flex justify-between items-center">
 						<h1 className="text-xl font-bold text-slate-900 dark:text-white">
-							Teacher Dashboard
+							Teacher {activeTab}
 						</h1>
 						<ThemeToggle />
 					</div>
@@ -237,16 +248,38 @@ export default function TeacherDashboard() {
 
 				{/* Dashboard Content */}
 				<div className="space-y-6">
-					<DashboardStats
-						totalStudents={totalStudents}
-						studentsWithFiles={studentsWithFiles}
-						totalFiles={totalFiles}
-					/>
-					<StudentFileManagement
-						teacherGradeLevelId={teacherGradeLevelId}
-						teacherSectionId={teacherSectionId}
-						refreshTrigger={refreshTrigger}
-					/>
+					{activeTab === "dashboard" ? (
+						<>
+							<DashboardStats
+								totalStudents={totalStudents}
+								studentsWithFiles={studentsWithFiles}
+								totalFiles={totalFiles}
+							/>
+							<StudentFileManagement
+								teacherGradeLevelId={teacherGradeLevelId}
+								teacherSectionId={teacherSectionId}
+								refreshTrigger={refreshTrigger}
+							/>
+						</>
+					) : activeTab === "students" ? (
+						<div className="py-8 text-center">
+							<h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-white">
+								Students Management
+							</h2>
+							<p className="text-slate-600 dark:text-slate-400">
+								Students section coming soon...
+							</p>
+						</div>
+					) : activeTab === "files" ? (
+						<div className="py-8 text-center">
+							<h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-white">
+								File Management
+							</h2>
+							<p className="text-slate-600 dark:text-slate-400">
+								File management section coming soon...
+							</p>
+						</div>
+					) : null}
 				</div>
 			</main>
 		</div>

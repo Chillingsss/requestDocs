@@ -151,3 +151,45 @@ export async function getTotalUsers() {
 		throw error;
 	}
 }
+
+export async function addStudent(studentData) {
+	const formData = new FormData();
+	formData.append("operation", "addStudent");
+	formData.append("json", JSON.stringify(studentData));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getStudentsWithFilters(
+	sectionId = null,
+	schoolYearId = null
+) {
+	const formData = new FormData();
+	formData.append("operation", "getStudentsWithFilters");
+
+	const filters = {};
+	if (sectionId) filters.sectionId = sectionId;
+	if (schoolYearId) filters.schoolYearId = schoolYearId;
+
+	formData.append("json", JSON.stringify(filters));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

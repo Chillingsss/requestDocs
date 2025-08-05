@@ -2,15 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import {
-	Menu,
 	FileText,
 	Users,
 	CheckCircle2,
 	XCircle,
-	LogOut,
 	Filter,
 	Calendar,
 	FolderOpen,
+	Menu,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
@@ -20,6 +19,7 @@ import ProcessedRequest from "./modal/ProcessedRequest";
 import StudentsTab from "./components/StudentsTab";
 import DocumentsTab from "./components/DocumentsTab";
 import ThemeToggle from "../../components/ThemeToggle";
+import Sidebar from "../../components/shared/Sidebar";
 
 export default function RegistrarDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -268,93 +268,16 @@ export default function RegistrarDashboard() {
 		<div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
 			<Toaster position="top-right" />
 
-			{/* Mobile Overlay */}
-			{sidebarOpen && (
-				<div
-					className="fixed inset-0 z-20 bg-black/50 lg:hidden"
-					onClick={() => setSidebarOpen(false)}
-				/>
-			)}
-
 			{/* Sidebar */}
-			<aside
-				className={`fixed lg:sticky top-0 z-30 flex flex-col bg-slate-900 text-white transition-all duration-300 h-screen ${
-					sidebarOpen
-						? "w-64 translate-x-0"
-						: "w-64 -translate-x-full lg:translate-x-0"
-				} ${sidebarOpen ? "lg:w-64" : "lg:w-20"}`}
-				style={{ backgroundColor: "#0f172a", color: "white" }}
-			>
-				{/* Top Section */}
-				<div className="flex flex-col p-4 space-y-6 h-full">
-					{/* Toggle button */}
-					<button
-						className="flex justify-center items-center mb-4 w-10 h-10 text-white bg-gray-600 rounded hover:bg-blue-700 focus:outline-none"
-						style={{ color: "white" }}
-						onClick={() => setSidebarOpen((open) => !open)}
-					>
-						<Menu className="w-6 h-6" />
-					</button>
-
-					{/* Logo Centered */}
-					<div className="flex justify-center items-center mb-8 w-full transition-all">
-						<img
-							src="/images/mogchs.jpg"
-							alt="MOGCHS Logo"
-							className={`transition-all duration-300 rounded-full bg-white object-cover ${
-								sidebarOpen ? "w-20 h-20" : "w-12 h-12"
-							}`}
-						/>
-					</div>
-
-					{/* Nav */}
-					<nav className="flex flex-col flex-1 gap-2">
-						{navItems.map((item, idx) => (
-							<button
-								key={item.key}
-								onClick={() => handleNavClick(item.key)}
-								className={`flex gap-3 items-center px-3 py-2 text-white rounded transition-colors hover:bg-slate-800 ${
-									activeTab === item.key ? "bg-slate-800" : "bg-slate-700"
-								}`}
-								style={{ color: "white" }}
-							>
-								{item.icon}
-								<span
-									className={`transition-all duration-200 origin-left ${
-										sidebarOpen
-											? "ml-2 opacity-100"
-											: "overflow-hidden ml-0 w-0 opacity-0"
-									}`}
-									style={{ color: "white" }}
-								>
-									{item.label}
-								</span>
-							</button>
-						))}
-					</nav>
-
-					{/* Bottom Section - Logout Button */}
-					<div className="mt-auto">
-						<button
-							className="flex gap-2 items-center px-4 py-2 w-full text-white bg-blue-600 rounded-md transition-colors hover:bg-blue-700"
-							style={{ backgroundColor: "#2563eb", color: "white" }}
-							onClick={logout}
-						>
-							<LogOut className="w-5 h-5" />
-							<span
-								className={`transition-all duration-200 origin-left ${
-									sidebarOpen
-										? "ml-2 opacity-100"
-										: "overflow-hidden ml-0 w-0 opacity-0"
-								}`}
-								style={{ color: "white" }}
-							>
-								Logout
-							</span>
-						</button>
-					</div>
-				</div>
-			</aside>
+			<Sidebar
+				sidebarOpen={sidebarOpen}
+				setSidebarOpen={setSidebarOpen}
+				activeSection={activeTab}
+				handleNavClick={handleNavClick}
+				onLogout={logout}
+				navItems={navItems}
+				userType="registrar"
+			/>
 
 			{/* Main Content */}
 			<main className="flex-1 p-4 w-full min-w-0 lg:p-8">

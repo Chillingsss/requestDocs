@@ -2,22 +2,23 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import {
+	Plus,
 	Menu,
 	LayoutDashboard,
 	Users,
 	FileText,
 	Settings,
-	LogOut,
-	Plus,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
+import CryptoJS from "crypto-js";
 import {
 	getUsers,
 	getRequestStats,
 	getCompletedRequests,
 	getRecentActivity,
 	getTotalUsers,
+	getStudentsWithFilters,
 } from "../../utils/admin";
 import AddUserModal from "./modal/AddUserModal";
 import toast, { Toaster } from "react-hot-toast";
@@ -33,6 +34,15 @@ import {
 	ArcElement,
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
+import AddStudentModal from "./modal/AddStudentModal";
+import { getSection, getSchoolYear } from "../../utils/registrar";
+import { Label } from "../../components/ui/label";
+import DashboardContent from "./components/DashboardContent";
+import UsersContent from "./components/UsersContent";
+import StudentsContent from "./components/StudentsContent";
+import Sidebar from "../../components/shared/Sidebar";
+
+const SECRET_KEY = "mogchs_secret_key";
 
 ChartJS.register(
 	CategoryScale,
@@ -58,13 +68,15 @@ export default function AdminDashboard() {
 	});
 	const [dashboardLoading, setDashboardLoading] = useState(false);
 	const navigate = useNavigate();
-
-	const navItems = [
-		{ icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard" },
-		{ icon: <Users className="w-5 h-5" />, label: "Users" },
-		{ icon: <FileText className="w-5 h-5" />, label: "Reports" },
-		{ icon: <Settings className="w-5 h-5" />, label: "Settings" },
-	];
+	const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+	const [sectionOptions, setSectionOptions] = useState([]);
+	const [schoolYearOptions, setSchoolYearOptions] = useState([]);
+	const [currentUserId, setCurrentUserId] = useState("");
+	const [currentUser, setCurrentUser] = useState(null);
+	const [students, setStudents] = useState([]);
+	const [studentsLoading, setStudentsLoading] = useState(false);
+	const [selectedSectionFilter, setSelectedSectionFilter] = useState("");
+	const [selectedSchoolYearFilter, setSelectedSchoolYearFilter] = useState("");
 
 	// Initialize sidebar state based on screen size
 	useEffect(() => {
@@ -98,6 +110,51 @@ export default function AdminDashboard() {
 			fetchUsers();
 		}
 	}, [activeSection]);
+
+	// Fetch students when Students section is active
+	useEffect(() => {
+		if (activeSection === "Students") {
+			fetchStudents();
+			// Load filter options
+			getSection().then((data) =>
+				setSectionOptions(Array.isArray(data) ? data : [])
+			);
+			getSchoolYear().then((data) =>
+				setSchoolYearOptions(Array.isArray(data) ? data : [])
+			);
+		}
+	}, [activeSection]);
+
+	// Fetch students when filters change
+	useEffect(() => {
+		if (activeSection === "Students") {
+			fetchStudents();
+		}
+	}, [selectedSectionFilter, selectedSchoolYearFilter]);
+
+	// Fetch section and school year options when AddStudentModal is opened
+	useEffect(() => {
+		if (showAddStudentModal) {
+			getSection().then((data) =>
+				setSectionOptions(Array.isArray(data) ? data : [])
+			);
+			getSchoolYear().then((data) =>
+				setSchoolYearOptions(Array.isArray(data) ? data : [])
+			);
+		}
+	}, [showAddStudentModal]);
+	// Get current admin user ID from cookie
+	useEffect(() => {
+		const userCookie = Cookies.get("mogchs_user");
+		if (userCookie) {
+			try {
+				const bytes = CryptoJS.AES.decrypt(userCookie, SECRET_KEY);
+				const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+				setCurrentUserId(decryptedData.id || "");
+				setCurrentUser(decryptedData); // Set currentUser state
+			} catch {}
+		}
+	}, []);
 
 	const fetchDashboardData = async () => {
 		try {
@@ -141,6 +198,23 @@ export default function AdminDashboard() {
 			setUsers([]);
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const fetchStudents = async () => {
+		try {
+			setStudentsLoading(true);
+			const data = await getStudentsWithFilters(
+				selectedSectionFilter,
+				selectedSchoolYearFilter
+			);
+			setStudents(Array.isArray(data) ? data : []);
+		} catch (error) {
+			console.error("Failed to fetch students:", error);
+			toast.error("Failed to load students");
+			setStudents([]);
+		} finally {
+			setStudentsLoading(false);
 		}
 	};
 
@@ -203,315 +277,54 @@ export default function AdminDashboard() {
 		],
 	};
 
-	const renderDashboardContent = () => {
-		return (
-			<>
-				{/* Stats Cards */}
-				<div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6 lg:mb-8">
-					<Card className="dark:bg-slate-800 dark:border-slate-700">
-						<CardContent className="p-4 lg:p-6">
-							<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
-								Total Users
-							</div>
-							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
-								{dashboardLoading ? "..." : dashboardData.totalUsers.totalUsers}
-							</div>
-							<div className="mt-1 text-xs text-green-600">
-								{dashboardData.totalUsers.adminUsers} Admin,{" "}
-								{dashboardData.totalUsers.studentUsers} Students
-							</div>
-						</CardContent>
-					</Card>
-					<Card className="dark:bg-slate-800 dark:border-slate-700">
-						<CardContent className="p-4 lg:p-6">
-							<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
-								Total Requests
-							</div>
-							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
-								{dashboardLoading
-									? "..."
-									: dashboardData.requestStats.reduce(
-											(sum, stat) => sum + stat.count,
-											0
-									  )}
-							</div>
-							<div className="mt-1 text-xs text-blue-600">
-								All time requests
-							</div>
-						</CardContent>
-					</Card>
-					<Card className="dark:bg-slate-800 dark:border-slate-700">
-						<CardContent className="p-4 lg:p-6">
-							<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
-								Completed Requests
-							</div>
-							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
-								{dashboardLoading
-									? "..."
-									: dashboardData.completedRequests.length}
-							</div>
-							<div className="mt-1 text-xs text-green-600">
-								Successfully processed
-							</div>
-						</CardContent>
-					</Card>
-					<Card className="dark:bg-slate-800 dark:border-slate-700">
-						<CardContent className="p-4 lg:p-6">
-							<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
-								Pending Requests
-							</div>
-							<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
-								{dashboardLoading
-									? "..."
-									: dashboardData.requestStats.find(
-											(stat) => stat.status === "Pending"
-									  )?.count || 0}
-							</div>
-							<div className="mt-1 text-xs text-orange-600">
-								Awaiting processing
-							</div>
-						</CardContent>
-					</Card>
-				</div>
-
-				{/* Charts Section */}
-				<div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
-					<Card className="dark:bg-slate-800 dark:border-slate-700">
-						<CardContent className="p-4 lg:p-6">
-							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
-								Request Status Distribution
-							</div>
-							{dashboardLoading ? (
-								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
-									Loading chart...
-								</div>
-							) : (
-								<Bar
-									data={requestStatusChartData}
-									options={{
-										responsive: true,
-										plugins: {
-											legend: {
-												position: "top",
-											},
-											title: {
-												display: false,
-											},
-										},
-									}}
-								/>
-							)}
-						</CardContent>
-					</Card>
-
-					<Card className="dark:bg-slate-800 dark:border-slate-700">
-						<CardContent className="p-4 lg:p-6">
-							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
-								User Distribution
-							</div>
-							{dashboardLoading ? (
-								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
-									Loading chart...
-								</div>
-							) : (
-								<Doughnut
-									data={userDistributionChartData}
-									options={{
-										responsive: true,
-										plugins: {
-											legend: {
-												position: "bottom",
-											},
-											title: {
-												display: false,
-											},
-										},
-									}}
-								/>
-							)}
-						</CardContent>
-					</Card>
-				</div>
-
-				{/* Recent Activity and Completed Requests */}
-				<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-					<Card className="dark:bg-slate-800 dark:border-slate-700">
-						<CardContent className="p-4 lg:p-6">
-							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
-								Recent Activity
-							</div>
-							{dashboardLoading ? (
-								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
-									Loading activities...
-								</div>
-							) : dashboardData.recentActivity.length === 0 ? (
-								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
-									No recent activity
-								</div>
-							) : (
-								<div className="space-y-3">
-									{dashboardData.recentActivity.map((activity, index) => (
-										<div
-											key={index}
-											className="flex justify-between items-start p-3 rounded-lg bg-slate-50 dark:bg-slate-700"
-										>
-											<div className="flex-1">
-												<div className="text-sm font-medium text-slate-900 dark:text-white">
-													{activity.student}
-												</div>
-												<div className="text-xs text-slate-600 dark:text-slate-300">
-													{activity.document}
-												</div>
-												<div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-													{activity.formattedDate}
-												</div>
-											</div>
-											<span
-												className={`px-2 py-1 rounded-full text-xs font-medium ml-2 ${
-													activity.status === "Released"
-														? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-														: activity.status === "Pending"
-														? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-														: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-												}`}
-											>
-												{activity.status}
-											</span>
-										</div>
-									))}
-								</div>
-							)}
-						</CardContent>
-					</Card>
-
-					<Card className="dark:bg-slate-800 dark:border-slate-700">
-						<CardContent className="p-4 lg:p-6">
-							<div className="mb-4 text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
-								Recently Completed Requests
-							</div>
-							{dashboardLoading ? (
-								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
-									Loading completed requests...
-								</div>
-							) : dashboardData.completedRequests.length === 0 ? (
-								<div className="py-8 text-center text-slate-500 dark:text-slate-400">
-									No completed requests
-								</div>
-							) : (
-								<div className="space-y-3">
-									{dashboardData.completedRequests
-										.slice(0, 5)
-										.map((request, index) => (
-											<div key={index} className="p-3 bg-green-50 rounded-lg">
-												<div className="flex justify-between items-start">
-													<div>
-														<div className="text-sm font-medium text-slate-900">
-															{request.student}
-														</div>
-														<div className="text-xs text-slate-600">
-															{request.document} - {request.purpose}
-														</div>
-													</div>
-													<div className="text-xs text-right text-slate-500">
-														<div>Requested: {request.dateRequested}</div>
-														<div>Completed: {request.dateCompleted}</div>
-													</div>
-												</div>
-											</div>
-										))}
-								</div>
-							)}
-						</CardContent>
-					</Card>
-				</div>
-			</>
-		);
-	};
-
-	const renderUsersContent = () => {
-		return (
-			<>
-				{/* Users List */}
-				<Card className="dark:bg-slate-800 dark:border-slate-700">
-					<CardContent className="p-4 lg:p-6">
-						<div className="flex justify-between items-center mb-4">
-							<div className="text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
-								Users Management
-							</div>
-							<Button
-								onClick={() => setShowAddUserModal(true)}
-								className="text-white bg-blue-600 hover:bg-blue-700"
-							>
-								<Plus className="mr-2 w-4 h-4" />
-								Add User
-							</Button>
-						</div>
-
-						{loading ? (
-							<div className="py-8 text-center text-slate-500 dark:text-slate-400">
-								Loading users...
-							</div>
-						) : users.length === 0 ? (
-							<div className="py-8 text-center text-slate-500 dark:text-slate-400">
-								No users found
-							</div>
-						) : (
-							<div className="overflow-x-auto">
-								<table className="w-full border-collapse">
-									<thead>
-										<tr className="border-b border-slate-200">
-											<th className="px-4 py-3 font-medium text-left text-slate-700">
-												User ID
-											</th>
-											<th className="px-4 py-3 font-medium text-left text-slate-700">
-												Name
-											</th>
-											<th className="px-4 py-3 font-medium text-left text-slate-700">
-												Email
-											</th>
-											<th className="px-4 py-3 font-medium text-left text-slate-700">
-												User Level
-											</th>
-										</tr>
-									</thead>
-									<tbody>
-										{users.map((user, index) => (
-											<tr
-												key={user.id}
-												className={`border-b border-slate-100 ${
-													index % 2 === 0 ? "bg-slate-50" : "bg-white"
-												}`}
-											>
-												<td className="px-4 py-3 text-sm text-slate-900">
-													{user.id}
-												</td>
-												<td className="px-4 py-3 text-sm text-slate-900">
-													{user.firstname} {user.lastname}
-												</td>
-												<td className="px-4 py-3 text-sm text-slate-900">
-													{user.email}
-												</td>
-												<td className="px-4 py-3 text-sm text-slate-900">
-													<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-														{user.userLevel}
-													</span>
-												</td>
-											</tr>
-										))}
-									</tbody>
-								</table>
-							</div>
-						)}
-					</CardContent>
-				</Card>
-			</>
-		);
-	};
+	const navItems = [
+		{
+			icon: <LayoutDashboard className="w-5 h-5" />,
+			label: "Dashboard",
+			key: "Dashboard",
+		},
+		{ icon: <Users className="w-5 h-5" />, label: "Users", key: "Users" },
+		{ icon: <Users className="w-5 h-5" />, label: "Students", key: "Students" },
+		{
+			icon: <FileText className="w-5 h-5" />,
+			label: "Reports",
+			key: "Reports",
+		},
+		{
+			icon: <Settings className="w-5 h-5" />,
+			label: "Settings",
+			key: "Settings",
+		},
+	];
 
 	const renderContent = () => {
 		switch (activeSection) {
 			case "Users":
-				return renderUsersContent();
+				return (
+					<UsersContent
+						users={users}
+						loading={loading}
+						onAddUser={() => setShowAddUserModal(true)}
+					/>
+				);
+			case "Students":
+				return (
+					<StudentsContent
+						students={students}
+						studentsLoading={studentsLoading}
+						sectionOptions={sectionOptions}
+						schoolYearOptions={schoolYearOptions}
+						selectedSectionFilter={selectedSectionFilter}
+						selectedSchoolYearFilter={selectedSchoolYearFilter}
+						onSectionFilterChange={(e) =>
+							setSelectedSectionFilter(e.target.value)
+						}
+						onSchoolYearFilterChange={(e) =>
+							setSelectedSchoolYearFilter(e.target.value)
+						}
+						onAddStudent={() => setShowAddStudentModal(true)}
+					/>
+				);
 			case "Reports":
 				return (
 					<Card className="dark:bg-slate-800 dark:border-slate-700">
@@ -533,7 +346,15 @@ export default function AdminDashboard() {
 					</Card>
 				);
 			default:
-				return renderDashboardContent();
+				return (
+					<DashboardContent
+						dashboardData={dashboardData}
+						dashboardLoading={dashboardLoading}
+						requestStatusChartData={requestStatusChartData}
+						userDistributionChartData={userDistributionChartData}
+						onRefreshData={fetchDashboardData}
+					/>
+				);
 		}
 	};
 
@@ -541,93 +362,16 @@ export default function AdminDashboard() {
 		<div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
 			<Toaster position="top-right" />
 
-			{/* Mobile Overlay */}
-			{sidebarOpen && (
-				<div
-					className="fixed inset-0 z-20 bg-black/50 lg:hidden"
-					onClick={() => setSidebarOpen(false)}
-				/>
-			)}
-
 			{/* Sidebar */}
-			<aside
-				className={`fixed lg:sticky top-0 z-30 flex flex-col bg-slate-900 text-white transition-all duration-300 h-screen ${
-					sidebarOpen
-						? "w-64 translate-x-0"
-						: "w-64 -translate-x-full lg:translate-x-0"
-				} ${sidebarOpen ? "lg:w-64" : "lg:w-20"}`}
-				style={{ backgroundColor: "#0f172a", color: "white" }}
-			>
-				{/* Top Section */}
-				<div className="flex flex-col p-4 space-y-6 h-full">
-					{/* Toggle button */}
-					<button
-						className="flex justify-center items-center mb-4 w-10 h-10 text-white bg-gray-600 rounded hover:bg-blue-700 focus:outline-none"
-						style={{ color: "white" }}
-						onClick={() => setSidebarOpen((open) => !open)}
-					>
-						<Menu className="w-6 h-6" />
-					</button>
-
-					{/* Logo Centered */}
-					<div className="flex justify-center items-center mb-8 w-full transition-all">
-						<img
-							src="/images/mogchs.jpg"
-							alt="MOGCHS Logo"
-							className={`transition-all duration-300 rounded-full bg-white object-cover ${
-								sidebarOpen ? "w-20 h-20" : "w-12 h-12"
-							}`}
-						/>
-					</div>
-
-					{/* Nav */}
-					<nav className="flex flex-col flex-1 gap-2">
-						{navItems.map((item, idx) => (
-							<button
-								key={item.label}
-								onClick={() => handleNavClick(item.label)}
-								className={`flex gap-3 items-center px-3 py-2 text-white rounded transition-colors hover:bg-slate-800 ${
-									activeSection === item.label ? "bg-slate-800" : "bg-slate-700"
-								}`}
-								style={{ color: "white" }}
-							>
-								{item.icon}
-								<span
-									className={`transition-all duration-200 origin-left ${
-										sidebarOpen
-											? "ml-2 opacity-100"
-											: "overflow-hidden ml-0 w-0 opacity-0"
-									}`}
-									style={{ color: "white" }}
-								>
-									{item.label}
-								</span>
-							</button>
-						))}
-					</nav>
-
-					{/* Bottom Section - Logout Button */}
-					<div className="mt-auto">
-						<button
-							className="flex gap-2 items-center px-4 py-2 w-full text-white bg-blue-600 rounded-md transition-colors hover:bg-blue-700"
-							style={{ backgroundColor: "#2563eb", color: "white" }}
-							onClick={logout}
-						>
-							<LogOut className="w-5 h-5" />
-							<span
-								className={`transition-all duration-200 origin-left ${
-									sidebarOpen
-										? "ml-2 opacity-100"
-										: "overflow-hidden ml-0 w-0 opacity-0"
-								}`}
-								style={{ color: "white" }}
-							>
-								Logout
-							</span>
-						</button>
-					</div>
-				</div>
-			</aside>
+			<Sidebar
+				sidebarOpen={sidebarOpen}
+				setSidebarOpen={setSidebarOpen}
+				activeSection={activeSection}
+				handleNavClick={handleNavClick}
+				onLogout={logout}
+				navItems={navItems}
+				userType="admin"
+			/>
 
 			{/* Main Content */}
 			<main className="flex-1 p-4 w-full min-w-0 lg:p-8">
@@ -689,6 +433,14 @@ export default function AdminDashboard() {
 				isOpen={showAddUserModal}
 				onClose={() => setShowAddUserModal(false)}
 				onSuccess={handleAddUserSuccess}
+			/>
+			<AddStudentModal
+				isOpen={showAddStudentModal}
+				onClose={() => setShowAddStudentModal(false)}
+				onSuccess={handleAddUserSuccess}
+				sectionOptions={sectionOptions}
+				schoolYearOptions={schoolYearOptions}
+				createdBy={currentUserId}
 			/>
 		</div>
 	);
