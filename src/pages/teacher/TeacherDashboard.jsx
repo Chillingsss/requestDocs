@@ -15,11 +15,13 @@ export default function TeacherDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const [students, setStudents] = useState([]);
 	const [teacherGradeLevelId, setTeacherGradeLevelId] = useState(null);
+	const [teacherSectionId, setTeacherSectionId] = useState(null);
+	const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger state
 	const navigate = useNavigate();
 	const COOKIE_KEY = "mogchs_user";
 	const SECRET_KEY = "mogchs_secret_key";
 
-	// Get teacher's grade level from stored user data
+	// Get teacher's grade level and section from stored user data
 	useEffect(() => {
 		const encrypted = Cookies.get(COOKIE_KEY);
 		if (encrypted) {
@@ -31,6 +33,10 @@ export default function TeacherDashboard() {
 				if (decryptedText && decryptedText.trim() !== "") {
 					const decrypted = JSON.parse(decryptedText);
 					console.log("Decrypted user data:", decrypted);
+					console.log("Debug - User ID:", decrypted.id);
+					console.log("Debug - User Level:", decrypted.userLevel);
+					console.log("Debug - Grade Level ID:", decrypted.gradeLevelId);
+					console.log("Debug - Section ID:", decrypted.sectionId);
 
 					// Check if user is a teacher and has gradeLevelId
 					if (
@@ -39,6 +45,12 @@ export default function TeacherDashboard() {
 						decrypted.gradeLevelId
 					) {
 						setTeacherGradeLevelId(decrypted.gradeLevelId);
+						setTeacherSectionId(decrypted.sectionId || null);
+						console.log(
+							"Debug - Set teacherGradeLevelId:",
+							decrypted.gradeLevelId
+						);
+						console.log("Debug - Set teacherSectionId:", decrypted.sectionId);
 					} else if (decrypted && decrypted.userLevel === "Teacher") {
 						console.warn("Teacher user found but no gradeLevelId assigned");
 						// You might want to redirect to an error page or show a message
@@ -106,6 +118,11 @@ export default function TeacherDashboard() {
 			console.error("Error fetching students:", error);
 			toast.error("Failed to load students");
 		}
+	};
+
+	const handleRefreshData = () => {
+		fetchStudents();
+		setRefreshTrigger((prev) => prev + 1); // Trigger refresh in child components
 	};
 
 	const logout = () => {
@@ -195,7 +212,7 @@ export default function TeacherDashboard() {
 						<ThemeToggle />
 						<Button
 							className="text-white bg-blue-600 hover:bg-blue-700"
-							onClick={fetchStudents}
+							onClick={handleRefreshData}
 						>
 							Refresh Data
 						</Button>
@@ -212,7 +229,7 @@ export default function TeacherDashboard() {
 					</div>
 					<Button
 						className="flex gap-2 items-center w-full bg-blue-600 hover:bg-blue-700"
-						onClick={fetchStudents}
+						onClick={handleRefreshData}
 					>
 						Refresh Data
 					</Button>
@@ -225,7 +242,11 @@ export default function TeacherDashboard() {
 						studentsWithFiles={studentsWithFiles}
 						totalFiles={totalFiles}
 					/>
-					<StudentFileManagement teacherGradeLevelId={teacherGradeLevelId} />
+					<StudentFileManagement
+						teacherGradeLevelId={teacherGradeLevelId}
+						teacherSectionId={teacherSectionId}
+						refreshTrigger={refreshTrigger}
+					/>
 				</div>
 			</main>
 		</div>

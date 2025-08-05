@@ -13,6 +13,7 @@ import {
 	Upload,
 	CheckSquare,
 	Square,
+	Users2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -23,7 +24,11 @@ import {
 import StudentModal from "./StudentModal";
 import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
-export default function StudentFileManagement({ teacherGradeLevelId }) {
+export default function StudentFileManagement({
+	teacherGradeLevelId,
+	teacherSectionId,
+	refreshTrigger,
+}) {
 	const [students, setStudents] = useState([]);
 	const [filteredStudents, setFilteredStudents] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -36,9 +41,6 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 	// Selection state
 	const [selectedStudents, setSelectedStudents] = useState(new Set());
 	const [selectAll, setSelectAll] = useState(false);
-	const [bulkUploadMode, setBulkUploadMode] = useState(false);
-	const [bulkFiles, setBulkFiles] = useState({});
-	const [uploadingBulk, setUploadingBulk] = useState(false);
 	const [modalSelectedStudents, setModalSelectedStudents] = useState([]); // For modal display
 
 	// Pagination state
@@ -58,6 +60,14 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 			fetchSectionsByGradeLevel();
 		}
 	}, [teacherGradeLevelId]);
+
+	// Refresh data when refreshTrigger changes
+	useEffect(() => {
+		if (teacherGradeLevelId && refreshTrigger > 0) {
+			fetchStudents();
+			fetchSectionsByGradeLevel();
+		}
+	}, [refreshTrigger, teacherGradeLevelId]);
 
 	// Apply section filter when selectedSection changes
 	useEffect(() => {
@@ -81,7 +91,10 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 
 	const fetchStudents = async () => {
 		try {
-			const data = await getStudentRecords(teacherGradeLevelId);
+			const data = await getStudentRecords(
+				teacherGradeLevelId,
+				teacherSectionId
+			);
 			console.log("API data:", data);
 			let studentsArray = data;
 			if (typeof data === "string") {
@@ -113,7 +126,12 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 
 	const fetchSectionsByGradeLevel = async () => {
 		try {
-			const data = await getSectionsByGradeLevel(teacherGradeLevelId);
+			console.log("Debug - teacherGradeLevelId:", teacherGradeLevelId);
+			console.log("Debug - teacherSectionId:", teacherSectionId);
+			const data = await getSectionsByGradeLevel(
+				teacherGradeLevelId,
+				teacherSectionId
+			);
 			let sectionsData = data;
 			if (typeof data === "string") {
 				try {
@@ -123,22 +141,26 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 				}
 			}
 
+			console.log("Debug - sectionsData:", sectionsData);
+
 			// Group sections by grade level (use actual teacher grade level)
 			const grouped = sectionsData.reduce((acc, item) => {
 				// Use actual teacher grade level if available, otherwise use section grade level
 				const gradeLevel =
-					item.actualTeacherGradeLevel ||
-					item.teacherGradeLevel ||
-					item.sectionGradeLevel;
+					item.actualTeacherGradeLevel || item.sectionGradeLevel;
 				if (gradeLevel && !acc[gradeLevel]) {
 					acc[gradeLevel] = [];
 				}
 				if (gradeLevel && item.sectionName) {
-					acc[gradeLevel].push(item.sectionName);
+					// Only add if not already in the array to prevent duplicates
+					if (!acc[gradeLevel].includes(item.sectionName)) {
+						acc[gradeLevel].push(item.sectionName);
+					}
 				}
 				return acc;
 			}, {});
 
+			console.log("Debug - grouped sections:", grouped);
 			setSectionsByGradeLevel(grouped);
 		} catch (error) {
 			console.error("Error fetching sections by grade level:", error);
@@ -263,14 +285,54 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 					record.actualTeacherGradeLevel || record.teacherGradeLevel,
 				sectionGradeLevel: record.sectionGradeLevel,
 				files: [],
+				grade11File: null,
+				grade12File: null,
 			};
 		}
+
+		// Handle file records based on grade level
 		if (record.fileName && record.fileName.trim() !== "") {
-			acc[id].files.push({
+			// This is a file record
+			const fileInfo = {
 				fileName: record.fileName,
-				sfType: record.actualTeacherGradeLevel || record.teacherGradeLevel, // This is the Teacher's Grade Level (Grade 11 or Grade 12)
-			});
+				sfType:
+					record.sfGradeLevelName ||
+					record.actualTeacherGradeLevel ||
+					record.teacherGradeLevel,
+				gradeLevelId: record.sfGradeLevelId,
+				gradeLevelName: record.sfGradeLevelName,
+			};
+
+			// Add to files array
+			acc[id].files.push(fileInfo);
+
+			// Also store separately for easy access
+			if (record.sfGradeLevelId == 1) {
+				acc[id].grade11File = fileInfo;
+			} else if (record.sfGradeLevelId == 2) {
+				acc[id].grade12File = fileInfo;
+			}
+		} else if (record.sfGradeLevelId) {
+			// This is a NULL file record (enrollment record)
+			const fileInfo = {
+				fileName: null,
+				sfType: record.sfGradeLevelName,
+				gradeLevelId: record.sfGradeLevelId,
+				gradeLevelName: record.sfGradeLevelName,
+				isNullRecord: true,
+			};
+
+			// Add to files array
+			acc[id].files.push(fileInfo);
+
+			// Also store separately for easy access
+			if (record.sfGradeLevelId == 1) {
+				acc[id].grade11File = fileInfo;
+			} else if (record.sfGradeLevelId == 2) {
+				acc[id].grade12File = fileInfo;
+			}
 		}
+
 		return acc;
 	}, {});
 
@@ -305,8 +367,8 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 
 	// Modal handlers
 	const handleOpenModal = (student) => {
-		// If bulk upload mode is active, use selected students
-		if (bulkUploadMode && selectedStudents.size > 0) {
+		// If students are selected, use selected students
+		if (selectedStudents.size > 0) {
 			const selectedStudentList = groupedStudents.filter((s) =>
 				selectedStudents.has(s.id)
 			);
@@ -332,8 +394,6 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 		// Clear student selection after successful upload
 		setSelectedStudents(new Set());
 		setSelectAll(false);
-		setBulkUploadMode(false);
-		setBulkFiles({});
 	};
 
 	// Selection handlers
@@ -359,111 +419,9 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 		}
 	};
 
-	const handleBulkFileSelect = (studentId, file) => {
-		if (file) {
-			// Validate file type
-			const allowedTypes = [
-				"application/vnd.ms-excel",
-				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-				".xlsx",
-				".xls",
-			];
-
-			const fileExtension = file.name.toLowerCase().split(".").pop();
-			const isValidType =
-				allowedTypes.includes(file.type) ||
-				file.name.toLowerCase().endsWith(".xlsx") ||
-				file.name.toLowerCase().endsWith(".xls");
-
-			if (!isValidType) {
-				toast.error("Please select a valid Excel file (.xlsx or .xls)");
-				return;
-			}
-
-			// Check file size (max 10MB)
-			if (file.size > 10 * 1024 * 1024) {
-				toast.error("File size too large. Maximum size is 10MB.");
-				return;
-			}
-
-			setBulkFiles((prev) => ({
-				...prev,
-				[studentId]: file,
-			}));
-		}
-	};
-
-	const handleBulkUpload = async () => {
-		const selectedIds = Array.from(selectedStudents);
-		const filesToUpload = selectedIds.filter((id) => bulkFiles[id]);
-
-		if (filesToUpload.length === 0) {
-			toast.error("Please select files for at least one student");
-			return;
-		}
-
-		setUploadingBulk(true);
-
-		try {
-			const uploadPromises = filesToUpload.map(async (studentId) => {
-				const file = bulkFiles[studentId];
-				const student = groupedStudents.find((s) => s.id === studentId);
-
-				const formData = new FormData();
-				formData.append("operation", "updateStudentFile");
-				formData.append("studentId", studentId);
-				formData.append("file", file);
-
-				const apiUrl = getDecryptedApiUrl();
-				const response = await fetch(`${apiUrl}/teacher.php`, {
-					method: "POST",
-					body: formData,
-				});
-
-				const result = await response.json();
-				return {
-					studentId,
-					studentName: student
-						? `${student.firstname} ${student.lastname}`
-						: studentId,
-					success: result.success,
-					error: result.error,
-				};
-			});
-
-			const results = await Promise.all(uploadPromises);
-			const successful = results.filter((r) => r.success).length;
-			const failed = results.filter((r) => !r.success).length;
-
-			if (successful > 0) {
-				toast.success(`Successfully uploaded ${successful} files`);
-			}
-			if (failed > 0) {
-				toast.error(`Failed to upload ${failed} files`);
-			}
-
-			// Reset states
-			setBulkUploadMode(false);
-			setSelectedStudents(new Set());
-			setSelectAll(false);
-			setBulkFiles({});
-
-			// Refresh data
-			fetchStudents();
-			fetchSectionsByGradeLevel();
-		} catch (error) {
-			console.error("Bulk upload error:", error);
-			toast.error("Failed to upload files");
-		} finally {
-			setUploadingBulk(false);
-		}
-	};
-
 	const clearBulkSelection = () => {
 		setSelectedStudents(new Set());
 		setSelectAll(false);
-		setBulkFiles({});
-		setBulkUploadMode(false);
 	};
 
 	// Generate page numbers for pagination
@@ -521,19 +479,6 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 						)}
 						{selectedStudents.size > 0 && (
 							<Button
-								onClick={() => setBulkUploadMode(!bulkUploadMode)}
-								className={`flex gap-2 items-center ${
-									bulkUploadMode
-										? "text-white bg-blue-600 hover:bg-blue-700"
-										: "text-white bg-green-600 hover:bg-green-700"
-								}`}
-							>
-								<Upload className="w-4 h-4" />
-								{bulkUploadMode ? "Cancel Bulk Upload" : "Bulk Upload"}
-							</Button>
-						)}
-						{bulkUploadMode && selectedStudents.size > 0 && (
-							<Button
 								onClick={() => {
 									const selectedStudentList = groupedStudents.filter((s) =>
 										selectedStudents.has(s.id)
@@ -542,33 +487,12 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 									setSelectedStudent(selectedStudentList[0]); // Set first student as default
 									setIsModalOpen(true);
 								}}
-								className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700"
+								className="flex gap-2 items-center text-white bg-purple-600 hover:bg-purple-700"
 							>
-								<Upload className="w-4 h-4" />
-								Upload Selected ({selectedStudents.size})
+								<Users2 className="w-4 h-4" />
+								Update Section or SF10 ({selectedStudents.size})
 							</Button>
 						)}
-						{bulkUploadMode &&
-							selectedStudents.size > 0 &&
-							Object.keys(bulkFiles).length > 0 && (
-								<Button
-									onClick={handleBulkUpload}
-									disabled={uploadingBulk}
-									className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-								>
-									{uploadingBulk ? (
-										<>
-											<div className="w-4 h-4 rounded-full border-b-2 border-white animate-spin"></div>
-											Uploading...
-										</>
-									) : (
-										<>
-											<Upload className="w-4 h-4" />
-											Upload Files ({Object.keys(bulkFiles).length})
-										</>
-									)}
-								</Button>
-							)}
 					</div>
 				</div>
 
@@ -803,38 +727,91 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 											>
 												<div className="max-w-xs">
 													{student.files && student.files.length > 0 ? (
-														student.files.map((file, fileIdx) => (
-															<div
-																key={`${student.id}-${fileIdx}`}
-																className="flex justify-between items-center p-2 mb-2 bg-gray-50 rounded-md dark:bg-gray-800"
-															>
-																<div className="flex-1 mr-2">
+														<div className="space-y-2">
+															{/* Grade 11 File */}
+															{student.grade11File && (
+																<div className="p-2 bg-gray-50 rounded-md dark:bg-gray-800">
+																	<div className="mb-1 text-xs font-medium text-green-600 dark:text-green-400">
+																		{student.grade11File.sfType}
+																	</div>
+																	{student.grade11File.fileName ? (
+																		<div className="text-xs text-gray-700 truncate dark:text-slate-400">
+																			{student.grade11File.fileName}
+																		</div>
+																	) : (
+																		<div className="text-xs italic text-gray-500">
+																			No file uploaded
+																		</div>
+																	)}
+																	{student.grade11File.fileName && (
+																		<div className="flex gap-1 mt-1">
+																			<Button
+																				size="sm"
+																				variant="outline"
+																				className="p-1 w-6 h-6"
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					handleFileDownload(
+																						student.grade11File.fileName
+																					);
+																				}}
+																				title="Download file"
+																			>
+																				<Download className="w-3 h-3" />
+																			</Button>
+																		</div>
+																	)}
+																</div>
+															)}
+
+															{/* Grade 12 File */}
+															{student.grade12File && (
+																<div className="p-2 bg-blue-50 rounded-md dark:bg-blue-900/20">
 																	<div className="mb-1 text-xs font-medium text-blue-600 dark:text-blue-400">
-																		{file.sfType}
+																		{student.grade12File.sfType}
 																	</div>
-																	<div className="text-xs text-gray-700 truncate dark:text-slate-400">
-																		{file.fileName}
+																	{student.grade12File.fileName ? (
+																		<div className="text-xs text-gray-700 truncate dark:text-slate-400">
+																			{student.grade12File.fileName}
+																		</div>
+																	) : (
+																		<div className="text-xs font-medium text-orange-600 dark:text-orange-400">
+																			⚠️ Please upload Grade 12 file
+																		</div>
+																	)}
+																	{student.grade12File.fileName && (
+																		<div className="flex gap-1 mt-1">
+																			<Button
+																				size="sm"
+																				variant="outline"
+																				className="p-1 w-6 h-6"
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					handleFileDownload(
+																						student.grade12File.fileName
+																					);
+																				}}
+																				title="Download file"
+																			>
+																				<Download className="w-3 h-3" />
+																			</Button>
+																		</div>
+																	)}
+																</div>
+															)}
+
+															{/* Show note if no Grade 12 file exists */}
+															{!student.grade12File && student.grade11File && (
+																<div className="p-2 bg-yellow-50 rounded-md dark:bg-yellow-900/20">
+																	<div className="text-xs font-medium text-yellow-700 dark:text-yellow-300">
+																		📝 Enroll to Grade 12 to upload SF10 file
 																	</div>
 																</div>
-																<div className="flex gap-1">
-																	<Button
-																		size="sm"
-																		variant="outline"
-																		className="p-1 w-6 h-6"
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			handleFileDownload(file.fileName);
-																		}}
-																		title="Download file"
-																	>
-																		<Download className="w-3 h-3" />
-																	</Button>
-																</div>
-															</div>
-														))
+															)}
+														</div>
 													) : (
 														<span className="text-xs italic text-gray-500">
-															No file uploaded
+															No files uploaded
 														</span>
 													)}
 												</div>
@@ -913,6 +890,8 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 					student={selectedStudent}
 					onFileUpdate={handleFileUpdate}
 					allStudents={modalSelectedStudents}
+					teacherGradeLevelId={teacherGradeLevelId}
+					teacherSectionId={teacherSectionId}
 				/>
 			</CardContent>
 		</Card>

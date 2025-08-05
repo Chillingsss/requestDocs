@@ -14,9 +14,16 @@ import {
 	CheckSquare,
 	Square,
 	Users,
+	ArrowRight,
+	Users2,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { downloadFile } from "../../../utils/teacher";
+import {
+	downloadFile,
+	getAvailableSections,
+	updateStudentSection,
+	updateMultipleStudentSections,
+} from "../../../utils/teacher";
 import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
 export default function StudentModal({
@@ -25,6 +32,7 @@ export default function StudentModal({
 	student,
 	onFileUpdate,
 	allStudents = [], // Pass selected students for bulk operations
+	teacherGradeLevelId, // Teacher's grade level ID
 }) {
 	const [uploading, setUploading] = useState(false);
 	const [selectedFile, setSelectedFile] = useState(null);
@@ -32,6 +40,13 @@ export default function StudentModal({
 	const [selectedStudents, setSelectedStudents] = useState(new Set());
 	const [bulkFiles, setBulkFiles] = useState({});
 	const fileInputRef = useRef(null);
+
+	// Section update state
+	const [sectionUpdateMode, setSectionUpdateMode] = useState(false);
+	const [availableSections, setAvailableSections] = useState([]);
+	const [selectedNewSection, setSelectedNewSection] = useState("");
+	const [updatingSection, setUpdatingSection] = useState(false);
+	const [targetGradeLevel, setTargetGradeLevel] = useState("2"); // Default to Grade 12 (ID: 2)
 
 	// Auto-set upload mode based on number of students
 	useEffect(() => {
@@ -43,6 +58,27 @@ export default function StudentModal({
 			setSelectedStudents(new Set(allStudents.map((s) => s.id)));
 		}
 	}, [allStudents]);
+
+	// Load sections when target grade level changes
+	useEffect(() => {
+		if (sectionUpdateMode && targetGradeLevel) {
+			handleLoadSections();
+		}
+	}, [targetGradeLevel, sectionUpdateMode]);
+
+	const handleLoadSections = async () => {
+		try {
+			const data = await getAvailableSections(targetGradeLevel);
+			if (data.success) {
+				setAvailableSections(data.sections);
+			} else {
+				toast.error("Failed to load available sections");
+			}
+		} catch (error) {
+			console.error("Error loading sections:", error);
+			toast.error("Failed to load available sections");
+		}
+	};
 
 	if (!isOpen || !student) return null;
 
@@ -92,6 +128,9 @@ export default function StudentModal({
 			formData.append("studentId", student.id);
 			formData.append("file", selectedFile);
 
+			// Pass the teacher's grade level dynamically
+			formData.append("gradeLevelId", teacherGradeLevelId);
+
 			// Get the encrypted API URL from session storage
 			const apiUrl = getDecryptedApiUrl();
 
@@ -103,7 +142,11 @@ export default function StudentModal({
 			const result = await response.json();
 
 			if (result.success) {
-				toast.success("SF10 file updated successfully");
+				const gradeLevelName =
+					teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
+						? "Grade 11"
+						: "Grade 12";
+				toast.success(`${gradeLevelName} SF10 file updated successfully`);
 				onFileUpdate(); // Refresh the parent component
 				onClose(); // Close the modal
 			} else {
@@ -201,6 +244,7 @@ export default function StudentModal({
 				formData.append("operation", "updateStudentFile");
 				formData.append("studentId", studentId);
 				formData.append("file", file);
+				formData.append("gradeLevelId", teacherGradeLevelId); // Pass the teacher's grade level dynamically
 
 				const apiUrl = getDecryptedApiUrl();
 				const response = await fetch(`${apiUrl}/teacher.php`, {
@@ -224,7 +268,13 @@ export default function StudentModal({
 			const failed = results.filter((r) => !r.success).length;
 
 			if (successful > 0) {
-				toast.success(`Successfully uploaded ${successful} files`);
+				const gradeLevelName =
+					teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
+						? "Grade 11"
+						: "Grade 12";
+				toast.success(
+					`Successfully uploaded ${successful} ${gradeLevelName} SF10 files`
+				);
 				onFileUpdate(); // Refresh the parent component
 				onClose(); // Close the modal
 			}
@@ -250,6 +300,74 @@ export default function StudentModal({
 			setUploading(false);
 		}
 	};
+
+	const clearBulkSelection = () => {
+		setSelectedStudents(new Set());
+		setSelectedNewSection("");
+		setBulkFiles({});
+		setSectionUpdateMode(false);
+	};
+
+	// Section update functions
+	const handleSectionUpdateMode = async () => {
+		setSectionUpdateMode(!sectionUpdateMode);
+		if (!sectionUpdateMode) {
+			// Load available sections for the selected grade level
+			await handleLoadSections();
+		}
+	};
+
+	const handleUpdateSection = async () => {
+		if (!selectedNewSection) {
+			toast.error("Please select a new section");
+			return;
+		}
+
+		setUpdatingSection(true);
+
+		try {
+			if (allStudents.length === 1) {
+				// Single student update
+				const result = await updateStudentSection(
+					student.id,
+					selectedNewSection
+				);
+				if (result.success) {
+					toast.success("Student section updated successfully");
+					onFileUpdate(); // Refresh the parent component
+					onClose(); // Close the modal
+				} else {
+					toast.error(result.error || "Failed to update student section");
+				}
+			} else {
+				// Multiple students update
+				const selectedIds = Array.from(selectedStudents);
+				if (selectedIds.length === 0) {
+					toast.error("Please select at least one student");
+					return;
+				}
+
+				const result = await updateMultipleStudentSections(
+					selectedIds,
+					selectedNewSection
+				);
+				if (result.success) {
+					toast.success(`Successfully updated ${result.successCount} students`);
+					onFileUpdate(); // Refresh the parent component
+					onClose(); // Close the modal
+				} else {
+					toast.error(result.error || "Failed to update student sections");
+				}
+			}
+		} catch (error) {
+			console.error("Section update error:", error);
+			toast.error("Failed to update student section(s)");
+		} finally {
+			setUpdatingSection(false);
+		}
+	};
+
+	// Generate page numbers for pagination
 
 	return (
 		<div className="flex fixed inset-0 z-50 justify-center items-center">
@@ -404,14 +522,27 @@ export default function StudentModal({
 													{file.sfType}
 												</div>
 												<div className="text-xs text-slate-500 dark:text-slate-400">
-													{file.fileName}
+													{file.fileName || "No file uploaded"}
 												</div>
+												{!file.fileName && file.gradeLevelId == 2 && (
+													<div className="mt-1 text-xs font-medium text-orange-600 dark:text-orange-400">
+														⚠️ Please upload Grade 12 SF10 file
+													</div>
+												)}
 											</div>
 											<Button
 												size="sm"
 												variant="outline"
 												onClick={() => handleDownload(file.fileName)}
-												className="flex gap-1 items-center"
+												disabled={!file.fileName}
+												className={`flex gap-1 items-center ${
+													!file.fileName ? "opacity-50 cursor-not-allowed" : ""
+												}`}
+												title={
+													!file.fileName
+														? "No file available to download"
+														: "Download file"
+												}
 											>
 												<Download className="w-3 h-3" />
 												Download
@@ -429,9 +560,27 @@ export default function StudentModal({
 
 					{/* Upload New File */}
 					<div className="space-y-3">
-						<Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-							Update SF10 File
-						</Label>
+						<div className="flex gap-2 items-center">
+							<Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+								Update SF10 File
+							</Label>
+							<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-200 dark:bg-blue-900">
+								{teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
+									? "Grade 11"
+									: "Grade 12"}{" "}
+								Only
+							</span>
+						</div>
+						<div className="text-xs text-slate-500 dark:text-slate-400">
+							{teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
+								? "Grade 11"
+								: "Grade 12"}{" "}
+							teachers can only update{" "}
+							{teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
+								? "Grade 11"
+								: "Grade 12"}{" "}
+							SF10 files
+						</div>
 
 						{/* Upload Mode Selection */}
 						<div className="flex gap-2 mb-4">
@@ -623,6 +772,158 @@ export default function StudentModal({
 										)}
 									</Button>
 								)}
+							</div>
+						)}
+					</div>
+
+					{/* Section Update */}
+					<div className="space-y-3">
+						<div className="flex gap-2 items-center">
+							<Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+								Update Student Section
+							</Label>
+							<Button
+								variant={sectionUpdateMode ? "default" : "outline"}
+								size="sm"
+								onClick={handleSectionUpdateMode}
+								disabled={updatingSection}
+								className="flex gap-1 items-center"
+							>
+								<ArrowRight className="w-4 h-4" />
+								{sectionUpdateMode
+									? "Cancel Section Update"
+									: student.sectionGradeLevel === "Grade 12"
+									? "Update Section"
+									: "Enroll to Grade 12"}
+							</Button>
+						</div>
+
+						{sectionUpdateMode && (
+							<div className="p-4 space-y-4 bg-blue-50 rounded-lg dark:bg-blue-900/20">
+								<div className="space-y-3">
+									<div className="flex gap-2 items-center">
+										<Users2 className="w-4 h-4 text-blue-600" />
+										<span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+											{student.sectionGradeLevel === "Grade 12"
+												? "Update Student Section"
+												: "Enroll Grade 11 Students to Grade 12"}
+										</span>
+									</div>
+
+									{/* Grade Level Selection */}
+									<div className="space-y-2">
+										<Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+											Target Grade Level
+										</Label>
+										<select
+											value={targetGradeLevel}
+											onChange={(e) => setTargetGradeLevel(e.target.value)}
+											disabled={updatingSection}
+											className="p-2 w-full rounded-md border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+										>
+											<option value="1" disabled>
+												Grade 11 (Not available for enrollment)
+											</option>
+											<option value="2">Grade 12 (Enrollment target)</option>
+										</select>
+										<div className="text-xs text-slate-500 dark:text-slate-400">
+											{student.sectionGradeLevel === "Grade 12"
+												? "Students can be moved to different Grade 12 sections"
+												: "Grade 11 students can only enroll to Grade 12 sections"}
+										</div>
+									</div>
+
+									{/* Section Selection */}
+									<div className="space-y-2">
+										<Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+											New Section
+										</Label>
+										<select
+											value={selectedNewSection}
+											onChange={(e) => setSelectedNewSection(e.target.value)}
+											disabled={updatingSection}
+											className="p-2 w-full rounded-md border border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+										>
+											<option value="">Select new section</option>
+											{availableSections.map((section) => (
+												<option key={section.id} value={section.id.toString()}>
+													{section.name}
+												</option>
+											))}
+										</select>
+									</div>
+
+									{/* Student Selection for Multiple Students */}
+									{allStudents.length > 1 && (
+										<div className="space-y-3">
+											<div className="flex gap-2 items-center">
+												<span className="text-sm text-slate-600 dark:text-slate-400">
+													Selected Students ({selectedStudents.size}/
+													{allStudents.length})
+												</span>
+												{selectedStudents.size > 0 && (
+													<Button
+														variant="outline"
+														size="sm"
+														onClick={() => setSelectedStudents(new Set())}
+														className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+													>
+														Clear Selection
+													</Button>
+												)}
+											</div>
+
+											<div className="overflow-y-auto max-h-40 rounded-lg border border-slate-200 dark:border-slate-700">
+												{allStudents.map((s) => (
+													<div
+														key={s.id}
+														className={`flex items-center gap-3 p-3 border-b border-slate-100 dark:border-slate-700 ${
+															selectedStudents.has(s.id)
+																? "bg-blue-50 dark:bg-blue-900/20"
+																: ""
+														}`}
+													>
+														<input
+															type="checkbox"
+															checked={selectedStudents.has(s.id)}
+															onChange={() => handleSelectStudent(s.id)}
+															className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+														/>
+														<div className="flex-1">
+															<div className="text-sm font-medium text-slate-900 dark:text-white">
+																{s.firstname} {s.lastname}
+															</div>
+															<div className="text-xs text-slate-500 dark:text-slate-400">
+																Current: {s.sectionName}
+															</div>
+														</div>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+
+									{/* Update Button */}
+									<Button
+										onClick={handleUpdateSection}
+										disabled={!selectedNewSection || updatingSection}
+										className="flex gap-2 items-center text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+									>
+										{updatingSection ? (
+											<>
+												<div className="w-4 h-4 rounded-full border-b-2 border-white animate-spin"></div>
+												Updating...
+											</>
+										) : (
+											<>
+												<ArrowRight className="w-4 h-4" />
+												{allStudents.length === 1
+													? "Update Section"
+													: `Update ${selectedStudents.size} Students`}
+											</>
+										)}
+									</Button>
+								</div>
 							</div>
 						)}
 					</div>
