@@ -22,7 +22,7 @@ export default function Sidebar({
 	handleNavClick,
 	onLogout,
 	navItems,
-	userType = "admin", // "admin" or "registrar"
+	userType = "admin", // optional fallback, panel type is determined from userLevel in cookie
 }) {
 	const [showUserDropdown, setShowUserDropdown] = useState(false);
 	const [currentUser, setCurrentUser] = useState(null);
@@ -38,6 +38,21 @@ export default function Sidebar({
 			} catch {}
 		}
 	}, []);
+
+	// Determine panel type based on userLevel from cookie
+	const getPanelType = () => {
+		if (!currentUser) return userType; // fallback to prop if no user data
+
+		const userLevel = currentUser.userLevel;
+		if (userLevel === "Admin") return "admin";
+		if (userLevel === "Registrar") return "registrar";
+		if (userLevel === "Teacher") return "teacher";
+		if (userLevel === "Student") return "student";
+
+		return userType; // fallback to prop
+	};
+
+	const panelType = getPanelType();
 
 	useEffect(() => {
 		const handleClickOutside = (event) => {
@@ -110,7 +125,15 @@ export default function Sidebar({
 										MOGCHS
 									</span>
 									<span className="text-xs text-slate-400">
-										{userType === "admin" ? "Admin Panel" : "Registrar Panel"}
+										{panelType === "admin"
+											? "Admin Panel"
+											: panelType === "registrar"
+											? "Registrar Panel"
+											: panelType === "teacher"
+											? "Teacher Panel"
+											: panelType === "student"
+											? "Student Panel"
+											: "Panel"}
 									</span>
 								</div>
 							</div>
@@ -131,20 +154,20 @@ export default function Sidebar({
 									onClick={() => setShowUserDropdown(!showUserDropdown)}
 									className="flex items-center p-3 space-x-3 w-full rounded-lg transition-colors hover:bg-slate-800"
 								>
-									<div className="flex justify-center items-center w-10 h-10 bg-blue-600 rounded-full">
+									<div className="flex flex-shrink-0 justify-center items-center w-10 h-10 bg-blue-600 rounded-full">
 										<User className="w-5 h-5 text-white" />
 									</div>
-									<div className="flex-1 text-left">
-										<div className="text-sm font-medium text-white">
+									<div className="flex-1 min-w-0 text-left">
+										<div className="text-sm font-medium text-white truncate">
 											{currentUser?.firstname || "User"}{" "}
 											{currentUser?.lastname || "Name"}
 										</div>
-										<div className="text-xs text-slate-400">
+										<div className="text-xs truncate text-slate-400">
 											{currentUser?.email || "user@mogchs.edu.ph"}
 										</div>
 									</div>
 									<ChevronDown
-										className={`w-4 h-4 text-slate-400 transition-transform ${
+										className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${
 											showUserDropdown ? "rotate-180" : ""}`}
 									/>
 								</button>
@@ -157,7 +180,7 @@ export default function Sidebar({
 												{currentUser?.firstname || "User"}{" "}
 												{currentUser?.lastname || "Name"}
 											</div>
-											<div className="text-xs text-slate-400">
+											<div className="text-xs break-all text-slate-400">
 												{currentUser?.email || "user@mogchs.edu.ph"}
 											</div>
 										</div>

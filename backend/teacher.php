@@ -377,6 +377,15 @@ class User {
           $updateStmt->bindParam(':gradeLevelId', $gradeLevelId);
           
           if ($updateStmt->execute()) {
+            // If this is Grade 12 (gradeLevelId = 2), also handle Excel upload to tblstudentdocument
+            if ($gradeLevelId == 2) {
+              $excelResult = $this->handleExcelUploadToStudentDocument($conn, $studentId, $fileName);
+              if (!$excelResult['success']) {
+                // Log the error but don't fail the main operation
+                error_log("Excel upload to student document failed: " . $excelResult['error']);
+              }
+            }
+            
             return json_encode(['success' => true, 'message' => 'SF10 file updated successfully']);
           } else {
             return json_encode(['success' => false, 'error' => 'Failed to update database record']);
@@ -391,6 +400,15 @@ class User {
           $insertStmt->bindParam(':gradeLevelId', $gradeLevelId);
           
           if ($insertStmt->execute()) {
+            // If this is Grade 12 (gradeLevelId = 2), also handle Excel upload to tblstudentdocument
+            if ($gradeLevelId == 2) {
+              $excelResult = $this->handleExcelUploadToStudentDocument($conn, $studentId, $fileName);
+              if (!$excelResult['success']) {
+                // Log the error but don't fail the main operation
+                error_log("Excel upload to student document failed: " . $excelResult['error']);
+              }
+            }
+            
             return json_encode(['success' => true, 'message' => 'SF10 file uploaded successfully']);
           } else {
             return json_encode(['success' => false, 'error' => 'Failed to insert database record']);
@@ -402,6 +420,63 @@ class User {
 
     } catch (Exception $e) {
       return json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    }
+  }
+
+  /**
+   * Handle Excel upload to tblstudentdocument for Grade 12 students
+   */
+  private function handleExcelUploadToStudentDocument($conn, $studentId, $excelFileName)
+  {
+    try {
+      // The Excel file was already uploaded and saved, so we just need to insert/update the record
+      // Get the SF10 document ID (assuming it's ID 5 based on the database dump)
+      $documentId = 5; // SF10 document type
+
+      // Get current user ID
+      $userId = isset($_POST['userId']) ? $_POST['userId'] : null;
+
+      // Check if record already exists in tblstudentdocument
+      $checkSql = "SELECT id FROM tblstudentdocument WHERE studentId = :studentId AND documentId = :documentId";
+      $checkStmt = $conn->prepare($checkSql);
+      $checkStmt->bindParam(':studentId', $studentId);
+      $checkStmt->bindParam(':documentId', $documentId);
+      $checkStmt->execute();
+
+      if ($checkStmt->rowCount() > 0) {
+        // Update existing record
+        $updateSql = "UPDATE tblstudentdocument SET fileName = :fileName, userId = :userId, createdAt = NOW() 
+                      WHERE studentId = :studentId AND documentId = :documentId";
+        $updateStmt = $conn->prepare($updateSql);
+        $updateStmt->bindParam(':fileName', $excelFileName);
+        $updateStmt->bindParam(':userId', $userId);
+        $updateStmt->bindParam(':studentId', $studentId);
+        $updateStmt->bindParam(':documentId', $documentId);
+        
+        if ($updateStmt->execute()) {
+          return ['success' => true, 'message' => 'Excel document updated successfully'];
+        } else {
+          return ['success' => false, 'error' => 'Failed to update Excel document record'];
+        }
+      } else {
+        // Insert new record
+        $insertSql = "INSERT INTO tblstudentdocument (studentId, fileName, documentId, userId, createdAt) 
+                      VALUES (:studentId, :fileName, :documentId, :userId, NOW())";
+        $insertStmt = $conn->prepare($insertSql);
+        $insertStmt->bindParam(':studentId', $studentId);
+        $insertStmt->bindParam(':fileName', $excelFileName);
+        $insertStmt->bindParam(':documentId', $documentId);
+        $insertStmt->bindParam(':userId', $userId);
+        
+        if ($insertStmt->execute()) {
+          return ['success' => true, 'message' => 'Excel document uploaded successfully'];
+        } else {
+          return ['success' => false, 'error' => 'Failed to insert Excel document record'];
+        }
+      }
+
+    } catch (Exception $e) {
+      return ['success' => false, 'error' => 'Excel upload error: ' . $e->getMessage()];
     }
   }
     

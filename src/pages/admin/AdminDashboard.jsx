@@ -370,7 +370,6 @@ export default function AdminDashboard() {
 				handleNavClick={handleNavClick}
 				onLogout={logout}
 				navItems={navItems}
-				userType="admin"
 			/>
 
 			{/* Main Content */}

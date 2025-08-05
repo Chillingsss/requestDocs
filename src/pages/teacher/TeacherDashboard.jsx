@@ -196,7 +196,6 @@ export default function TeacherDashboard() {
 				navItems={navItems}
 				activeSection={activeTab}
 				handleNavClick={handleNavClick}
-				userType="Teacher"
 			/>
 
 			{/* Main Content */}

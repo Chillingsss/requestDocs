@@ -570,6 +570,12 @@ export default function StudentModal({
 									: "Grade 12"}{" "}
 								Only
 							</span>
+							{/* Show dual storage indicator for Grade 12 */}
+							{(teacherGradeLevelId == 2 || teacherGradeLevelId === "2") && (
+								<span className="inline-flex px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:text-green-200 dark:bg-green-900">
+									📊 Dual Storage
+								</span>
+							)}
 						</div>
 						<div className="text-xs text-slate-500 dark:text-slate-400">
 							{teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
@@ -580,6 +586,12 @@ export default function StudentModal({
 								? "Grade 11"
 								: "Grade 12"}{" "}
 							SF10 files
+							{(teacherGradeLevelId == 2 || teacherGradeLevelId === "2") && (
+								<span className="block mt-1 text-green-600 dark:text-green-400">
+									📊 Excel files will be stored in both SF10 records and student
+									documents
+								</span>
+							)}
 						</div>
 
 						{/* Upload Mode Selection */}

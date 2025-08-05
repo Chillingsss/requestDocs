@@ -276,7 +276,6 @@ export default function RegistrarDashboard() {
 				handleNavClick={handleNavClick}
 				onLogout={logout}
 				navItems={navItems}
-				userType="registrar"
 			/>
 
 			{/* Main Content */}

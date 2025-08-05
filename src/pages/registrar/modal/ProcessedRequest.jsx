@@ -341,7 +341,7 @@ export default function ProcessedRequest({
 	return (
 		<>
 			<div className="flex fixed inset-0 z-50 justify-center items-center p-1 backdrop-blur-sm bg-black/50 sm:p-4">
-				<div className="relative w-full max-w-md sm:max-w-2xl lg:max-w-4xl bg-white rounded-lg sm:rounded-xl shadow-2xl max-h-[98vh] sm:max-h-[90vh] overflow-hidden">
+				<div className="relative w-full max-w-md sm:max-w-2xl lg:max-w-4xl bg-white dark:bg-slate-800 rounded-lg sm:rounded-xl shadow-2xl max-h-[98vh] sm:max-h-[90vh] overflow-hidden">
 					{/* Header */}
 					<div className="flex justify-between items-center px-4 py-3 text-white bg-[#5409DA] sm:px-6 sm:py-4">
 						<div className="flex gap-2 items-center sm:gap-3">
@@ -365,40 +365,40 @@ export default function ProcessedRequest({
 							{/* Request Information */}
 							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 								{/* Student Info */}
-								<div className="p-4 rounded-lg bg-slate-50">
+								<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
 									<div className="flex gap-3 items-center mb-3">
-										<User className="w-5 h-5 text-blue-600" />
-										<span className="text-sm font-medium text-slate-600">
+										<User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+										<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
 											Student
 										</span>
 									</div>
-									<p className="text-lg font-semibold break-words text-slate-900">
+									<p className="text-lg font-semibold break-words text-slate-900 dark:text-white">
 										{currentRequest.student}
 									</p>
 								</div>
 
 								{/* Document Info */}
-								<div className="p-4 rounded-lg bg-slate-50">
+								<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
 									<div className="flex gap-3 items-center mb-3">
-										<FileText className="w-5 h-5 text-blue-600" />
-										<span className="text-sm font-medium text-slate-600">
+										<FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+										<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
 											Document
 										</span>
 									</div>
-									<p className="text-lg font-semibold break-words text-slate-900">
+									<p className="text-lg font-semibold break-words text-slate-900 dark:text-white">
 										{currentRequest.document}
 									</p>
 								</div>
 
 								{/* Date Requested */}
-								<div className="p-4 rounded-lg bg-slate-50">
+								<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
 									<div className="flex gap-3 items-center mb-3">
-										<Calendar className="w-5 h-5 text-blue-600" />
-										<span className="text-sm font-medium text-slate-600">
+										<Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+										<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
 											Date Requested
 										</span>
 									</div>
-									<p className="text-lg font-semibold text-slate-900">
+									<p className="text-lg font-semibold text-slate-900 dark:text-white">
 										{currentRequest.dateRequested}
 									</p>
 								</div>
@@ -435,14 +435,14 @@ export default function ProcessedRequest({
 
 							{/* Purpose */}
 							{currentRequest?.purpose && (
-								<div className="p-4 rounded-lg bg-slate-50">
+								<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
 									<div className="flex gap-3 items-center mb-3">
-										<MessageSquare className="w-5 h-5 text-blue-600" />
-										<span className="text-sm font-medium text-slate-600">
+										<MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+										<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
 											Purpose
 										</span>
 									</div>
-									<p className="text-base leading-relaxed break-words text-slate-900">
+									<p className="text-base leading-relaxed break-words text-slate-900 dark:text-white">
 										{currentRequest.purpose}
 									</p>
 								</div>
@@ -458,24 +458,24 @@ export default function ProcessedRequest({
 
 							{/* Diploma Template Info - Show for diploma requests */}
 							{isDiplomaRequest() && (
-								<div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200 border-dashed">
+								<div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200 border-dashed dark:bg-blue-900/20 dark:border-blue-700">
 									<div className="flex gap-3 items-center mb-3">
-										<FileText className="w-5 h-5 text-blue-600" />
-										<span className="text-sm font-medium text-blue-700">
+										<FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+										<span className="text-sm font-medium text-blue-700 dark:text-blue-300">
 											Diploma Template Ready
 										</span>
 									</div>
-									<div className="mb-2 text-sm text-blue-600">
+									<div className="mb-2 text-sm text-blue-600 dark:text-blue-400">
 										A diploma template will be generated for this student. Click
 										"Generate Diploma Template" to review and edit the student
 										information before processing.
 									</div>
 									{studentInfo && (
-										<div className="p-3 mt-3 bg-white rounded border border-blue-200">
-											<div className="mb-2 text-xs font-medium text-blue-600">
+										<div className="p-3 mt-3 bg-white rounded border border-blue-200 dark:bg-slate-800 dark:border-blue-600">
+											<div className="mb-2 text-xs font-medium text-blue-600 dark:text-blue-400">
 												Current Student Information:
 											</div>
-											<div className="grid grid-cols-2 gap-2 text-xs">
+											<div className="grid grid-cols-2 gap-2 text-xs text-slate-900 dark:text-white">
 												<div>
 													<span className="font-medium">Name:</span>{" "}
 													{studentInfo.firstname} {studentInfo.middlename}{" "}
@@ -518,11 +518,11 @@ export default function ProcessedRequest({
 					</div>
 
 					{/* Actions Footer */}
-					<div className="flex flex-col gap-3 px-4 py-4 border-t sm:flex-row sm:px-6 bg-slate-50 border-slate-200">
+					<div className="flex flex-col gap-3 px-4 py-4 border-t sm:flex-row sm:px-6 bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600">
 						{/* Warning message when documents are missing */}
 						{buttonConfig.reason && (
-							<div className="flex gap-2 items-center p-3 text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-200">
-								<span className="text-amber-600">⚠️</span>
+							<div className="flex gap-2 items-center p-3 text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-200 dark:text-amber-300 dark:bg-amber-900/20 dark:border-amber-700">
+								<span className="text-amber-600 dark:text-amber-400">⚠️</span>
 								<span>{buttonConfig.reason}</span>
 							</div>
 						)}
@@ -543,7 +543,7 @@ export default function ProcessedRequest({
 							<Button
 								onClick={onClose}
 								variant="outline"
-								className="py-3 w-full text-base font-medium sm:flex-1"
+								className="py-3 w-full text-base font-medium sm:flex-1 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600"
 							>
 								Cancel
 							</Button>
