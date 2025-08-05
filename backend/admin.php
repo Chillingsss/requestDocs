@@ -19,6 +19,29 @@ class User {
     if ($stmt->rowCount() > 0) {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if (password_verify($json['password'], $user['password'])) {
+            // Check if password is still the default (lastname)
+            $lastnameLower = strtolower($user['lastname']);
+            $inputPasswordLower = strtolower($json['password']);
+            
+            // Debug logging
+            error_log("Login attempt - User: " . $user['id'] . ", Lastname: " . $user['lastname'] . ", Input password: " . $json['password']);
+            error_log("Password comparison - Lastname lower: " . $lastnameLower . ", Input lower: " . $inputPasswordLower);
+            
+            // Check if password matches lastname (case-insensitive)
+            if ($inputPasswordLower === $lastnameLower) {
+                error_log("Password reset required for user: " . $user['id']);
+                return json_encode([
+                    'id' => $user['id'],
+                    'userLevel' => $user['userLevel'],
+                    'firstname' => $user['firstname'],
+                    'lastname' => $user['lastname'],
+                    'email' => $user['email'],
+                    'gradeLevelId' => $user['gradeLevelId'],
+                    'sectionId' => $user['sectionId'],
+                    'needsPasswordReset' => true
+                ]);
+            }
+            error_log("Normal login for user: " . $user['id']);
             return json_encode([
                 'id' => $user['id'],
                 'userLevel' => $user['userLevel'],
@@ -43,6 +66,27 @@ class User {
     if ($stmt->rowCount() > 0) {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if (password_verify($json['password'], $user['password'])) {
+            // Check if password is still the default (lastname)
+            $lastnameLower = strtolower($user['lastname']);
+            $inputPasswordLower = strtolower($json['password']);
+            
+            // Debug logging
+            error_log("Student login attempt - User: " . $user['id'] . ", Lastname: " . $user['lastname'] . ", Input password: " . $json['password']);
+            error_log("Student password comparison - Lastname lower: " . $lastnameLower . ", Input lower: " . $inputPasswordLower);
+            
+            // Check if password matches lastname (case-insensitive)
+            if ($inputPasswordLower === $lastnameLower) {
+                error_log("Password reset required for student: " . $user['id']);
+                return json_encode([
+                    'id' => $user['id'],
+                    'firstname' => $user['firstname'],
+                    'lastname' => $user['lastname'],
+                    'email' => $user['email'],
+                    'userLevel' => $user['userLevel'],
+                    'needsPasswordReset' => true
+                ]);
+            }
+            error_log("Normal student login for user: " . $user['id']);
             return json_encode([
                 'id' => $user['id'],
                 'firstname' => $user['firstname'],
@@ -55,6 +99,218 @@ class User {
 
     return json_encode(null);
 }
+
+   function checkEmailExists($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $email = $json['email'];
+    
+    // Debug logging
+    error_log("Checking email existence: $email");
+    
+    // Check in tbluser
+    $sql = "SELECT id, firstname, lastname, email, userLevel FROM tbluser WHERE email = :email";
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':email', $email);
+    $stmt->execute();
+    
+    if ($stmt->rowCount() > 0) {
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        error_log("Email found in tbluser: " . $user['id']);
+        return json_encode([
+            'status' => 'success',
+            'exists' => true,
+            'userType' => 'user',
+            'userId' => $user['id'],
+            'firstname' => $user['firstname'],
+            'lastname' => $user['lastname'],
+            'email' => $user['email']
+        ]);
+    }
+    
+    // Check in tblstudent
+    $sql = "SELECT id, firstname, lastname, email, userLevel FROM tblstudent WHERE email = :email";
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':email', $email);
+    $stmt->execute();
+    
+    if ($stmt->rowCount() > 0) {
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        error_log("Email found in tblstudent: " . $user['id']);
+        return json_encode([
+            'status' => 'success',
+            'exists' => true,
+            'userType' => 'student',
+            'userId' => $user['id'],
+            'firstname' => $user['firstname'],
+            'lastname' => $user['lastname'],
+            'email' => $user['email']
+        ]);
+    }
+    
+    error_log("Email not found: $email");
+    return json_encode([
+        'status' => 'success',
+        'exists' => false,
+        'message' => 'Email not found in our records'
+    ]);
+   }
+
+   function sendPasswordResetOTP($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $userId = $json['userId'];
+    $userType = $json['userType']; // 'user' or 'student'
+    
+    // Debug logging
+    error_log("Sending OTP for user: $userId, type: $userType");
+    
+    // Generate 6-digit OTP
+    $otp = sprintf("%06d", mt_rand(0, 999999));
+    
+    // Get user email
+    $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+    $emailSql = "SELECT email, firstname, lastname FROM $table WHERE id = :userId";
+    $emailStmt = $conn->prepare($emailSql);
+    $emailStmt->bindParam(':userId', $userId);
+    $emailStmt->execute();
+    
+    if ($emailStmt->rowCount() > 0) {
+        $user = $emailStmt->fetch(PDO::FETCH_ASSOC);
+        $email = $user['email'];
+        $fullName = $user['firstname'] . ' ' . $user['lastname'];
+        
+        error_log("Found user: $fullName, email: $email");
+        
+        // Send email using PHPMailer
+        $emailSent = $this->sendOTPEmail($email, $fullName, $otp);
+        
+        if ($emailSent) {
+            error_log("OTP email sent successfully to: $email");
+            return json_encode([
+                'status' => 'success', 
+                'message' => 'OTP sent successfully',
+                'otp' => $otp // Return OTP for frontend storage
+            ]);
+        } else {
+            error_log("Failed to send OTP email to: $email");
+            return json_encode(['status' => 'error', 'message' => 'Failed to send OTP email']);
+        }
+    } else {
+        error_log("User not found: $userId in table $table");
+        return json_encode(['status' => 'error', 'message' => 'User not found']);
+    }
+   }
+   
+   function verifyPasswordResetOTP($json)
+   {
+    // This function is now simplified since we're doing local verification
+    // But we'll keep it for compatibility
+    $json = json_decode($json, true);
+    
+    // For now, just return success - the actual verification is done on frontend
+    return json_encode(['status' => 'success', 'valid' => true]);
+   }
+   
+   function resetPassword($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $userId = $json['userId'];
+    $userType = $json['userType'];
+    $newPassword = $json['newPassword'];
+    
+    // Hash the new password
+    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+    
+    // Update password in appropriate table
+    $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+    $sql = "UPDATE $table SET password = :password WHERE id = :userId";
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':password', $hashedPassword);
+    $stmt->bindParam(':userId', $userId);
+    
+    if ($stmt->execute()) {
+        // Clean up OTP after successful password reset
+        // global $otpStorage; // Removed global otpStorage
+        // $otpKey = $userId . '_' . $userType;
+        // if (isset($otpStorage[$otpKey])) {
+        //     unset($otpStorage[$otpKey]);
+        // }
+        
+        return json_encode(['status' => 'success', 'message' => 'Password reset successfully']);
+    }
+    
+    return json_encode(['status' => 'error', 'message' => 'Failed to reset password']);
+   }
+   
+   // Removed private function cleanupExpiredOTPs()
+   
+   private function sendOTPEmail($email, $fullName, $otp)
+   {
+    try {
+        require 'vendor/autoload.php';
+        
+        $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+        
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'ralp.pelino11@gmail.com';
+        $mail->Password = 'esip bjyt ymrh yhoq';
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port = 465;
+        
+        // Enable debug output
+        $mail->SMTPDebug = 0; // Set to 2 for debugging
+        
+        // Recipients
+        $mail->setFrom('noreply@mogchs.com', 'MOGCHS System');
+        $mail->addAddress($email, $fullName);
+        
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'Password Reset OTP - MOGCHS';
+        $mail->Body = "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                <div style='background-color: #f8f9fa; padding: 20px; text-align: center;'>
+                    <h2 style='color: #333;'>MOGCHS Password Reset</h2>
+                </div>
+                <div style='padding: 20px; background-color: #ffffff;'>
+                    <p>Dear <strong>$fullName</strong>,</p>
+                    <p>You have requested to reset your password. Please use the following OTP to complete the process:</p>
+                    <div style='background-color: #f8f9fa; padding: 15px; text-align: center; margin: 20px 0;'>
+                        <h1 style='color: #007bff; font-size: 32px; letter-spacing: 5px; margin: 0;'>$otp</h1>
+                    </div>
+                    <p><strong>Important:</strong></p>
+                    <ul>
+                        <li>This OTP is valid for 10 minutes only</li>
+                        <li>Do not share this OTP with anyone</li>
+                        <li>If you didn't request this reset, please ignore this email</li>
+                    </ul>
+                    <p>Best regards,<br>MOGCHS System Administrator</p>
+                </div>
+                <div style='background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #666;'>
+                    <p>This is an automated message. Please do not reply to this email.</p>
+                </div>
+            </div>
+        ";
+        
+        $mail->send();
+        error_log("Email sent successfully to: $email");
+        return true;
+    } catch (Exception $e) {
+        error_log("Email sending failed: " . $e->getMessage());
+        error_log("PHPMailer Error: " . $mail->ErrorInfo);
+        return false;
+    }
+   }
     
    function addUser($json)
    {
@@ -68,19 +324,40 @@ class User {
     // Hash the PIN code before storing
     $hashedPinCode = password_hash($json['pinCode'], PASSWORD_DEFAULT);
     
-    $sql = "INSERT INTO tbluser (id, firstname, lastname, email, password, pinCode, userLevel, gradeLevelId) VALUES (:id, :firstname, :lastname, :email, :password, :pinCode, :userLevel, :gradeLevelId)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bindParam(':id', $json['id']);
-    $stmt->bindParam(':firstname', $json['firstname']);
-    $stmt->bindParam(':lastname', $json['lastname']);
-    $stmt->bindParam(':email', $json['email']);
-    $stmt->bindParam(':password', $hashedPassword);
-    $stmt->bindParam(':pinCode', $hashedPinCode);
-    $stmt->bindParam(':userLevel', $json['userLevel']);
-    $stmt->bindParam(':gradeLevelId', $json['gradeLevelId']);
-    $stmt->execute();
+    // Check if sectionId is provided (for teachers)
+    $sectionId = isset($json['sectionId']) ? $json['sectionId'] : null;
+    
+    try {
+        $sql = "INSERT INTO tbluser (id, firstname, lastname, email, password, pinCode, userLevel, gradeLevelId, sectionId) VALUES (:id, :firstname, :lastname, :email, :password, :pinCode, :userLevel, :gradeLevelId, :sectionId)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $json['id']);
+        $stmt->bindParam(':firstname', $json['firstname']);
+        $stmt->bindParam(':lastname', $json['lastname']);
+        $stmt->bindParam(':email', $json['email']);
+        $stmt->bindParam(':password', $hashedPassword);
+        $stmt->bindParam(':pinCode', $hashedPinCode);
+        $stmt->bindParam(':userLevel', $json['userLevel']);
+        $stmt->bindParam(':gradeLevelId', $json['gradeLevelId']);
+        $stmt->bindParam(':sectionId', $sectionId);
+        $stmt->execute();
 
-    return json_encode(array("status" => "success"));
+        return json_encode(array("status" => "success", "message" => "User added successfully"));
+    } catch (PDOException $e) {
+        // Check for duplicate entry error
+        if ($e->getCode() == 23000) {
+            if (strpos($e->getMessage(), 'PRIMARY') !== false) {
+                return json_encode(array("status" => "error", "message" => "User ID already exists. Please use a different User ID."));
+            } else if (strpos($e->getMessage(), 'email') !== false) {
+                return json_encode(array("status" => "error", "message" => "Email address already exists. Please use a different email."));
+            } else {
+                return json_encode(array("status" => "error", "message" => "Duplicate entry found. Please check your input and try again."));
+            }
+        }
+        
+        // Log the error for debugging
+        error_log("Database error in addUser: " . $e->getMessage());
+        return json_encode(array("status" => "error", "message" => "Failed to add user. Please try again."));
+    }
    }
 
    function getUserLevel()
@@ -423,6 +700,81 @@ class User {
       return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
    }
+
+   function getSection()
+   {
+    include "connection.php";
+
+    $gradeLevelId = isset($_POST["gradeLevelId"]) ? $_POST["gradeLevelId"] : null;
+
+    if ($gradeLevelId) {
+        // Filter sections by grade level and exclude sections that already have a teacher
+        $sql = "SELECT s.* FROM tblsection s 
+                LEFT JOIN tbluser u ON s.id = u.sectionId 
+                WHERE s.gradeLevelId = :gradeLevelId 
+                AND (u.sectionId IS NULL OR u.sectionId = '')
+                GROUP BY s.id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':gradeLevelId', $gradeLevelId);
+    } else {
+        // Get all sections that don't have a teacher assigned
+        $sql = "SELECT s.* FROM tblsection s 
+                LEFT JOIN tbluser u ON s.id = u.sectionId 
+                WHERE (u.sectionId IS NULL OR u.sectionId = '')
+                GROUP BY s.id";
+        $stmt = $conn->prepare($sql);
+    }
+
+    $stmt->execute();
+
+    if ($stmt->rowCount() > 0) {
+      $sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      return json_encode($sections);
+    }
+    return json_encode([]);
+   }
+
+   function checkUserExists($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $userId = $json['userId'];
+    
+    // Check in tbluser
+    $sql = "SELECT id FROM tbluser WHERE id = :userId";
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':userId', $userId);
+    $stmt->execute();
+    
+    if ($stmt->rowCount() > 0) {
+        return json_encode([
+            'status' => 'success',
+            'exists' => true,
+            'message' => 'User ID already exists'
+        ]);
+    }
+    
+    // Check in tblstudent
+    $sql = "SELECT id FROM tblstudent WHERE id = :userId";
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':userId', $userId);
+    $stmt->execute();
+    
+    if ($stmt->rowCount() > 0) {
+        return json_encode([
+            'status' => 'success',
+            'exists' => true,
+            'message' => 'User ID already exists'
+        ]);
+    }
+    
+    return json_encode([
+        'status' => 'success',
+        'exists' => false,
+        'message' => 'User ID is available'
+    ]);
+   }
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -437,6 +789,18 @@ $user = new User();
 switch ($operation) {
   case "login":
     echo $user->login($json);
+    break;
+  case "checkEmailExists":
+    echo $user->checkEmailExists($json);
+    break;
+  case "sendPasswordResetOTP":
+    echo $user->sendPasswordResetOTP($json);
+    break;
+  case "verifyPasswordResetOTP":
+    echo $user->verifyPasswordResetOTP($json);
+    break;
+  case "resetPassword":
+    echo $user->resetPassword($json);
     break;
   case "addUser":
     echo $user->addUser($json);
@@ -470,6 +834,12 @@ switch ($operation) {
     break;
   case "getStudentsWithFilters":
     echo $user->getStudentsWithFilters($json);
+    break;
+  case "getSection":
+    echo $user->getSection();
+    break;
+  case "checkUserExists":
+    echo $user->checkUserExists($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

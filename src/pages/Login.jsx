@@ -10,6 +10,8 @@ import CryptoJS from "crypto-js";
 import Cookies from "js-cookie";
 import { loginUser } from "../utils/security";
 import PinVerification from "../components/PinVerification";
+import PasswordReset from "../components/PasswordReset";
+import ForgotPassword from "../components/ForgotPassword";
 import Captcha from "../components/Captcha";
 import ThemeToggle from "../components/ThemeToggle";
 import toast, { Toaster } from "react-hot-toast";
@@ -22,6 +24,8 @@ export default function LoginPage() {
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [showPinVerification, setShowPinVerification] = useState(false);
+	const [showPasswordReset, setShowPasswordReset] = useState(false);
+	const [showForgotPassword, setShowForgotPassword] = useState(false);
 	const [pendingUser, setPendingUser] = useState(null);
 	const [error, setError] = useState("");
 	const [showCaptcha, setShowCaptcha] = useState(false);
@@ -97,6 +101,52 @@ export default function LoginPage() {
 		toast.error("Login cancelled");
 	};
 
+	const handlePasswordReset = () => {
+		// Password reset completed, go back to login
+		setShowPasswordReset(false);
+		setPendingUser(null);
+		setIsLoading(false);
+		// Reset form state
+		setShowCaptcha(false);
+		setCaptchaVerified(false);
+		setCaptchaError("");
+		setUsername("");
+		setPassword("");
+		setError("");
+		toast.success(
+			"Password reset completed. Please login with your new password."
+		);
+	};
+
+	const handlePasswordResetCancel = () => {
+		setShowPasswordReset(false);
+		setPendingUser(null);
+		setIsLoading(false);
+		// Reset form state
+		setShowCaptcha(false);
+		setCaptchaVerified(false);
+		setCaptchaError("");
+		toast.error("Password reset cancelled");
+	};
+
+	const handleForgotPassword = () => {
+		setShowForgotPassword(true);
+	};
+
+	const handleBackToLogin = () => {
+		setShowForgotPassword(false);
+		setShowPasswordReset(false);
+		setPendingUser(null);
+		setIsLoading(false);
+		// Reset form state
+		setShowCaptcha(false);
+		setCaptchaVerified(false);
+		setCaptchaError("");
+		setUsername("");
+		setPassword("");
+		setError("");
+	};
+
 	const handleSubmit = async (event) => {
 		event.preventDefault();
 
@@ -130,26 +180,44 @@ export default function LoginPage() {
 			const user = await loginUser(username, password);
 			console.log("user", user);
 
-			if (user && user.userLevel === "Admin") {
+			// Debug logging
+			console.log("Login response:", user);
+			console.log("needsPasswordReset:", user?.needsPasswordReset);
+			console.log("userLevel:", user?.userLevel);
+
+			if (user && user.needsPasswordReset) {
+				// User needs password reset
+				console.log("Redirecting to password reset");
+				setPendingUser(user);
+				setShowPasswordReset(true);
+				setIsLoading(false);
+				toast.success(
+					"Password reset required. Please check your email for OTP."
+				);
+			} else if (user && user.userLevel === "Admin") {
 				// Admin needs PIN verification
+				console.log("Redirecting to PIN verification for Admin");
 				setPendingUser(user);
 				setShowPinVerification(true);
 				setIsLoading(false);
 				toast.success("Login successful! Please enter your PIN.");
 			} else if (user && user.userLevel === "Registrar") {
 				// Registrar needs PIN verification
+				console.log("Redirecting to PIN verification for Registrar");
 				setPendingUser(user);
 				setShowPinVerification(true);
 				setIsLoading(false);
 				toast.success("Login successful! Please enter your PIN.");
 			} else if (user && user.userLevel === "Teacher") {
 				// Teacher needs PIN verification
+				console.log("Redirecting to PIN verification for Teacher");
 				setPendingUser(user);
 				setShowPinVerification(true);
 				setIsLoading(false);
 				toast.success("Login successful! Please enter your PIN.");
 			} else if (user && user.userLevel === "Student") {
 				// Student goes directly to dashboard (no PIN required)
+				console.log("Redirecting to Student Dashboard");
 				const encrypted = CryptoJS.AES.encrypt(
 					JSON.stringify(user),
 					SECRET_KEY
@@ -159,6 +227,7 @@ export default function LoginPage() {
 				navigate("/StudentDashboard");
 			} else {
 				// Invalid credentials - reset everything
+				console.log("Login failed - invalid credentials");
 				setError(
 					"Invalid credentials or unauthorized access. Please check your username and password."
 				);
@@ -179,6 +248,30 @@ export default function LoginPage() {
 			setIsLoading(false);
 		}
 	};
+
+	// Show password reset screen if needed
+	if (showPasswordReset && pendingUser) {
+		return (
+			<>
+				<Toaster position="top-right" />
+				<PasswordReset
+					user={pendingUser}
+					onPasswordReset={handlePasswordReset}
+					onCancel={handlePasswordResetCancel}
+				/>
+			</>
+		);
+	}
+
+	// Show forgot password screen if needed
+	if (showForgotPassword) {
+		return (
+			<>
+				<Toaster position="top-right" />
+				<ForgotPassword onBackToLogin={handleBackToLogin} />
+			</>
+		);
+	}
 
 	// Show PIN verification screen if needed
 	if (showPinVerification && pendingUser) {
@@ -304,6 +397,10 @@ export default function LoginPage() {
 									</Label>
 									<a
 										href="#"
+										onClick={(e) => {
+											e.preventDefault();
+											handleForgotPassword();
+										}}
 										className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
 									>
 										Forgot your password?

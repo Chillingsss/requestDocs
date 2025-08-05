@@ -71,6 +71,78 @@ export async function verifyPin(userId, pin) {
 	}
 }
 
+export async function checkEmailExists(email) {
+	const formData = new FormData();
+	formData.append("operation", "checkEmailExists");
+	formData.append("json", JSON.stringify({ email }));
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function sendPasswordResetOTP(userId, userType) {
+	const formData = new FormData();
+	formData.append("operation", "sendPasswordResetOTP");
+	formData.append("json", JSON.stringify({ userId, userType }));
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function verifyPasswordResetOTP(userId, userType, otp) {
+	const formData = new FormData();
+	formData.append("operation", "verifyPasswordResetOTP");
+	formData.append("json", JSON.stringify({ userId, userType, otp }));
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function resetPassword(userId, userType, newPassword) {
+	const formData = new FormData();
+	formData.append("operation", "resetPassword");
+	formData.append("json", JSON.stringify({ userId, userType, newPassword }));
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 export async function getGradeLevel() {
 	const formData = new FormData();
 	formData.append("operation", "getGradelevel");
@@ -181,6 +253,43 @@ export async function getStudentsWithFilters(
 	if (schoolYearId) filters.schoolYearId = schoolYearId;
 
 	formData.append("json", JSON.stringify(filters));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getSection(gradeLevelId = null) {
+	const formData = new FormData();
+	formData.append("operation", "getSection");
+
+	if (gradeLevelId) {
+		formData.append("gradeLevelId", gradeLevelId);
+	}
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function checkUserExists(userId) {
+	const formData = new FormData();
+	formData.append("operation", "checkUserExists");
+	formData.append("json", JSON.stringify({ userId }));
 
 	const apiUrl = getDecryptedApiUrl();
 
