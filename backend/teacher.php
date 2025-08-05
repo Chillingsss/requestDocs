@@ -36,12 +36,14 @@ class User {
               b.fileName, 
               c.name as teacherGradeLevel,
               d.name as sectionName,
-              e.name as sectionGradeLevel
+              e.name as sectionGradeLevel,
+              f.name as actualTeacherGradeLevel
             FROM tblstudent a 
             LEFT JOIN tblsfrecord b ON a.id = b.studentId
             LEFT JOIN tblgradelevel c ON b.gradeLevelId = c.id
             INNER JOIN tblsection d ON a.sectionId = d.id
             LEFT JOIN tblgradelevel e ON d.gradeLevelId = e.id
+            LEFT JOIN tblgradelevel f ON f.id = :teacherGradeLevelId
             WHERE 1=1";
 
     // Add grade level filter if teacher's grade level is provided
@@ -77,12 +79,14 @@ class User {
     $sql = "SELECT DISTINCT 
               d.name as sectionName, 
               c.name as teacherGradeLevel,
-              e.name as sectionGradeLevel
+              e.name as sectionGradeLevel,
+              f.name as actualTeacherGradeLevel
             FROM tblstudent a 
             LEFT JOIN tblsfrecord b ON a.id = b.studentId
             LEFT JOIN tblgradelevel c ON b.gradeLevelId = c.id
             INNER JOIN tblsection d ON a.sectionId = d.id
             LEFT JOIN tblgradelevel e ON d.gradeLevelId = e.id
+            LEFT JOIN tblgradelevel f ON f.id = :teacherGradeLevelId
             WHERE (c.name IS NOT NULL OR e.name IS NOT NULL)";
 
     // Add grade level filter if teacher's grade level is provided

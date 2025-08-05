@@ -206,6 +206,18 @@ if ($operation === 'savePreviewedStudents') {
                 continue;
             }
             
+            // Get the section's grade level ID
+            $sectionGradeLevelId = 1; // Default to Grade 11
+            $sectionSql = "SELECT gradeLevelId FROM tblsection WHERE id = :sectionId";
+            $sectionStmt = $conn->prepare($sectionSql);
+            $sectionStmt->bindParam(':sectionId', $sectionId);
+            $sectionStmt->execute();
+            
+            if ($sectionStmt->rowCount() > 0) {
+                $sectionResult = $sectionStmt->fetch(PDO::FETCH_ASSOC);
+                $sectionGradeLevelId = $sectionResult['gradeLevelId'] ?? 1;
+            }
+            
             // Insert student data with schoolyearId
             $sql = "INSERT INTO tblstudent (
                 id, firstname, middlename, lastname, lrn, email, password, 
@@ -253,7 +265,7 @@ if ($operation === 'savePreviewedStudents') {
                 $sfRecordStmt = $conn->prepare($sfRecordSql);
                 $sfRecordStmt->bindParam(':fileName', $studentFileName); // Using the personalized fileName
                 $sfRecordStmt->bindParam(':studentId', $lrn); // Using LRN as studentId
-                $sfRecordStmt->bindParam(':gradeLevelId', $defaultGradeLevelId);
+                $sfRecordStmt->bindParam(':gradeLevelId', $sectionGradeLevelId); // Use section's grade level ID
                 $sfRecordStmt->bindParam(':userId', $importUserId);
                 
                 if ($sfRecordStmt->execute()) {

@@ -123,10 +123,13 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 				}
 			}
 
-			// Group sections by grade level (combine teacher and section grade levels)
+			// Group sections by grade level (use actual teacher grade level)
 			const grouped = sectionsData.reduce((acc, item) => {
-				// Use teacher grade level if available, otherwise use section grade level
-				const gradeLevel = item.teacherGradeLevel || item.sectionGradeLevel;
+				// Use actual teacher grade level if available, otherwise use section grade level
+				const gradeLevel =
+					item.actualTeacherGradeLevel ||
+					item.teacherGradeLevel ||
+					item.sectionGradeLevel;
 				if (gradeLevel && !acc[gradeLevel]) {
 					acc[gradeLevel] = [];
 				}
@@ -256,7 +259,8 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 				lrn: record.lrn,
 				email: record.email,
 				sectionName: record.sectionName,
-				teacherGradeLevel: record.teacherGradeLevel,
+				teacherGradeLevel:
+					record.actualTeacherGradeLevel || record.teacherGradeLevel,
 				sectionGradeLevel: record.sectionGradeLevel,
 				files: [],
 			};
@@ -264,7 +268,7 @@ export default function StudentFileManagement({ teacherGradeLevelId }) {
 		if (record.fileName && record.fileName.trim() !== "") {
 			acc[id].files.push({
 				fileName: record.fileName,
-				sfType: record.teacherGradeLevel, // This is the Teacher's Grade Level (Grade 11 or Grade 12)
+				sfType: record.actualTeacherGradeLevel || record.teacherGradeLevel, // This is the Teacher's Grade Level (Grade 11 or Grade 12)
 			});
 		}
 		return acc;

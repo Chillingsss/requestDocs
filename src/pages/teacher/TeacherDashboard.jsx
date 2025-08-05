@@ -123,7 +123,8 @@ export default function TeacherDashboard() {
 				lastname: record.lastname,
 				email: record.email,
 				sectionName: record.sectionName,
-				teacherGradeLevel: record.teacherGradeLevel,
+				teacherGradeLevel:
+					record.actualTeacherGradeLevel || record.teacherGradeLevel,
 				sectionGradeLevel: record.sectionGradeLevel,
 				files: [],
 			};
@@ -131,7 +132,7 @@ export default function TeacherDashboard() {
 		if (record.fileName && record.fileName.trim() !== "") {
 			acc[id].files.push({
 				fileName: record.fileName,
-				sfType: record.teacherGradeLevel, // This is the Teacher's Grade Level (Grade 11 or Grade 12)
+				sfType: record.actualTeacherGradeLevel || record.teacherGradeLevel, // This is the Teacher's Grade Level (Grade 11 or Grade 12)
 			});
 		}
 		return acc;
