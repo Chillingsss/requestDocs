@@ -19,7 +19,6 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 		lastname: "",
 		email: "",
 		password: "",
-		pinCode: "",
 		userLevel: "",
 	});
 	const [userLevels, setUserLevels] = useState([]);
@@ -156,18 +155,6 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 				newData.password = value;
 			}
 
-			// Auto-generate PIN code from last 4 digits of User ID
-			if (name === "id") {
-				const lastFourDigits = value.slice(-4);
-				// Check if we have exactly 4 digits and they are all numeric
-				if (lastFourDigits.length === 4 && /^\d{4}$/.test(lastFourDigits)) {
-					newData.pinCode = lastFourDigits;
-				} else {
-					// If User ID is less than 4 characters or doesn't end with 4 digits, clear PIN
-					newData.pinCode = "";
-				}
-			}
-
 			// Reset gradeLevel if userLevel changes and is not Teacher
 			if (name === "userLevel" && value !== getTeacherLevelId()) {
 				newData.gradeLevel = "";
@@ -184,16 +171,8 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 	};
 
 	const validateForm = () => {
-		const {
-			id,
-			firstname,
-			lastname,
-			email,
-			pinCode,
-			userLevel,
-			gradeLevel,
-			sectionId,
-		} = formData;
+		const { id, firstname, lastname, email, userLevel, gradeLevel, sectionId } =
+			formData;
 
 		if (!id.trim()) {
 			toast.error("User ID is required");
@@ -223,16 +202,6 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 			toast.error("Please enter a valid email address");
 			return false;
 		}
-		if (!pinCode.trim()) {
-			toast.error(
-				"PIN Code is required. Please ensure User ID ends with 4 digits."
-			);
-			return false;
-		}
-		if (!/^\d{4}$/.test(pinCode)) {
-			toast.error("PIN Code must be exactly 4 digits");
-			return false;
-		}
 		if (!userLevel) {
 			toast.error("User level is required");
 			return false;
@@ -253,16 +222,8 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 	};
 
 	const isFormValid = () => {
-		const {
-			id,
-			firstname,
-			lastname,
-			email,
-			pinCode,
-			userLevel,
-			gradeLevel,
-			sectionId,
-		} = formData;
+		const { id, firstname, lastname, email, userLevel, gradeLevel, sectionId } =
+			formData;
 
 		// Check if all required fields are filled
 		const basicFieldsValid =
@@ -271,8 +232,6 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 			lastname.trim() &&
 			email.trim() &&
 			email.includes("@") &&
-			pinCode.trim() &&
-			/^\d{4}$/.test(pinCode) &&
 			userLevel;
 
 		// Check User ID validation
@@ -300,7 +259,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 
 			const userData = {
 				...formData,
-				pinCode: parseInt(formData.pinCode),
+				pinCode: formData.id.slice(-4), // Generate PIN from last 4 digits of User ID as string
 			};
 			// Only include gradeLevelId and sectionId if Teacher
 			if (formData.userLevel === String(getTeacherLevelId())) {
@@ -333,7 +292,6 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 					lastname: "",
 					email: "",
 					password: "",
-					pinCode: "",
 					userLevel: "",
 				});
 
@@ -361,7 +319,6 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 			lastname: "",
 			email: "",
 			password: "",
-			pinCode: "",
 			userLevel: "",
 		});
 		onClose();
@@ -441,15 +398,6 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 									>
 										{userIdValidation.message}
 									</p>
-								)}
-
-								{formData.pinCode && (
-									<div className="flex items-center space-x-2 text-xs text-green-600 dark:text-green-400">
-										<Lock className="w-3 h-3" />
-										<span>
-											PIN Code generated: {"*".repeat(formData.pinCode.length)}
-										</span>
-									</div>
 								)}
 							</div>
 							<div className="space-y-2">
@@ -640,6 +588,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 										• Password: Automatically set to the user's last name
 										<br />
 										• PIN Code: Auto-generated from the last 4 digits of User ID
+										when form is submitted
 										<br />
 										Users can change both after their first login.
 									</p>
