@@ -6,6 +6,8 @@ import toast from "react-hot-toast";
 import StudentImport from "../../../components/StudentImport";
 import { getStudent } from "../../../utils/teacher";
 import { getSection } from "../../../utils/registrar";
+import { getStrands } from "../../../utils/registrar";
+import { getSchoolYear } from "../../../utils/registrar";
 
 export default function StudentsTab() {
 	const [students, setStudents] = useState([]);
@@ -20,22 +22,28 @@ export default function StudentsTab() {
 
 	// Filter state
 	const [selectedSection, setSelectedSection] = useState("");
+	const [strands, setStrands] = useState([]);
+	const [selectedStrand, setSelectedStrand] = useState("");
+	const [schoolYears, setSchoolYears] = useState([]);
+	const [selectedSchoolYear, setSelectedSchoolYear] = useState("");
 
 	// Fetch students and sections when component mounts
 	useEffect(() => {
 		fetchStudents();
 		fetchSections();
+		fetchStrands();
+		fetchSchoolYears();
 	}, []);
 
-	// Apply section filter when selectedSection changes
+	// Apply section filter when selectedSection, selectedStrand, or selectedSchoolYear changes
 	useEffect(() => {
 		applyFilters();
-	}, [students, selectedSection]);
+	}, [students, selectedSection, selectedStrand, selectedSchoolYear]);
 
 	// Reset to page 1 when filters change
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [selectedSection]);
+	}, [selectedSection, selectedStrand, selectedSchoolYear]);
 
 	const fetchStudents = async () => {
 		setStudentsLoading(true);
@@ -77,6 +85,41 @@ export default function StudentsTab() {
 		}
 	};
 
+	const fetchStrands = async () => {
+		try {
+			const data = await getStrands();
+			let strandsArray = data;
+			if (typeof data === "string") {
+				try {
+					strandsArray = JSON.parse(data);
+				} catch (e) {
+					strandsArray = [];
+				}
+			}
+			setStrands(Array.isArray(strandsArray) ? strandsArray : []);
+		} catch (error) {
+			toast.error("Failed to load strands");
+		}
+	};
+
+	const fetchSchoolYears = async () => {
+		try {
+			const data = await getSchoolYear();
+			let schoolYearsArray = data;
+			if (typeof data === "string") {
+				try {
+					schoolYearsArray = JSON.parse(data);
+				} catch (e) {
+					schoolYearsArray = [];
+				}
+			}
+			setSchoolYears(Array.isArray(schoolYearsArray) ? schoolYearsArray : []);
+		} catch (error) {
+			console.error("Error fetching school years:", error);
+			toast.error("Failed to load school years");
+		}
+	};
+
 	const applyFilters = () => {
 		let filtered = [...students];
 
@@ -84,9 +127,41 @@ export default function StudentsTab() {
 		if (selectedSection && selectedSection !== "") {
 			filtered = filtered.filter(
 				(student) =>
-					student.name === selectedSection ||
+					student.sectionName === selectedSection ||
 					student.sectionId === selectedSection
 			);
+		}
+		// Apply strand filter
+		if (selectedStrand && selectedStrand !== "") {
+			console.log("Filtering by strand:", selectedStrand);
+			console.log(
+				"Available students:",
+				students.map((s) => ({
+					id: s.id,
+					strandId: s.strandId,
+					strand: s.strand,
+				}))
+			);
+			filtered = filtered.filter((student) => {
+				const matches =
+					student.strandId == selectedStrand ||
+					student.strand === selectedStrand;
+				console.log(
+					`Student ${student.id}: strandId=${student.strandId}, strand=${student.strand}, matches=${matches}`
+				);
+				return matches;
+			});
+			console.log("Filtered students:", filtered.length);
+		}
+
+		// Apply school year filter
+		if (selectedSchoolYear && selectedSchoolYear !== "") {
+			filtered = filtered.filter((student) => {
+				const matches =
+					student.schoolyearId == selectedSchoolYear ||
+					student.schoolYear === selectedSchoolYear;
+				return matches;
+			});
 		}
 
 		setFilteredStudents(filtered);
@@ -94,6 +169,12 @@ export default function StudentsTab() {
 
 	const handleSectionChange = (sectionValue) => {
 		setSelectedSection(sectionValue);
+	};
+	const handleStrandChange = (strandValue) => {
+		setSelectedStrand(strandValue);
+	};
+	const handleSchoolYearChange = (schoolYearValue) => {
+		setSelectedSchoolYear(schoolYearValue);
 	};
 
 	// Calculate pagination
@@ -197,14 +278,31 @@ export default function StudentsTab() {
 									</option>
 								))}
 							</select>
+							<select
+								value={selectedStrand}
+								onChange={(e) => handleStrandChange(e.target.value)}
+								className="px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+							>
+								<option value="">All Strands</option>
+								{strands.map((strand) => (
+									<option key={strand.id} value={strand.id}>
+										{strand.name} ({strand.trackName})
+									</option>
+								))}
+							</select>
+							<select
+								value={selectedSchoolYear}
+								onChange={(e) => handleSchoolYearChange(e.target.value)}
+								className="px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+							>
+								<option value="">All School Years</option>
+								{schoolYears.map((schoolYear) => (
+									<option key={schoolYear.id} value={schoolYear.id}>
+										{schoolYear.year}
+									</option>
+								))}
+							</select>
 						</div>
-
-						{selectedSection && (
-							<div className="text-sm text-slate-600 dark:text-slate-400">
-								Showing students from section:{" "}
-								<span className="font-medium">{selectedSection}</span>
-							</div>
-						)}
 					</div>
 
 					{studentsLoading ? (
@@ -249,6 +347,9 @@ export default function StudentsTab() {
 												Section
 											</th>
 											<th className="px-3 py-2 font-semibold text-left lg:px-4">
+												School Year
+											</th>
+											<th className="px-3 py-2 font-semibold text-left lg:px-4">
 												Track & Strand
 											</th>
 										</tr>
@@ -285,7 +386,12 @@ export default function StudentsTab() {
 												</td>
 												<td className="px-3 py-3 lg:px-4 lg:py-2">
 													<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-300 dark:bg-blue-900/20">
-														{student.name || "N/A"}
+														{student.sectionName || "N/A"}
+													</span>
+												</td>
+												<td className="px-3 py-3 lg:px-4 lg:py-2">
+													<span className="inline-flex px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:text-green-300 dark:bg-green-900/20">
+														{student.schoolYear || "N/A"}
 													</span>
 												</td>
 												<td className="px-3 py-3 lg:px-4 lg:py-2">

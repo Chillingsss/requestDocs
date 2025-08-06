@@ -179,12 +179,13 @@ export default function ProcessedRequest({
 
 	const handleDiplomaSave = async (diplomaData) => {
 		try {
-			// Update student information with diploma data
 			const updateResponse = await updateStudentInfo(
 				currentRequest.id,
 				diplomaData.lrn,
-				diplomaData.track,
-				diplomaData.strand
+				diplomaData.strandId,
+				diplomaData.firstname,
+				diplomaData.middlename,
+				diplomaData.lastname
 			);
 
 			if (updateResponse.success) {

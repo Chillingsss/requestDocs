@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { addStudent } from "../../../utils/admin";
+import { getStrands } from "../../../utils/registrar";
 import { X, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -14,6 +15,7 @@ export default function AddStudentModal({
 	schoolYearOptions = [],
 	createdBy,
 }) {
+	const [strands, setStrands] = useState([]);
 	const [formData, setFormData] = useState({
 		firstname: "",
 		middlename: "",
@@ -23,6 +25,7 @@ export default function AddStudentModal({
 		password: "",
 		track: "",
 		strand: "",
+		strandId: "",
 		birthDate: "",
 		age: "",
 		religion: "",
@@ -33,9 +36,31 @@ export default function AddStudentModal({
 		guardianRelationship: "",
 		sectionId: "",
 		schoolYearId: "",
+		userLevel: "4", // Add default userLevel for students
 		createdBy: createdBy || "",
 	});
 	const [loading, setLoading] = useState(false);
+
+	// Fetch strands when modal opens
+	useEffect(() => {
+		const fetchStrands = async () => {
+			try {
+				const data = await getStrands();
+				let strandsArray = data;
+				if (typeof data === "string") {
+					try {
+						strandsArray = JSON.parse(data);
+					} catch (e) {
+						strandsArray = [];
+					}
+				}
+				setStrands(Array.isArray(strandsArray) ? strandsArray : []);
+			} catch (error) {
+				toast.error("Failed to load strands");
+			}
+		};
+		fetchStrands();
+	}, []);
 
 	const handleInputChange = (e) => {
 		const { name, value } = e.target;
@@ -44,6 +69,17 @@ export default function AddStudentModal({
 		// Auto-populate password with lastname when lastname changes
 		if (name === "lastname") {
 			setFormData((prev) => ({ ...prev, password: value }));
+		}
+
+		// Auto-fill track when strand is selected
+		if (name === "strandId") {
+			const selectedStrand = strands.find((s) => s.id === value);
+			setFormData((prev) => ({
+				...prev,
+				strand: selectedStrand ? selectedStrand.name : "",
+				track: selectedStrand ? selectedStrand.trackName : "",
+				strandId: value,
+			}));
 		}
 	};
 
@@ -81,6 +117,7 @@ export default function AddStudentModal({
 				...formData,
 				id: formData.lrn, // Set the ID to be the same as LRN
 			};
+			console.log("studentData", studentData);
 			await addStudent(studentData);
 			toast.success("Student added successfully!");
 			setFormData({
@@ -90,8 +127,7 @@ export default function AddStudentModal({
 				lrn: "",
 				email: "",
 				password: "",
-				track: "",
-				strand: "",
+				strandId: "",
 				birthDate: "",
 				age: "",
 				religion: "",
@@ -102,6 +138,7 @@ export default function AddStudentModal({
 				guardianRelationship: "",
 				sectionId: "",
 				schoolYearId: "",
+				userLevel: "4", // Reset userLevel
 				createdBy: createdBy || "",
 			});
 			onClose();
@@ -124,6 +161,7 @@ export default function AddStudentModal({
 			password: "",
 			track: "",
 			strand: "",
+			strandId: "",
 			birthDate: "",
 			age: "",
 			religion: "",
@@ -134,6 +172,7 @@ export default function AddStudentModal({
 			guardianRelationship: "",
 			sectionId: "",
 			schoolYearId: "",
+			userLevel: "4", // Reset userLevel
 			createdBy: createdBy || "",
 		});
 		onClose();
@@ -268,26 +307,32 @@ export default function AddStudentModal({
 									id="track"
 									name="track"
 									value={formData.track}
-									onChange={handleInputChange}
-									placeholder="Enter track"
-									className="bg-gray-50 border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+									readOnly
+									placeholder="Auto-filled from strand"
+									className="bg-gray-100 border-gray-200 dark:bg-gray-600 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
 								/>
 							</div>
 							<div className="space-y-2">
 								<Label
-									htmlFor="strand"
+									htmlFor="strandId"
 									className="text-gray-700 dark:text-gray-200"
 								>
 									Strand
 								</Label>
-								<Input
-									id="strand"
-									name="strand"
-									value={formData.strand}
+								<select
+									id="strandId"
+									name="strandId"
+									value={formData.strandId}
 									onChange={handleInputChange}
-									placeholder="Enter strand"
-									className="bg-gray-50 border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-								/>
+									className="flex px-3 py-2 w-full h-10 text-sm bg-gray-50 rounded-md border border-gray-200 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+								>
+									<option value="">Select strand</option>
+									{strands.map((strand) => (
+										<option key={strand.id} value={strand.id}>
+											{strand.name} ({strand.trackName})
+										</option>
+									))}
+								</select>
 							</div>
 						</div>
 						<div className="grid grid-cols-1 gap-6 md:grid-cols-2">

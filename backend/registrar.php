@@ -333,13 +333,15 @@ class User {
                 s.middlename,
                 s.lastname,
                 s.lrn,
-                s.track,
-                s.strand,
+                s.strandId,
+                st.name as strand,
+                t.name as track,
                 s.email
               FROM tblrequest r
               INNER JOIN tblstudent s ON r.studentId = s.id
+              LEFT JOIN tblstrand st ON s.strandId = st.id
+              LEFT JOIN tbltrack t ON st.trackId = t.id
               WHERE r.id = :requestId";
-      
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':requestId', $requestId);
       $stmt->execute();
@@ -363,8 +365,10 @@ class User {
     $json = json_decode($json, true);
     $requestId = $json['requestId'];
     $lrn = $json['lrn'];
-    $track = $json['track'];
-    $strand = $json['strand'];
+    $strandId = $json['strandId'];
+    $firstname = $json['firstname'];
+    $middlename = $json['middlename'];
+    $lastname = $json['lastname'];
 
     try {
       // First get the student ID from the request
@@ -380,15 +384,16 @@ class User {
       $studentData = $getStudentStmt->fetch(PDO::FETCH_ASSOC);
       $studentId = $studentData['studentId'];
 
-      // Update student information
+      // Update student information (firstname, middlename, lastname, lrn, strandId)
       $sql = "UPDATE tblstudent 
-              SET lrn = :lrn, track = :track, strand = :strand 
+              SET firstname = :firstname, middlename = :middlename, lastname = :lastname, lrn = :lrn, strandId = :strandId 
               WHERE id = :studentId";
-      
       $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':firstname', $firstname);
+      $stmt->bindParam(':middlename', $middlename);
+      $stmt->bindParam(':lastname', $lastname);
       $stmt->bindParam(':lrn', $lrn);
-      $stmt->bindParam(':track', $track);
-      $stmt->bindParam(':strand', $strand);
+      $stmt->bindParam(':strandId', $strandId);
       $stmt->bindParam(':studentId', $studentId);
 
       if ($stmt->execute()) {
@@ -547,6 +552,18 @@ class User {
       ]);
     }
   }
+
+  function getStrands() {
+    include "connection.php";
+    $sql = "SELECT s.id, s.name, t.id as trackId, t.name as trackName FROM tblstrand s INNER JOIN tbltrack t ON s.trackId = t.id";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    if ($stmt->rowCount() > 0) {
+      $strands = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      return json_encode($strands);
+    }
+    return json_encode([]);
+  }
   
 }
 
@@ -594,6 +611,9 @@ switch ($operation) {
     break;
   case "uploadStudentDocuments":
     echo $user->uploadStudentDocuments();
+    break;
+  case "getStrands":
+    echo $user->getStrands();
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

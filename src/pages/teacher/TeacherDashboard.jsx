@@ -114,11 +114,14 @@ export default function TeacherDashboard() {
 		if (teacherGradeLevelId) {
 			fetchStudents();
 		}
-	}, [teacherGradeLevelId]);
+	}, [teacherGradeLevelId, teacherSectionId]);
 
 	const fetchStudents = async () => {
 		try {
-			const data = await getStudentRecords(teacherGradeLevelId);
+			const data = await getStudentRecords(
+				teacherGradeLevelId,
+				teacherSectionId
+			);
 			console.log("API data:", data);
 			let studentsArray = data;
 			if (typeof data === "string") {

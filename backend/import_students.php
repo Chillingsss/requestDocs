@@ -95,6 +95,7 @@ if ($operation === 'savePreviewedStudents') {
     $sectionId = $json['sectionId'] ?? '';
     $schoolYearId = $json['schoolYearId'] ?? '';
     $importUserId = $json['userId'] ?? '';
+    $strandId = $json['strandId'] ?? '';
     
     if (empty($data) || empty($headers)) {
         echo json_encode([
@@ -124,6 +125,14 @@ if ($operation === 'savePreviewedStudents') {
         echo json_encode([
             'success' => false,
             'error' => 'User ID is required'
+        ]);
+        exit;
+    }
+
+    if (empty($strandId)) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'Strand ID is required'
         ]);
         exit;
     }
@@ -171,8 +180,6 @@ if ($operation === 'savePreviewedStudents') {
             $motherName = findHeader($rowAssoc, ['MOTHER']);
             $guardianName = findHeader($rowAssoc, ['GUARDIAN']);
             $relationship = findHeader($rowAssoc, ['RELATIONSHIP']);
-            $track = findHeader($rowAssoc, ['TRACK']);
-            $strand = findHeader($rowAssoc, ['STRAND']);
             
             // Validate required fields
             if (empty($lrn) || empty($fullName)) {
@@ -221,14 +228,14 @@ if ($operation === 'savePreviewedStudents') {
             // Insert student data with schoolyearId
             $sql = "INSERT INTO tblstudent (
                 id, firstname, middlename, lastname, lrn, email, password, 
-                userLevel, track, strand, birthDate, age, religion, 
+                userLevel, birthDate, age, religion, 
                 completeAddress, fatherName, motherName, guardianName, 
-                guardianRelationship, sectionId, schoolyearId, createdAt
+                guardianRelationship, sectionId, schoolyearId, strandId, createdAt
             ) VALUES (
                 :id, :firstname, :middlename, :lastname, :lrn, :email, :password,
-                :userLevel, :track, :strand, :birthDate, :age, :religion,
+                :userLevel, :birthDate, :age, :religion,
                 :completeAddress, :fatherName, :motherName, :guardianName,
-                :guardianRelationship, :sectionId, :schoolyearId, NOW()
+                :guardianRelationship, :sectionId, :schoolyearId, :strandId, NOW()
             )";
             
             $stmt = $conn->prepare($sql);
@@ -241,8 +248,6 @@ if ($operation === 'savePreviewedStudents') {
             $stmt->bindParam(':email', $email);
             $stmt->bindParam(':password', $defaultPassword);
             $stmt->bindParam(':userLevel', $defaultUserLevel);
-            $stmt->bindParam(':track', $track);
-            $stmt->bindParam(':strand', $strand);
             $stmt->bindParam(':birthDate', $birthDate);
             $stmt->bindParam(':age', $age);
             $stmt->bindParam(':religion', $religion);
@@ -253,6 +258,7 @@ if ($operation === 'savePreviewedStudents') {
             $stmt->bindParam(':guardianRelationship', $relationship);
             $stmt->bindParam(':sectionId', $sectionId);
             $stmt->bindParam(':schoolyearId', $schoolYearId);
+            $stmt->bindParam(':strandId', $strandId);
             
             if ($stmt->execute()) {
                 // Insert into tblsfrecord after successful student insertion

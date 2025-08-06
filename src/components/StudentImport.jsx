@@ -15,7 +15,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import CryptoJS from "crypto-js";
 import { getDecryptedApiUrl } from "../utils/apiConfig";
-import { getSection, getSchoolYear } from "../utils/registrar";
+import { getSection, getSchoolYear, getStrands } from "../utils/registrar";
 
 const StudentImport = ({ onClose, onImportComplete }) => {
 	const [file, setFile] = useState(null);
@@ -32,6 +32,9 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 	const [schoolYears, setSchoolYears] = useState([]);
 	const [selectedSchoolYear, setSelectedSchoolYear] = useState("");
 	const [loadingSchoolYears, setLoadingSchoolYears] = useState(false);
+	const [strands, setStrands] = useState([]);
+	const [selectedStrand, setSelectedStrand] = useState("");
+	const [loadingStrands, setLoadingStrands] = useState(false);
 
 	// Constants for authentication
 	const COOKIE_KEY = "mogchs_user";
@@ -51,6 +54,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 	useEffect(() => {
 		loadSections();
 		loadSchoolYears();
+		loadStrands();
 	}, []);
 
 	const loadSections = async () => {
@@ -76,6 +80,18 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 			toast.error("Failed to load school years");
 		} finally {
 			setLoadingSchoolYears(false);
+		}
+	};
+
+	const loadStrands = async () => {
+		setLoadingStrands(true);
+		try {
+			const strandsData = await getStrands();
+			setStrands(strandsData);
+		} catch (error) {
+			toast.error("Failed to load strands");
+		} finally {
+			setLoadingStrands(false);
 		}
 	};
 
@@ -216,6 +232,10 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 			toast.error("Please select a school year for the students.");
 			return;
 		}
+		if (!selectedStrand) {
+			toast.error("Please select a strand for the students.");
+			return;
+		}
 		setIsSaving(true);
 		setSaveResult(null);
 		const apiUrl = getDecryptedApiUrl();
@@ -227,6 +247,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 				sectionId: selectedSection,
 				schoolYearId: selectedSchoolYear,
 				userId: userId,
+				strandId: selectedStrand,
 			});
 			setSaveResult(response.data);
 			if (response.data.success) {
@@ -258,6 +279,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 		setSaveResult(null);
 		setSelectedSection("");
 		setSelectedSchoolYear("");
+		setSelectedStrand("");
 	};
 
 	const removeRow = (rowIndex) => {
@@ -449,6 +471,34 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 								</p>
 							</div>
 
+							{/* Strand Selection */}
+							<div className="mb-4">
+								<div className="flex items-center mb-2 space-x-2">
+									<Users className="w-5 h-5 text-blue-400" />
+									<label className="font-medium text-white">
+										Select Strand for All Students:
+									</label>
+								</div>
+								<select
+									value={selectedStrand}
+									onChange={(e) => setSelectedStrand(e.target.value)}
+									className="px-3 py-2 w-full text-white bg-gray-800 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									disabled={loadingStrands}
+								>
+									<option value="">
+										{loadingStrands ? "Loading strands..." : "Select a strand"}
+									</option>
+									{strands.map((strand) => (
+										<option key={strand.id} value={strand.id}>
+											{strand.name} ({strand.trackName})
+										</option>
+									))}
+								</select>
+								<p className="mt-1 text-sm text-gray-400">
+									All imported students will be assigned to the selected strand.
+								</p>
+							</div>
+
 							{/* Preview Table */}
 							<div className="mb-4">
 								<div className="flex justify-between items-center mb-2">
@@ -565,7 +615,8 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 										isParsing ||
 										!previewData.length ||
 										!selectedSection ||
-										!selectedSchoolYear
+										!selectedSchoolYear ||
+										!selectedStrand
 									}
 									className="flex items-center px-6 py-2 space-x-2 text-white bg-green-600 rounded-md transition-colors hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
 								>

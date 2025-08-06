@@ -587,9 +587,9 @@ class User {
 
         // Insert into tblstudent
         $sql = "INSERT INTO tblstudent (
-            id, firstname, middlename, lastname, lrn, email, password, userLevel, track, strand, birthDate, age, religion, completeAddress, fatherName, motherName, guardianName, guardianRelationship, sectionId, schoolyearId, createdAt
+            id, firstname, middlename, lastname, lrn, email, password, userLevel, birthDate, age, religion, completeAddress, fatherName, motherName, guardianName, guardianRelationship, sectionId, schoolyearId, strandId, createdAt
         ) VALUES (
-            :id, :firstname, :middlename, :lastname, :lrn, :email, :password, :userLevel, :track, :strand, :birthDate, :age, :religion, :completeAddress, :fatherName, :motherName, :guardianName, :guardianRelationship, :sectionId, :schoolyearId, NOW()
+            :id, :firstname, :middlename, :lastname, :lrn, :email, :password, :userLevel, :birthDate, :age, :religion, :completeAddress, :fatherName, :motherName, :guardianName, :guardianRelationship, :sectionId, :schoolyearId, :strandId, NOW()
         )";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':id', $studentId);
@@ -600,8 +600,6 @@ class User {
         $stmt->bindParam(':email', $json['email']);
         $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':userLevel', $defaultUserLevel);
-        $stmt->bindParam(':track', $json['track']);
-        $stmt->bindParam(':strand', $json['strand']);
         $stmt->bindParam(':birthDate', $json['birthDate']);
         $stmt->bindParam(':age', $json['age']);
         $stmt->bindParam(':religion', $json['religion']);
@@ -612,6 +610,7 @@ class User {
         $stmt->bindParam(':guardianRelationship', $json['guardianRelationship']);
         $stmt->bindParam(':sectionId', $sectionId);
         $stmt->bindParam(':schoolyearId', $schoolYearId);
+        $stmt->bindParam(':strandId', $json['strandId']);
 
         if ($stmt->execute()) {
             // Insert into tblsfrecord
@@ -647,8 +646,6 @@ class User {
                 s.lastname,
                 s.lrn,
                 s.email,
-                s.track,
-                s.strand,
                 s.birthDate,
                 s.age,
                 s.religion,
@@ -659,11 +656,16 @@ class User {
                 s.guardianRelationship,
                 s.sectionId,
                 s.schoolyearId,
+                s.strandId,
                 sec.name as sectionName,
-                sy.year as schoolYear
+                sy.year as schoolYear,
+                t.name as track,
+                st.name as strand
               FROM tblstudent s
               LEFT JOIN tblsection sec ON s.sectionId = sec.id
               LEFT JOIN tblschoolyear sy ON s.schoolyearId = sy.id
+              LEFT JOIN tblstrand st ON s.strandId = st.id
+              LEFT JOIN tbltrack t ON st.trackId = t.id
               WHERE 1=1";
 
       // Add section filter if provided

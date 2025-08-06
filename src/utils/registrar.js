@@ -142,7 +142,14 @@ export async function getStudentInfo(requestId) {
 	}
 }
 
-export async function updateStudentInfo(requestId, lrn, track, strand) {
+export async function updateStudentInfo(
+	requestId,
+	lrn,
+	strandId,
+	firstname,
+	middlename,
+	lastname
+) {
 	const formData = new FormData();
 	formData.append("operation", "updateStudentInfo");
 	formData.append(
@@ -150,14 +157,13 @@ export async function updateStudentInfo(requestId, lrn, track, strand) {
 		JSON.stringify({
 			requestId,
 			lrn,
-			track,
-			strand,
+			strandId,
+			firstname,
+			middlename,
+			lastname,
 		})
 	);
-
-	// Get the encrypted API URL from session storage
 	const apiUrl = getDecryptedApiUrl();
-
 	try {
 		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
 			headers: { "Content-Type": "multipart/form-data" },
@@ -223,6 +229,20 @@ export async function uploadStudentDocuments(formData) {
 	// Get the encrypted API URL from session storage
 	const apiUrl = getDecryptedApiUrl();
 
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getStrands() {
+	const formData = new FormData();
+	formData.append("operation", "getStrands");
+	const apiUrl = getDecryptedApiUrl();
 	try {
 		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
 			headers: { "Content-Type": "multipart/form-data" },

@@ -5,6 +5,7 @@ import { Edit3, Save, X, Download, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { getStrands } from "../../../utils/registrar";
 
 export default function DiplomaTemplate({
 	studentInfo,
@@ -17,10 +18,20 @@ export default function DiplomaTemplate({
 
 	const [diplomaData, setDiplomaData] = useState({
 		fullName: "",
+		firstname: "",
+		middlename: "",
+		lastname: "",
 		lrn: "",
 		track: "",
 		strand: "",
+		strandId: "",
 	});
+
+	const [strands, setStrands] = useState([]);
+	const [principalName, setPrincipalName] = useState("ABDON R. BACAYANA, PhD");
+	const [superintendentName, setSuperintendentName] = useState(
+		"EDILBERTO L. OPLENARIA, EdD, CESO V"
+	);
 
 	useEffect(() => {
 		if (studentInfo) {
@@ -29,15 +40,49 @@ export default function DiplomaTemplate({
 			}${studentInfo.lastname}`.trim();
 			setDiplomaData({
 				fullName,
+				firstname: studentInfo.firstname || "",
+				middlename: studentInfo.middlename || "",
+				lastname: studentInfo.lastname || "",
 				lrn: studentInfo.lrn || "",
 				track: studentInfo.track || "",
 				strand: studentInfo.strand || "",
+				strandId: studentInfo.strandId || "",
 			});
 		}
+		// Fetch strands from backend
+		const fetchStrands = async () => {
+			try {
+				const data = await getStrands();
+				let strandsArray = data;
+				if (typeof data === "string") {
+					try {
+						strandsArray = JSON.parse(data);
+					} catch (e) {
+						strandsArray = [];
+					}
+				}
+				setStrands(Array.isArray(strandsArray) ? strandsArray : []);
+			} catch (error) {
+				toast.error("Failed to load strands");
+			}
+		};
+		fetchStrands();
 	}, [studentInfo]);
 
 	const handleInputChange = (field, value) => {
 		setDiplomaData((prev) => ({ ...prev, [field]: value }));
+	};
+
+	const handleStrandChange = (strandId) => {
+		const selectedStrand = strands.find(
+			(s) => String(s.id) === String(strandId)
+		);
+		setDiplomaData((prev) => ({
+			...prev,
+			strand: selectedStrand ? selectedStrand.name : "",
+			track: selectedStrand ? selectedStrand.trackName : "",
+			strandId: strandId,
+		}));
 	};
 
 	const generatePDF = async () => {
@@ -448,13 +493,13 @@ export default function DiplomaTemplate({
                 <div class="signatures">
                   <div class="signature-item">
                     <div class="signature-line"></div>
-                    <p class="signature-name">ABDON R. BACAYANA, PhD</p>
+                    <p class="signature-name">${principalName}</p>
                     <p class="signature-title">Punong Guro</p>
                     <p class="signature-title-italic">(Principal)</p>
                   </div>
                   <div class="signature-item">
                     <div class="signature-line"></div>
-                    <p class="signature-name">EDILBERTO L. OPLENARIA, EdD, CESO V</p>
+                    <p class="signature-name">${superintendentName}</p>
                     <p class="signature-title">Pansangay na Tagapamahala ng mga Paaralan</p>
                     <p class="signature-title-italic">Schools Division Superintendent</p>
                   </div>
@@ -523,14 +568,45 @@ export default function DiplomaTemplate({
 
 					{/* Student Name */}
 					{isEditing ? (
-						<Input
-							value={diplomaData.fullName}
-							onChange={(e) => handleInputChange("fullName", e.target.value)}
-							className="mx-auto my-3 max-w-md text-2xl font-bold text-center"
-						/>
+						<div className="flex flex-col gap-2 justify-center items-center mb-3 sm:flex-row">
+							<Input
+								value={diplomaData.firstname}
+								onChange={(e) =>
+									setDiplomaData((prev) => ({
+										...prev,
+										firstname: e.target.value,
+									}))
+								}
+								placeholder="First Name"
+								className="max-w-xs text-center"
+							/>
+							<Input
+								value={diplomaData.middlename}
+								onChange={(e) =>
+									setDiplomaData((prev) => ({
+										...prev,
+										middlename: e.target.value,
+									}))
+								}
+								placeholder="Middle Name"
+								className="max-w-xs text-center"
+							/>
+							<Input
+								value={diplomaData.lastname}
+								onChange={(e) =>
+									setDiplomaData((prev) => ({
+										...prev,
+										lastname: e.target.value,
+									}))
+								}
+								placeholder="Last Name"
+								className="max-w-xs text-center"
+							/>
+						</div>
 					) : (
 						<h2 className="inline-block px-4 my-3 text-2xl font-bold uppercase border-b-2 border-black">
-							{diplomaData.fullName || "EDIJANE V. RETAZA"}
+							{diplomaData.firstname} {diplomaData.middlename}{" "}
+							{diplomaData.lastname}
 						</h2>
 					)}
 
@@ -563,27 +639,25 @@ export default function DiplomaTemplate({
 					{/* Track and Strand - horizontal layout */}
 					<div className="flex gap-8 justify-center items-center mb-4">
 						<div className="text-center">
-							{isEditing ? (
-								<Input
-									value={diplomaData.track}
-									onChange={(e) => handleInputChange("track", e.target.value)}
-									className="mb-1 w-32 font-bold text-center"
-								/>
-							) : (
-								<p className="px-2 mb-1 text-lg font-bold border-b-2 border-black">
-									{diplomaData.track || "SPORTS"}
-								</p>
-							)}
+							<p className="px-2 mb-1 text-lg font-bold border-b-2 border-black">
+								{diplomaData.track || "TRACK"}
+							</p>
 							<p className="text-sm font-bold">TRACK</p>
 						</div>
-
 						<div className="text-center">
 							{isEditing ? (
-								<Input
-									value={diplomaData.strand}
-									onChange={(e) => handleInputChange("strand", e.target.value)}
-									className="mb-1 w-32 font-bold text-center"
-								/>
+								<select
+									value={diplomaData.strandId || ""}
+									onChange={(e) => handleStrandChange(e.target.value)}
+									className="mb-1 w-32 font-bold text-center rounded border border-gray-300"
+								>
+									<option value="">Select Strand</option>
+									{strands.map((strand) => (
+										<option key={strand.id} value={strand.id}>
+											{strand.name} ({strand.trackName})
+										</option>
+									))}
+								</select>
 							) : (
 								<p className="px-2 mb-1 text-lg font-bold border-b-2 border-black">
 									{diplomaData.strand || "STRAND"}
@@ -622,15 +696,29 @@ export default function DiplomaTemplate({
 					<div className="flex justify-between mt-8">
 						<div className="text-center">
 							<div className="mx-auto mb-2 w-48 border-t border-black"></div>
-							<p className="text-sm font-bold">ABDON R. BACAYANA, PhD</p>
+							{isEditing ? (
+								<Input
+									value={principalName}
+									onChange={(e) => setPrincipalName(e.target.value)}
+									className="mb-1 font-bold text-center"
+								/>
+							) : (
+								<p className="text-sm font-bold">{principalName}</p>
+							)}
 							<p className="text-xs">Punong Guro</p>
 							<p className="text-xs italic">(Principal)</p>
 						</div>
 						<div className="text-center">
 							<div className="mx-auto mb-2 w-48 border-t border-black"></div>
-							<p className="text-sm font-bold">
-								EDILBERTO L. OPLENARIA, EdD, CESO V
-							</p>
+							{isEditing ? (
+								<Input
+									value={superintendentName}
+									onChange={(e) => setSuperintendentName(e.target.value)}
+									className="mb-1 font-bold text-center"
+								/>
+							) : (
+								<p className="text-sm font-bold">{superintendentName}</p>
+							)}
 							<p className="text-xs">
 								Pansangay na Tagapamahala ng mga Paaralan
 							</p>
@@ -676,7 +764,13 @@ export default function DiplomaTemplate({
 						<>
 							<Button
 								onClick={() => {
-									onSave(diplomaData);
+									onSave({
+										lrn: diplomaData.lrn,
+										strandId: diplomaData.strandId,
+										firstname: diplomaData.firstname,
+										middlename: diplomaData.middlename,
+										lastname: diplomaData.lastname,
+									});
 									setIsEditing(false);
 								}}
 								className="text-white bg-green-600 hover:bg-green-700"
