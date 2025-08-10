@@ -9,6 +9,7 @@ import {
 	Download,
 	Eye,
 	Upload,
+	GraduationCap,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { getDocumentAllStudent } from "../../../utils/registrar";
@@ -27,13 +28,26 @@ export default function DocumentsTab() {
 	// Filter state
 	const [selectedDocumentType, setSelectedDocumentType] = useState("");
 	const [selectedTrack, setSelectedTrack] = useState("");
+	const [selectedGradeLevel, setSelectedGradeLevel] = useState("");
 	const [searchTerm, setSearchTerm] = useState("");
 
-	// Get unique document types and tracks for filters
+	// Get unique document types, tracks, and grade levels for filters
 	const documentTypes = [...new Set(documents.map((doc) => doc.documentType))];
 	const tracks = [
 		...new Set(documents.map((doc) => doc.track).filter(Boolean)),
 	];
+
+	// Get unique grade levels using Map to avoid duplicates
+	const gradeLevelsMap = new Map();
+	documents.forEach((doc) => {
+		if (doc.gradeLevelId) {
+			gradeLevelsMap.set(doc.gradeLevelId, {
+				id: doc.gradeLevelId,
+				name: doc.gradeLevelName || `Grade ${doc.gradeLevelId}`,
+			});
+		}
+	});
+	const gradeLevels = Array.from(gradeLevelsMap.values());
 
 	// Fetch documents when component mounts
 	useEffect(() => {
@@ -43,12 +57,18 @@ export default function DocumentsTab() {
 	// Apply filters when documents or filter states change
 	useEffect(() => {
 		applyFilters();
-	}, [documents, selectedDocumentType, selectedTrack, searchTerm]);
+	}, [
+		documents,
+		selectedDocumentType,
+		selectedTrack,
+		selectedGradeLevel,
+		searchTerm,
+	]);
 
 	// Reset to page 1 when filters change
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [selectedDocumentType, selectedTrack, searchTerm]);
+	}, [selectedDocumentType, selectedTrack, selectedGradeLevel, searchTerm]);
 
 	const fetchDocuments = async () => {
 		setDocumentsLoading(true);
@@ -87,6 +107,13 @@ export default function DocumentsTab() {
 			filtered = filtered.filter((doc) => doc.track === selectedTrack);
 		}
 
+		// Apply grade level filter
+		if (selectedGradeLevel && selectedGradeLevel !== "") {
+			filtered = filtered.filter(
+				(doc) => doc.gradeLevelId == selectedGradeLevel
+			);
+		}
+
 		// Apply search term filter
 		if (searchTerm && searchTerm.trim() !== "") {
 			const searchLower = searchTerm.toLowerCase();
@@ -96,7 +123,10 @@ export default function DocumentsTab() {
 					doc.lastname?.toLowerCase().includes(searchLower) ||
 					doc.middlename?.toLowerCase().includes(searchLower) ||
 					doc.lrn?.toLowerCase().includes(searchLower) ||
-					doc.documentType?.toLowerCase().includes(searchLower)
+					doc.documentType?.toLowerCase().includes(searchLower) ||
+					(doc.gradeLevelName || `Grade ${doc.gradeLevelId}`)
+						?.toLowerCase()
+						.includes(searchLower)
 			);
 		}
 
@@ -259,10 +289,30 @@ export default function DocumentsTab() {
 								))}
 							</select>
 						</div>
+
+						{/* Grade Level Filter */}
+						<div className="flex gap-2 items-center">
+							<GraduationCap className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+							<select
+								value={selectedGradeLevel}
+								onChange={(e) => setSelectedGradeLevel(e.target.value)}
+								className="px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+							>
+								<option value="">All Grade Levels</option>
+								{gradeLevels.map((level) => (
+									<option key={level.id} value={level.id}>
+										{level.name}
+									</option>
+								))}
+							</select>
+						</div>
 					</div>
 
 					{/* Active Filters Display */}
-					{(selectedDocumentType || selectedTrack || searchTerm) && (
+					{(selectedDocumentType ||
+						selectedTrack ||
+						selectedGradeLevel ||
+						searchTerm) && (
 						<div className="flex flex-wrap gap-2 mb-4 text-sm text-slate-600 dark:text-slate-400">
 							<span>Active filters:</span>
 							{selectedDocumentType && (
@@ -273,6 +323,13 @@ export default function DocumentsTab() {
 							{selectedTrack && (
 								<span className="px-2 py-1 text-green-800 bg-green-100 rounded dark:text-green-300 dark:bg-green-900/20">
 									Track: {selectedTrack}
+								</span>
+							)}
+							{selectedGradeLevel && (
+								<span className="px-2 py-1 text-purple-800 bg-purple-100 rounded dark:text-purple-300 dark:bg-purple-900/20">
+									Grade:{" "}
+									{gradeLevels.find((level) => level.id == selectedGradeLevel)
+										?.name || `Grade ${selectedGradeLevel}`}
 								</span>
 							)}
 							{searchTerm && (
@@ -325,6 +382,9 @@ export default function DocumentsTab() {
 												Document Type
 											</th>
 											<th className="px-3 py-2 font-semibold text-left lg:px-4">
+												Grade Level
+											</th>
+											<th className="px-3 py-2 font-semibold text-left lg:px-4">
 												File Name
 											</th>
 											<th className="px-3 py-2 font-semibold text-center lg:px-4">
@@ -366,6 +426,23 @@ export default function DocumentsTab() {
 													<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-300 dark:bg-blue-900/20">
 														{doc.documentType}
 													</span>
+												</td>
+												<td className="px-3 py-3 lg:px-4 lg:py-2">
+													<div className="flex gap-1 items-center">
+														<GraduationCap className="w-3 h-3 text-slate-500" />
+														<span
+															className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+																doc.gradeLevelId === 1
+																	? "text-blue-800 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/20"
+																	: doc.gradeLevelId === 2
+																	? "text-green-800 bg-green-100 dark:text-green-300 dark:bg-green-900/20"
+																	: "text-gray-800 bg-gray-100 dark:text-gray-300 dark:bg-gray-900/20"
+															}`}
+														>
+															{doc.gradeLevelName ||
+																`Grade ${doc.gradeLevelId}`}
+														</span>
+													</div>
 												</td>
 												<td className="px-3 py-3 lg:px-4 lg:py-2">
 													<div className="flex gap-1 items-center max-w-[150px]">

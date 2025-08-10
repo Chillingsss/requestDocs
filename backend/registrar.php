@@ -279,18 +279,21 @@ class User {
       $studentId = $requestData['studentId'];
       $documentId = $requestData['documentId'];
 
-      // Get student documents that match the requested document type only
+      // Get student documents that match the requested document type only, including grade level information
       $sql = "SELECT 
                 sd.id,
                 sd.documentId,
                 sd.fileName,
                 sd.createdAt,
-                d.name as documentType
+                sd.gradeLevelId,
+                d.name as documentType,
+                gl.name as gradeLevelName
               FROM tblstudentdocument sd
               LEFT JOIN tbldocument d ON sd.documentId = d.id
+              LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
               WHERE sd.studentId = :studentId 
               AND sd.documentId = :documentId
-              ORDER BY sd.createdAt DESC";
+              ORDER BY sd.gradeLevelId ASC, sd.createdAt DESC";
       
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':studentId', $studentId);
@@ -440,9 +443,11 @@ class User {
   function getDocumentAllStudent(){
     include "connection.php";
 
-    $sql = "SELECT a.fileName, b.name as documentType, c.firstname, c.lastname, c.middlename, c.lrn, c.track, c.strand FROM tblstudentdocument a 
+    $sql = "SELECT a.fileName, a.gradeLevelId, b.name as documentType, c.firstname, c.lastname, c.middlename, c.lrn, c.track, c.strand, gl.name as gradeLevelName FROM tblstudentdocument a 
     INNER JOIN tbldocument b ON a.documentId = b.id
     INNER JOIN tblstudent c ON a.studentId = c.id
+    LEFT JOIN tblgradelevel gl ON a.gradeLevelId = gl.id
+    ORDER BY a.gradeLevelId ASC, c.lastname ASC, c.firstname ASC
     ";
     $stmt = $conn->prepare($sql);
     $stmt->execute();
@@ -509,20 +514,35 @@ class User {
 
           if (move_uploaded_file($fileTmpName, $filePath)) {
             $results['totalProcessed']++;
-            // Insert document record
-            $insertSql = "INSERT INTO tblstudentdocument (studentId, documentId, fileName, createdAt) 
-                         VALUES (:studentId, :documentId, :fileName, NOW())";
+            
+            // Get student's current grade level
+            $gradeLevelSql = "SELECT s.gradeLevelId FROM tblstudent s WHERE s.id = :studentId";
+            $gradeLevelStmt = $conn->prepare($gradeLevelSql);
+            $gradeLevelStmt->bindParam(':studentId', $studentId);
+            $gradeLevelStmt->execute();
+            
+            $gradeLevelId = 1; // Default to Grade 11 if not found
+            if ($gradeLevelStmt->rowCount() > 0) {
+              $studentData = $gradeLevelStmt->fetch(PDO::FETCH_ASSOC);
+              $gradeLevelId = $studentData['gradeLevelId'] ?? 1;
+            }
+            
+            // Insert document record with grade level
+            $insertSql = "INSERT INTO tblstudentdocument (studentId, documentId, fileName, gradeLevelId, createdAt) 
+                         VALUES (:studentId, :documentId, :fileName, :gradeLevelId, NOW())";
             $insertStmt = $conn->prepare($insertSql);
             $insertStmt->bindParam(':studentId', $studentId);
             $insertStmt->bindParam(':documentId', $documentType);
             $insertStmt->bindParam(':fileName', $uniqueFileName);
+            $insertStmt->bindParam(':gradeLevelId', $gradeLevelId);
 
             if ($insertStmt->execute()) {
               $results['successfulAssignments']++;
               $results['details'][] = [
                 'fileName' => $fileName,
                 'success' => true,
-                'studentId' => $studentId
+                'studentId' => $studentId,
+                'gradeLevelId' => $gradeLevelId
               ];
             } else {
               $results['failedAssignments']++;

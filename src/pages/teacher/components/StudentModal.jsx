@@ -33,6 +33,7 @@ export default function StudentModal({
 	onFileUpdate,
 	allStudents = [], // Pass selected students for bulk operations
 	teacherGradeLevelId, // Teacher's grade level ID
+	teacherUserId, // Add teacher user ID prop
 }) {
 	const [uploading, setUploading] = useState(false);
 	const [selectedFile, setSelectedFile] = useState(null);
@@ -130,6 +131,11 @@ export default function StudentModal({
 
 			// Pass the teacher's grade level dynamically
 			formData.append("gradeLevelId", teacherGradeLevelId);
+
+			// Pass the teacher's user ID
+			if (teacherUserId) {
+				formData.append("userId", teacherUserId);
+			}
 
 			// Get the encrypted API URL from session storage
 			const apiUrl = getDecryptedApiUrl();
@@ -245,6 +251,11 @@ export default function StudentModal({
 				formData.append("studentId", studentId);
 				formData.append("file", file);
 				formData.append("gradeLevelId", teacherGradeLevelId); // Pass the teacher's grade level dynamically
+
+				// Pass the teacher's user ID
+				if (teacherUserId) {
+					formData.append("userId", teacherUserId);
+				}
 
 				const apiUrl = getDecryptedApiUrl();
 				const response = await fetch(`${apiUrl}/teacher.php`, {

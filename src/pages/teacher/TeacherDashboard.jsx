@@ -16,6 +16,7 @@ export default function TeacherDashboard() {
 	const [students, setStudents] = useState([]);
 	const [teacherGradeLevelId, setTeacherGradeLevelId] = useState(null);
 	const [teacherSectionId, setTeacherSectionId] = useState(null);
+	const [teacherUserId, setTeacherUserId] = useState(null); // Add teacher user ID state
 	const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger state
 	const navigate = useNavigate();
 	const COOKIE_KEY = "mogchs_user";
@@ -61,6 +62,7 @@ export default function TeacherDashboard() {
 					) {
 						setTeacherGradeLevelId(decrypted.gradeLevelId);
 						setTeacherSectionId(decrypted.sectionId || null);
+						setTeacherUserId(decrypted.id); // Extract user ID
 						console.log(
 							"Debug - Set teacherGradeLevelId:",
 							decrypted.gradeLevelId
@@ -260,6 +262,7 @@ export default function TeacherDashboard() {
 							<StudentFileManagement
 								teacherGradeLevelId={teacherGradeLevelId}
 								teacherSectionId={teacherSectionId}
+								teacherUserId={teacherUserId}
 								refreshTrigger={refreshTrigger}
 							/>
 						</>

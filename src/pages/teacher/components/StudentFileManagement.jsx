@@ -27,6 +27,7 @@ import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 export default function StudentFileManagement({
 	teacherGradeLevelId,
 	teacherSectionId,
+	teacherUserId, // Add teacher user ID prop
 	refreshTrigger,
 }) {
 	const [students, setStudents] = useState([]);
@@ -892,6 +893,7 @@ export default function StudentFileManagement({
 					allStudents={modalSelectedStudents}
 					teacherGradeLevelId={teacherGradeLevelId}
 					teacherSectionId={teacherSectionId}
+					teacherUserId={teacherUserId} // Pass teacherUserId to StudentModal
 				/>
 			</CardContent>
 		</Card>

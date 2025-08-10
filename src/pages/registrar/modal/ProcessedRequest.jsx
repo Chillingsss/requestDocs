@@ -13,6 +13,7 @@ import StudentDocumentsSection from "../components/StudentDocumentsSection";
 import AttachmentsSection from "../components/AttachmentsSection";
 import ImageZoomModal from "../components/ImageZoomModal";
 import DiplomaTemplateModal from "../components/DiplomaTemplateModal";
+import CertificateTemplateModal from "../components/CertificateTemplateModal";
 
 export default function ProcessedRequest({
 	request,
@@ -28,6 +29,7 @@ export default function ProcessedRequest({
 	const [groupByType, setGroupByType] = useState(false);
 	const [studentInfo, setStudentInfo] = useState(null);
 	const [showDiplomaTemplate, setShowDiplomaTemplate] = useState(false);
+	const [showCertificateTemplate, setShowCertificateTemplate] = useState(false);
 	const [currentRequest, setCurrentRequest] = useState(request);
 
 	// Update currentRequest when request prop changes
@@ -38,6 +40,14 @@ export default function ProcessedRequest({
 	// Check if this is a diploma request
 	const isDiplomaRequest = () => {
 		return currentRequest?.document?.toLowerCase().includes("diploma");
+	};
+
+	// Check if this is a certificate of enrollment request
+	const isCertificateRequest = () => {
+		return (
+			currentRequest?.document?.toLowerCase().includes("certificate") &&
+			currentRequest?.document?.toLowerCase().includes("enrollment")
+		);
 	};
 
 	// Function to get file extension
@@ -75,7 +85,7 @@ export default function ProcessedRequest({
 	};
 
 	const fetchStudentInfo = async () => {
-		if (isDiplomaRequest()) {
+		if (isDiplomaRequest() || isCertificateRequest()) {
 			try {
 				const studentData = await getStudentInfo(currentRequest.id);
 				if (studentData && !studentData.error) {
@@ -206,8 +216,41 @@ export default function ProcessedRequest({
 		}
 	};
 
+	const handleCertificateSave = async (certificateData) => {
+		try {
+			const updateResponse = await updateStudentInfo(
+				currentRequest.id,
+				certificateData.lrn,
+				certificateData.strandId,
+				certificateData.firstname,
+				certificateData.middlename,
+				certificateData.lastname
+			);
+
+			if (updateResponse.success) {
+				toast.success("Certificate information saved successfully!");
+				// Refresh the student information to show updated data
+				await fetchStudentInfo();
+				onSuccess();
+			} else {
+				toast.error(
+					updateResponse.error || "Failed to save certificate information"
+				);
+			}
+		} catch (error) {
+			console.error("Failed to save certificate:", error);
+			toast.error("Failed to save certificate information");
+		} finally {
+			setProcessing(false);
+		}
+	};
+
 	const handleDiplomaCancel = () => {
 		setShowDiplomaTemplate(false);
+	};
+
+	const handleCertificateCancel = () => {
+		setShowCertificateTemplate(false);
 	};
 
 	// Function to get button text and color based on status
@@ -223,16 +266,21 @@ export default function ProcessedRequest({
 		const statusName = currentRequest.status.toLowerCase();
 
 		// Check if student documents are required and available for pending status
-		// For diploma requests, we don't need existing documents since we generate a template
+		// For diploma and certificate requests, we don't need existing documents since we generate a template
 		const hasRequiredDocuments =
 			statusName !== "pending" ||
 			studentDocuments.length > 0 ||
-			isDiplomaRequest();
+			isDiplomaRequest() ||
+			isCertificateRequest();
 
 		switch (statusName) {
 			case "pending":
-				// Always show 'Mark as Processed' for diploma requests
-				const buttonText = "Mark as Processed";
+				// Always show 'Mark as Processed' for diploma and certificate requests
+				const buttonText = isDiplomaRequest()
+					? "Mark as Processed"
+					: isCertificateRequest()
+					? "Mark as Processed"
+					: "Mark as Processed";
 
 				return {
 					text: processing ? "Processing..." : buttonText,
@@ -450,7 +498,7 @@ export default function ProcessedRequest({
 							)}
 
 							{/* Student Documents */}
-							{!isDiplomaRequest() && (
+							{!isDiplomaRequest() && !isCertificateRequest() && (
 								<StudentDocumentsSection
 									studentDocuments={studentDocuments}
 									request={currentRequest}
@@ -503,6 +551,56 @@ export default function ProcessedRequest({
 										className="mt-3 text-white bg-blue-600 hover:bg-blue-700"
 									>
 										Generate Diploma Template
+									</Button>
+								</div>
+							)}
+
+							{/* Certificate Template Info - Show for certificate requests */}
+							{isCertificateRequest() && (
+								<div className="p-4 bg-green-50 rounded-lg border-2 border-green-200 border-dashed dark:bg-green-900/20 dark:border-green-700">
+									<div className="flex gap-3 items-center mb-3">
+										<FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+										<span className="text-sm font-medium text-green-700 dark:text-green-300">
+											Certificate of Enrollment Template Ready
+										</span>
+									</div>
+									<div className="mb-2 text-sm text-green-600 dark:text-green-400">
+										A certificate of enrollment template will be generated for
+										this student. Click "Generate Certificate Template" to
+										review and edit the student information before processing.
+									</div>
+									{studentInfo && (
+										<div className="p-3 mt-3 bg-white rounded border border-green-200 dark:bg-slate-800 dark:border-green-600">
+											<div className="mb-2 text-xs font-medium text-green-600 dark:text-green-400">
+												Current Student Information:
+											</div>
+											<div className="grid grid-cols-2 gap-2 text-xs text-slate-900 dark:text-white">
+												<div>
+													<span className="font-medium">Name:</span>{" "}
+													{studentInfo.firstname} {studentInfo.middlename}{" "}
+													{studentInfo.lastname}
+												</div>
+												<div>
+													<span className="font-medium">LRN:</span>{" "}
+													{studentInfo.lrn || "Not set"}
+												</div>
+												<div>
+													<span className="font-medium">Track:</span>{" "}
+													{studentInfo.track || "Not set"}
+												</div>
+												<div>
+													<span className="font-medium">Strand:</span>{" "}
+													{studentInfo.strand || "Not set"}
+												</div>
+											</div>
+										</div>
+									)}
+									{/* Generate Certificate Template Button */}
+									<Button
+										onClick={() => setShowCertificateTemplate(true)}
+										className="mt-3 text-white bg-green-600 hover:bg-green-700"
+									>
+										Generate Certificate Template
 									</Button>
 								</div>
 							)}
@@ -573,6 +671,18 @@ export default function ProcessedRequest({
 					request={currentRequest}
 					studentInfo={studentInfo}
 					onSave={handleDiplomaSave}
+					fetchStudentInfo={fetchStudentInfo}
+				/>
+			)}
+
+			{/* Certificate Template Modal */}
+			{showCertificateTemplate && (
+				<CertificateTemplateModal
+					isOpen={showCertificateTemplate}
+					onClose={handleCertificateCancel}
+					request={currentRequest}
+					studentInfo={studentInfo}
+					onSave={handleCertificateSave}
 					fetchStudentInfo={fetchStudentInfo}
 				/>
 			)}

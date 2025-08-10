@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FileText } from "lucide-react";
+import { FileText, GraduationCap } from "lucide-react";
 import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 import ExcelPrintModal from "./ExcelPrintModal";
 
@@ -40,6 +40,27 @@ const StudentDocumentsSection = ({ studentDocuments, request }) => {
 		setSelectedExcelFile(null);
 	};
 
+	// Function to get grade level display text
+	const getGradeLevelDisplay = (document) => {
+		if (document.gradeLevelName) {
+			return document.gradeLevelName;
+		}
+		if (document.gradeLevelId) {
+			return `Grade ${document.gradeLevelId}`;
+		}
+		return "Unknown Grade";
+	};
+
+	// Function to get grade level badge styling
+	const getGradeLevelBadgeStyle = (document) => {
+		if (document.gradeLevelId === 1) {
+			return "bg-blue-100 text-blue-800 border-blue-200";
+		} else if (document.gradeLevelId === 2) {
+			return "bg-green-100 text-green-800 border-green-200";
+		}
+		return "bg-gray-100 text-gray-800 border-gray-200";
+	};
+
 	if (studentDocuments.length > 0) {
 		return (
 			<>
@@ -62,11 +83,20 @@ const StudentDocumentsSection = ({ studentDocuments, request }) => {
 								key={index}
 								className="overflow-hidden bg-white rounded-lg border shadow-sm border-slate-200"
 							>
-								{/* Document Type Header */}
+								{/* Document Type Header with Grade Level */}
 								<div className="px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-slate-200">
-									<p className="text-xs font-semibold tracking-wide text-green-800 uppercase">
-										{document.documentType || "Document"}
-									</p>
+									<div className="flex justify-between items-center">
+										<p className="text-xs font-semibold tracking-wide text-green-800 uppercase">
+											{document.documentType || "Document"}
+										</p>
+										{/* Grade Level Badge */}
+										<div
+											className={`flex gap-1 items-center px-2 py-1 text-xs font-medium rounded-full border ${getGradeLevelBadgeStyle( document )}`}
+										>
+											<GraduationCap className="w-3 h-3" />
+											{getGradeLevelDisplay(document)}
+										</div>
+									</div>
 								</div>
 
 								<div className="flex gap-3 items-center p-4">
@@ -77,6 +107,10 @@ const StudentDocumentsSection = ({ studentDocuments, request }) => {
 										</p>
 										<p className="mb-2 text-xs text-slate-500">
 											Added: {new Date(document.createdAt).toLocaleDateString()}
+										</p>
+										{/* Grade Level Info */}
+										<p className="mb-2 text-xs text-slate-600">
+											📚 {getGradeLevelDisplay(document)}
 										</p>
 										<div className="flex gap-2">
 											<a
@@ -153,7 +187,11 @@ const StudentDocumentsSection = ({ studentDocuments, request }) => {
 			</div>
 			<div className="mb-2 text-sm text-amber-600">
 				No {request.document} documents are available for this student in the
-				system.
+				system. This includes checking both Grade 11 and Grade 12 records.
+			</div>
+			<div className="text-xs text-amber-500">
+				Documents are stored with grade level information to distinguish between
+				different academic years.
 			</div>
 		</div>
 	);
