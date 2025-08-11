@@ -17,7 +17,7 @@ import CryptoJS from "crypto-js";
 import { getDecryptedApiUrl } from "../utils/apiConfig";
 import { getSection, getSchoolYear, getStrands } from "../utils/registrar";
 
-const StudentImport = ({ onClose, onImportComplete }) => {
+const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 	const [file, setFile] = useState(null);
 	const [previewData, setPreviewData] = useState([]);
 	const [headers, setHeaders] = useState([]);
@@ -56,6 +56,13 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 		loadSchoolYears();
 		loadStrands();
 	}, []);
+
+	// Auto-select teacher's section if provided
+	useEffect(() => {
+		if (teacherSectionId) {
+			setSelectedSection(teacherSectionId);
+		}
+	}, [teacherSectionId]);
 
 	const loadSections = async () => {
 		setLoadingSections(true);
@@ -414,18 +421,22 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 								<div className="flex items-center mb-2 space-x-2">
 									<Users className="w-5 h-5 text-blue-500 dark:text-blue-400" />
 									<label className="font-medium text-gray-900 dark:text-white">
-										Select Section for All Students:
+										{teacherSectionId
+											? "Section (Auto-selected):"
+											: "Select Section for All Students:"}
 									</label>
 								</div>
 								<select
 									value={selectedSection}
 									onChange={(e) => setSelectedSection(e.target.value)}
 									className="px-3 py-2 w-full text-gray-900 bg-white rounded-md border border-gray-300 dark:text-white dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									disabled={loadingSections}
+									disabled={loadingSections || !!teacherSectionId}
 								>
 									<option value="">
 										{loadingSections
 											? "Loading sections..."
+											: teacherSectionId
+											? "Section automatically selected"
 											: "Select a section"}
 									</option>
 									{sections.map((section) => (
@@ -435,8 +446,9 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 									))}
 								</select>
 								<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-									All imported students will be assigned to the selected
-									section.
+									{teacherSectionId
+										? "Section is automatically selected based on your teacher account."
+										: "All imported students will be assigned to the selected section."}
 								</p>
 							</div>
 

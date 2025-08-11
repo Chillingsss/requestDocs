@@ -14,6 +14,7 @@ export default function AddStudentModal({
 	sectionOptions = [],
 	schoolYearOptions = [],
 	createdBy,
+	teacherSectionId,
 }) {
 	const [strands, setStrands] = useState([]);
 	const [formData, setFormData] = useState({
@@ -34,7 +35,7 @@ export default function AddStudentModal({
 		motherName: "",
 		guardianName: "",
 		guardianRelationship: "",
-		sectionId: "",
+		sectionId: teacherSectionId || "", // Auto-set teacher section if available
 		schoolYearId: "",
 		userLevel: "4", // Add default userLevel for students
 		createdBy: createdBy || "",
@@ -61,6 +62,16 @@ export default function AddStudentModal({
 		};
 		fetchStrands();
 	}, []);
+
+	// Auto-select teacher's section if provided
+	useEffect(() => {
+		if (teacherSectionId) {
+			setFormData((prev) => ({
+				...prev,
+				sectionId: teacherSectionId,
+			}));
+		}
+	}, [teacherSectionId]);
 
 	const handleInputChange = (e) => {
 		const { name, value } = e.target;
@@ -93,7 +104,16 @@ export default function AddStudentModal({
 			"schoolYearId",
 		];
 		for (const field of requiredFields) {
-			if (!formData[field] || !formData[field].trim()) {
+			const value = formData[field];
+			// Check if the field has a value
+			if (!value || value === "") {
+				toast.error(
+					`${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+				);
+				return false;
+			}
+			// For string fields, also check if they're not just whitespace
+			if (typeof value === "string" && !value.trim()) {
 				toast.error(
 					`${field.charAt(0).toUpperCase() + field.slice(1)} is required`
 				);
@@ -136,7 +156,7 @@ export default function AddStudentModal({
 				motherName: "",
 				guardianName: "",
 				guardianRelationship: "",
-				sectionId: "",
+				sectionId: teacherSectionId || "", // Keep teacher section if available
 				schoolYearId: "",
 				userLevel: "4", // Reset userLevel
 				createdBy: createdBy || "",
@@ -170,7 +190,7 @@ export default function AddStudentModal({
 			motherName: "",
 			guardianName: "",
 			guardianRelationship: "",
-			sectionId: "",
+			sectionId: teacherSectionId || "", // Keep teacher section if available
 			schoolYearId: "",
 			userLevel: "4", // Reset userLevel
 			createdBy: createdBy || "",
@@ -474,7 +494,7 @@ export default function AddStudentModal({
 									htmlFor="sectionId"
 									className="text-gray-700 dark:text-gray-200"
 								>
-									Section
+									{teacherSectionId ? "Section (Auto-selected)" : "Section"}
 								</Label>
 								<select
 									id="sectionId"
@@ -482,15 +502,26 @@ export default function AddStudentModal({
 									value={formData.sectionId}
 									onChange={handleInputChange}
 									required
-									className="px-4 py-3 w-full bg-gray-50 rounded-xl border-2 border-gray-200 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-400"
+									disabled={!!teacherSectionId}
+									className="px-4 py-3 w-full bg-gray-50 rounded-xl border-2 border-gray-200 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
 								>
-									<option value="">Select section</option>
+									<option value="">
+										{teacherSectionId
+											? "Section automatically selected"
+											: "Select section"}
+									</option>
 									{sectionOptions.map((section) => (
 										<option key={section.id} value={section.id}>
 											{section.name}
 										</option>
 									))}
 								</select>
+								{teacherSectionId && (
+									<p className="text-xs text-gray-500 dark:text-gray-400">
+										Section is automatically selected based on your teacher
+										account.
+									</p>
+								)}
 							</div>
 							<div className="space-y-2">
 								<Label
