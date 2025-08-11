@@ -431,6 +431,107 @@ class User {
       return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
   }
+
+  function getProfile($json){
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+
+    try {
+      $sql = "SELECT 
+                s.id,
+                s.firstname,
+                s.middlename,
+                s.lastname,
+                s.lrn,
+                s.email,
+                s.birthDate,
+                s.age,
+                s.religion,
+                s.completeAddress,
+                s.fatherName,
+                s.motherName,
+                s.guardianName,
+                s.guardianRelationship,
+                s.sectionId,
+                s.schoolyearId,
+                s.strandId,
+                sec.name as sectionName,
+                sy.year as schoolYear,
+                t.name as track,
+                st.name as strand
+              FROM tblstudent s
+              LEFT JOIN tblsection sec ON s.sectionId = sec.id
+              LEFT JOIN tblschoolyear sy ON s.schoolyearId = sy.id
+              LEFT JOIN tblstrand st ON s.strandId = st.id
+              LEFT JOIN tbltrack t ON st.trackId = t.id
+              WHERE s.id = :userId";
+
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':userId', $userId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+        return json_encode($profile);
+      }
+      return json_encode(['error' => 'Student profile not found']);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function updateProfile($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+
+    try {
+      $sql = "UPDATE tblstudent 
+              SET firstname = :firstname, 
+                  middlename = :middlename, 
+                  lastname = :lastname, 
+                  email = :email,
+                  birthDate = :birthDate,
+                  age = :age,
+                  religion = :religion,
+                  completeAddress = :completeAddress,
+                  fatherName = :fatherName,
+                  motherName = :motherName,
+                  guardianName = :guardianName,
+                  guardianRelationship = :guardianRelationship,
+                  updatedAt = NOW()
+              WHERE id = :userId";
+
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':firstname', $json['firstname']);
+      $stmt->bindParam(':middlename', $json['middlename']);
+      $stmt->bindParam(':lastname', $json['lastname']);
+      $stmt->bindParam(':email', $json['email']);
+      $stmt->bindParam(':birthDate', $json['birthDate']);
+      $stmt->bindParam(':age', $json['age']);
+      $stmt->bindParam(':religion', $json['religion']);
+      $stmt->bindParam(':completeAddress', $json['completeAddress']);
+      $stmt->bindParam(':fatherName', $json['fatherName']);
+      $stmt->bindParam(':motherName', $json['motherName']);
+      $stmt->bindParam(':guardianName', $json['guardianName']);
+      $stmt->bindParam(':guardianRelationship', $json['guardianRelationship']);
+      $stmt->bindParam(':userId', $userId);
+
+      if ($stmt->execute()) {
+        return json_encode(['success' => true, 'message' => 'Profile updated successfully']);
+      } else {
+        return json_encode(['error' => 'Failed to update profile']);
+      }
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -460,6 +561,12 @@ switch ($operation) {
     break;
   case "getRequestTracking":
     echo $user->getRequestTracking($json);
+    break;
+  case "getProfile":
+    echo $user->getProfile($json);
+    break;
+  case "updateProfile":
+    echo $user->updateProfile($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

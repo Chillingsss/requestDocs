@@ -10,6 +10,7 @@ import StudentFileManagement from "./components/StudentFileManagement";
 import ThemeToggle from "../../components/ThemeToggle";
 import Sidebar from "../../components/shared/Sidebar";
 import CryptoJS from "crypto-js";
+import StudentsTab from "../registrar/components/StudentsTab";
 
 export default function TeacherDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -267,14 +268,7 @@ export default function TeacherDashboard() {
 							/>
 						</>
 					) : activeTab === "students" ? (
-						<div className="py-8 text-center">
-							<h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-white">
-								Students Management
-							</h2>
-							<p className="text-slate-600 dark:text-slate-400">
-								Students section coming soon...
-							</p>
-						</div>
+						<StudentsTab />
 					) : activeTab === "files" ? (
 						<div className="py-8 text-center">
 							<h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-white">

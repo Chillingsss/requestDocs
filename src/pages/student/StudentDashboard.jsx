@@ -13,10 +13,12 @@ import ThemeToggle from "../../components/ThemeToggle";
 import Sidebar from "../../components/shared/Sidebar";
 import StatsCards from "./components/StatsCards";
 import RequestsTable from "./components/RequestsTable";
+import ProfileModal from "./modal/ProfileModal";
 
 export default function StudentDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const [showRequestForm, setShowRequestForm] = useState(false);
+	const [showProfileModal, setShowProfileModal] = useState(false);
 	const [userRequests, setUserRequests] = useState([]);
 	const [loadingRequests, setLoadingRequests] = useState(false);
 	const navigate = useNavigate();
@@ -108,6 +110,7 @@ export default function StudentDashboard() {
 				activeSection={activeTab}
 				handleNavClick={handleNavClick}
 				onLogout={logout}
+				onProfileClick={() => setShowProfileModal(true)}
 				navItems={navItems}
 			/>
 
@@ -214,12 +217,28 @@ export default function StudentDashboard() {
 						<h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-white">
 							Student Profile
 						</h2>
-						<p className="text-slate-600 dark:text-slate-400">
-							Profile section coming soon...
+						<p className="mb-6 text-slate-600 dark:text-slate-400">
+							View and edit your profile information
 						</p>
+						<Button
+							onClick={() => setShowProfileModal(true)}
+							className="flex items-center space-x-2 text-white bg-blue-600 hover:bg-blue-700"
+						>
+							<User className="w-4 h-4" />
+							<span>Open Profile</span>
+						</Button>
 					</div>
 				) : null}
 			</main>
+
+			{/* Profile Modal */}
+			{showProfileModal && (
+				<ProfileModal
+					isOpen={showProfileModal}
+					onClose={() => setShowProfileModal(false)}
+					userId={userId}
+				/>
+			)}
 		</div>
 	);
 }

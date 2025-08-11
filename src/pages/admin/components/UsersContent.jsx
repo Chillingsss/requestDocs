@@ -1,9 +1,14 @@
 import React from "react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, User, Eye } from "lucide-react";
 
-export default function UsersContent({ users, loading, onAddUser }) {
+export default function UsersContent({
+	users,
+	loading,
+	onAddUser,
+	onViewProfile,
+}) {
 	return (
 		<>
 			{/* Users List */}
@@ -49,6 +54,9 @@ export default function UsersContent({ users, loading, onAddUser }) {
 										<th className="px-4 py-3 font-medium text-left text-slate-700 dark:text-white">
 											User Level
 										</th>
+										<th className="px-4 py-3 font-medium text-left text-slate-700 dark:text-white">
+											Actions
+										</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -74,6 +82,17 @@ export default function UsersContent({ users, loading, onAddUser }) {
 												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
 													{user.userLevel}
 												</span>
+											</td>
+											<td className="px-4 py-3 text-sm text-slate-900 dark:text-white">
+												<Button
+													onClick={() => onViewProfile(user.id, "user")}
+													variant="outline"
+													size="sm"
+													className="flex items-center space-x-2 text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+												>
+													<Eye className="w-4 h-4" />
+													<span>View Profile</span>
+												</Button>
 											</td>
 										</tr>
 									))}

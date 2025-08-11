@@ -287,10 +287,64 @@ export async function getSection(gradeLevelId = null) {
 	}
 }
 
+export async function getAllSections(gradeLevelId = null) {
+	const formData = new FormData();
+	formData.append("operation", "getAllSections");
+
+	if (gradeLevelId) {
+		formData.append("gradeLevelId", gradeLevelId);
+	}
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 export async function checkUserExists(userId) {
 	const formData = new FormData();
 	formData.append("operation", "checkUserExists");
 	formData.append("json", JSON.stringify({ userId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getUserProfile(userId, userType) {
+	const formData = new FormData();
+	formData.append("operation", "getUserProfile");
+	formData.append("json", JSON.stringify({ userId, userType }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateUserProfile(userId, userType, profileData) {
+	const formData = new FormData();
+	formData.append("operation", "updateUserProfile");
+	formData.append("json", JSON.stringify({ userId, userType, ...profileData }));
 
 	const apiUrl = getDecryptedApiUrl();
 

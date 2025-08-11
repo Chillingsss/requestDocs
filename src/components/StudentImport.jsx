@@ -314,19 +314,19 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 	};
 
 	return (
-		<div className="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50">
-			<div className="bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+		<div className="flex fixed inset-0 z-50 justify-center items-center bg-black/50 dark:bg-black/70">
+			<div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
 				{/* Header */}
-				<div className="flex justify-between items-center p-6 border-b border-gray-700">
+				<div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
 					<div className="flex items-center space-x-2">
 						<FileSpreadsheet className="w-6 h-6 text-green-500" />
-						<h2 className="text-xl font-semibold text-white">
+						<h2 className="text-xl font-semibold text-gray-900 dark:text-white">
 							Import Students from CSV/Excel
 						</h2>
 					</div>
 					<button
 						onClick={onClose}
-						className="text-gray-400 transition-colors hover:text-gray-200"
+						className="text-gray-500 transition-colors dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
 					>
 						<X className="w-6 h-6" />
 					</button>
@@ -336,11 +336,11 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 					{!file ? (
 						<>
 							{/* Instructions */}
-							<div className="p-4 mb-6 rounded-lg border bg-blue-900/20 border-blue-800/30">
-								<h3 className="mb-2 font-medium text-blue-200">
+							<div className="p-4 mb-6 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800/30">
+								<h3 className="mb-2 font-medium text-blue-800 dark:text-blue-200">
 									File Requirements:
 								</h3>
-								<ul className="space-y-1 text-sm text-blue-100">
+								<ul className="space-y-1 text-sm text-blue-700 dark:text-blue-100">
 									<li>
 										• <strong>CSV format (.csv) is recommended</strong> for best
 										compatibility
@@ -370,10 +370,10 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							<div
 								className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
 									dragActive
-										? "border-green-500 bg-green-900/20"
+										? "bg-green-50 border-green-500 dark:bg-green-900/20"
 										: file
-										? "border-green-600 bg-green-900/20"
-										: "border-gray-600 hover:border-gray-500 bg-gray-800/50"
+										? "bg-green-50 border-green-600 dark:bg-green-900/20"
+										: "bg-gray-50 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 dark:bg-gray-800/50"
 								}`}
 								onDragEnter={handleDrag}
 								onDragLeave={handleDrag}
@@ -391,16 +391,16 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 								<div className="space-y-4">
 									<Upload className="mx-auto w-12 h-12 text-gray-400" />
 									<div>
-										<p className="text-lg font-medium text-white">
+										<p className="text-lg font-medium text-gray-900 dark:text-white">
 											Drop your CSV or Excel file here, or{" "}
 											<label
 												htmlFor="file-input"
-												className="text-green-400 cursor-pointer hover:text-green-300"
+												className="text-green-600 cursor-pointer dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
 											>
 												browse
 											</label>
 										</p>
-										<p className="mt-1 text-sm text-gray-400">
+										<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
 											Supports .csv, .xls, and .xlsx files up to 10MB
 										</p>
 									</div>
@@ -412,15 +412,15 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							{/* Section Selection */}
 							<div className="mb-4">
 								<div className="flex items-center mb-2 space-x-2">
-									<Users className="w-5 h-5 text-blue-400" />
-									<label className="font-medium text-white">
+									<Users className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+									<label className="font-medium text-gray-900 dark:text-white">
 										Select Section for All Students:
 									</label>
 								</div>
 								<select
 									value={selectedSection}
 									onChange={(e) => setSelectedSection(e.target.value)}
-									className="px-3 py-2 w-full text-white bg-gray-800 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									className="px-3 py-2 w-full text-gray-900 bg-white rounded-md border border-gray-300 dark:text-white dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 									disabled={loadingSections}
 								>
 									<option value="">
@@ -434,7 +434,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 										</option>
 									))}
 								</select>
-								<p className="mt-1 text-sm text-gray-400">
+								<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
 									All imported students will be assigned to the selected
 									section.
 								</p>
@@ -443,15 +443,15 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							{/* School Year Selection */}
 							<div className="mb-4">
 								<div className="flex items-center mb-2 space-x-2">
-									<Calendar className="w-5 h-5 text-blue-400" />
-									<label className="font-medium text-white">
+									<Calendar className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+									<label className="font-medium text-gray-900 dark:text-white">
 										Select School Year for All Students:
 									</label>
 								</div>
 								<select
 									value={selectedSchoolYear}
 									onChange={(e) => setSelectedSchoolYear(e.target.value)}
-									className="px-3 py-2 w-full text-white bg-gray-800 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									className="px-3 py-2 w-full text-gray-900 bg-white rounded-md border border-gray-300 dark:text-white dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 									disabled={loadingSchoolYears}
 								>
 									<option value="">
@@ -465,7 +465,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 										</option>
 									))}
 								</select>
-								<p className="mt-1 text-sm text-gray-400">
+								<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
 									All imported students will be assigned to the selected school
 									year.
 								</p>
@@ -474,15 +474,15 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							{/* Strand Selection */}
 							<div className="mb-4">
 								<div className="flex items-center mb-2 space-x-2">
-									<Users className="w-5 h-5 text-blue-400" />
-									<label className="font-medium text-white">
+									<Users className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+									<label className="font-medium text-gray-900 dark:text-white">
 										Select Strand for All Students:
 									</label>
 								</div>
 								<select
 									value={selectedStrand}
 									onChange={(e) => setSelectedStrand(e.target.value)}
-									className="px-3 py-2 w-full text-white bg-gray-800 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									className="px-3 py-2 w-full text-gray-900 bg-white rounded-md border border-gray-300 dark:text-white dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 									disabled={loadingStrands}
 								>
 									<option value="">
@@ -494,7 +494,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 										</option>
 									))}
 								</select>
-								<p className="mt-1 text-sm text-gray-400">
+								<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
 									All imported students will be assigned to the selected strand.
 								</p>
 							</div>
@@ -502,30 +502,30 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							{/* Preview Table */}
 							<div className="mb-4">
 								<div className="flex justify-between items-center mb-2">
-									<h3 className="font-medium text-green-300">
+									<h3 className="font-medium text-green-600 dark:text-green-300">
 										Preview Data ({previewData.length} rows)
 									</h3>
-									<div className="text-sm text-gray-400">
+									<div className="text-sm text-gray-600 dark:text-gray-400">
 										Click on cells to edit • Click trash icon to remove rows
 									</div>
 								</div>
 
 								{isParsing ? (
-									<div className="text-center text-gray-400">
+									<div className="text-center text-gray-600 dark:text-gray-400">
 										Parsing file...
 									</div>
 								) : (
-									<div className="overflow-x-auto max-h-[50vh] border border-gray-700 rounded-lg">
-										<table className="min-w-full text-xs text-gray-200 lg:text-sm">
+									<div className="overflow-x-auto max-h-[50vh] border border-gray-300 dark:border-gray-700 rounded-lg">
+										<table className="min-w-full text-xs text-gray-700 dark:text-gray-200 lg:text-sm">
 											<thead>
 												<tr>
-													<th className="px-3 py-2 w-16 font-semibold text-left bg-gray-800">
+													<th className="px-3 py-2 w-16 font-semibold text-left bg-gray-100 dark:bg-gray-800">
 														Actions
 													</th>
 													{headers.map((header, idx) => (
 														<th
 															key={idx}
-															className="px-3 py-2 font-semibold text-left bg-gray-800"
+															className="px-3 py-2 font-semibold text-left bg-gray-100 dark:bg-gray-800"
 														>
 															{header}
 														</th>
@@ -537,13 +537,15 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 													<tr
 														key={rIdx}
 														className={
-															rIdx % 2 === 0 ? "bg-gray-900" : "bg-gray-800"
+															rIdx % 2 === 0
+																? "bg-white dark:bg-gray-900"
+																: "bg-gray-50 dark:bg-gray-800"
 														}
 													>
 														<td className="px-3 py-2">
 															<button
 																onClick={() => removeRow(rIdx)}
-																className="p-1 text-red-400 rounded transition-colors hover:text-red-300 hover:bg-red-900/20"
+																className="p-1 text-red-500 rounded transition-colors dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/20"
 																title="Remove this row"
 															>
 																<Trash2 className="w-4 h-4" />
@@ -570,19 +572,19 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 																		onKeyPress={(e) =>
 																			handleCellKeyPress(e, rIdx, cIdx)
 																		}
-																		className="px-2 py-1 w-full text-sm text-white bg-gray-800 rounded border border-blue-500 focus:outline-none focus:border-blue-400"
+																		className="px-2 py-1 w-full text-sm text-gray-900 bg-white rounded border border-blue-500 dark:text-white dark:bg-gray-800 focus:outline-none focus:border-blue-400"
 																		autoFocus
 																	/>
 																) : (
 																	<div
 																		onClick={() => startEditing(rIdx, cIdx)}
-																		className="min-h-[24px] cursor-pointer hover:bg-blue-900/20 rounded px-1 py-1 flex items-center group"
+																		className="min-h-[24px] cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded px-1 py-1 flex items-center group"
 																		title="Click to edit"
 																	>
 																		<span className="overflow-hidden flex-1 whitespace-nowrap text-ellipsis">
 																			{row[cIdx] || ""}
 																		</span>
-																		<Edit3 className="ml-1 w-3 h-3 text-gray-500 opacity-0 transition-opacity group-hover:opacity-100" />
+																		<Edit3 className="ml-1 w-3 h-3 text-gray-500 opacity-0 transition-opacity dark:text-gray-500 group-hover:opacity-100" />
 																	</div>
 																)}
 															</td>
@@ -594,7 +596,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 									</div>
 								)}
 								{previewData.length === 0 && !isParsing && (
-									<div className="py-8 text-center text-gray-400">
+									<div className="py-8 text-center text-gray-600 dark:text-gray-400">
 										No data to preview. All rows may have been removed.
 									</div>
 								)}
@@ -604,7 +606,7 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							<div className="flex justify-end mt-6 space-x-3">
 								<button
 									onClick={resetForm}
-									className="px-4 py-2 text-gray-300 rounded-md border border-gray-600 transition-colors hover:bg-gray-800"
+									className="px-4 py-2 text-gray-700 rounded-md border border-gray-300 transition-colors dark:text-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
 								>
 									Cancel
 								</button>
@@ -642,11 +644,11 @@ const StudentImport = ({ onClose, onImportComplete }) => {
 							{saveResult && (
 								<div className="mt-6">
 									{saveResult.success ? (
-										<div className="font-semibold text-green-400">
+										<div className="font-semibold text-green-600 dark:text-green-400">
 											{saveResult.message}
 										</div>
 									) : (
-										<div className="font-semibold text-red-400">
+										<div className="font-semibold text-red-600 dark:text-red-400">
 											{saveResult.error}
 										</div>
 									)}

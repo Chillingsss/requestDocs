@@ -147,3 +147,39 @@ export async function getRequestTracking(requestId) {
 		throw error;
 	}
 }
+
+export async function getStudentProfile(userId) {
+	const formData = new FormData();
+	formData.append("operation", "getProfile");
+	formData.append("json", JSON.stringify({ userId }));
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/student.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateStudentProfile(userId, profileData) {
+	const formData = new FormData();
+	formData.append("operation", "updateProfile");
+	formData.append("json", JSON.stringify({ userId, ...profileData }));
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/student.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

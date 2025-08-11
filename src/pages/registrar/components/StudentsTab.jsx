@@ -471,15 +471,14 @@ export default function StudentsTab() {
 						</>
 					)}
 				</CardContent>
+				{/* Import Modal */}
+				{showImportModal && (
+					<StudentImport
+						onClose={() => setShowImportModal(false)}
+						onImportComplete={handleImportComplete}
+					/>
+				)}
 			</Card>
-
-			{/* Import Modal */}
-			{showImportModal && (
-				<StudentImport
-					onClose={() => setShowImportModal(false)}
-					onImportComplete={handleImportComplete}
-				/>
-			)}
 		</>
 	);
 }

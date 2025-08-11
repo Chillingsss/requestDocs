@@ -736,6 +736,35 @@ class User {
     return json_encode([]);
    }
 
+   function getAllSections()
+   {
+    include "connection.php";
+
+    $gradeLevelId = isset($_POST["gradeLevelId"]) ? $_POST["gradeLevelId"] : null;
+
+    if ($gradeLevelId) {
+        // Filter sections by grade level only (no teacher assignment filter)
+        $sql = "SELECT s.* FROM tblsection s 
+                WHERE s.gradeLevelId = :gradeLevelId 
+                ORDER BY s.name";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':gradeLevelId', $gradeLevelId);
+    } else {
+        // Get all sections (no teacher assignment filter)
+        $sql = "SELECT s.* FROM tblsection s 
+                ORDER BY s.name";
+        $stmt = $conn->prepare($sql);
+    }
+
+    $stmt->execute();
+
+    if ($stmt->rowCount() > 0) {
+      $sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      return json_encode($sections);
+    }
+    return json_encode([]);
+   }
+
    function checkUserExists($json)
    {
     include "connection.php";
@@ -776,6 +805,150 @@ class User {
         'exists' => false,
         'message' => 'User ID is available'
     ]);
+   }
+
+   function getUserProfile($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $userType = $json['userType']; // 'user' or 'student'
+    
+    try {
+        if ($userType === 'student') {
+            // Get student profile
+            $sql = "SELECT 
+                      s.id,
+                      s.firstname,
+                      s.middlename,
+                      s.lastname,
+                      s.lrn,
+                      s.email,
+                      s.birthDate,
+                      s.age,
+                      s.religion,
+                      s.completeAddress,
+                      s.fatherName,
+                      s.motherName,
+                      s.guardianName,
+                      s.guardianRelationship,
+                      s.sectionId,
+                      s.schoolyearId,
+                      s.strandId,
+                      sec.name as sectionName,
+                      sy.year as schoolYear,
+                      t.name as track,
+                      st.name as strand,
+                      ul.name as userLevel
+                    FROM tblstudent s
+                    LEFT JOIN tblsection sec ON s.sectionId = sec.id
+                    LEFT JOIN tblschoolyear sy ON s.schoolyearId = sy.id
+                    LEFT JOIN tblstrand st ON s.strandId = st.id
+                    LEFT JOIN tbltrack t ON st.trackId = t.id
+                    LEFT JOIN tbluserlevel ul ON s.userLevel = ul.id
+                    WHERE s.id = :userId";
+        } else {
+            // Get admin/teacher profile
+            $sql = "SELECT 
+                      u.id,
+                      u.firstname,
+                      u.lastname,
+                      u.email,
+                      u.gradeLevelId,
+                      u.sectionId,
+                      gl.name as gradeLevel,
+                      sec.name as sectionName,
+                      ul.name as userLevel
+                    FROM tbluser u
+                    LEFT JOIN tblgradelevel gl ON u.gradeLevelId = gl.id
+                    LEFT JOIN tblsection sec ON u.sectionId = sec.id
+                    LEFT JOIN tbluserlevel ul ON u.userLevel = ul.id
+                    WHERE u.id = :userId";
+        }
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':userId', $userId);
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0) {
+            $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+            $profile['userType'] = $userType; // Add user type to profile data
+            return json_encode($profile);
+        }
+        return json_encode(['error' => 'User profile not found']);
+
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function updateUserProfile($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $userType = $json['userType'];
+    
+    try {
+        if ($userType === 'student') {
+            // Update student profile
+            $sql = "UPDATE tblstudent 
+                    SET firstname = :firstname, 
+                        middlename = :middlename, 
+                        lastname = :lastname, 
+                        email = :email,
+                        birthDate = :birthDate,
+                        age = :age,
+                        religion = :religion,
+                        completeAddress = :completeAddress,
+                        fatherName = :fatherName,
+                        motherName = :motherName,
+                        guardianName = :guardianName,
+                        guardianRelationship = :guardianRelationship
+                    WHERE id = :userId";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bindParam(':firstname', $json['firstname']);
+            $stmt->bindParam(':middlename', $json['middlename']);
+            $stmt->bindParam(':lastname', $json['lastname']);
+            $stmt->bindParam(':email', $json['email']);
+            $stmt->bindParam(':birthDate', $json['birthDate']);
+            $stmt->bindParam(':age', $json['age']);
+            $stmt->bindParam(':religion', $json['religion']);
+            $stmt->bindParam(':completeAddress', $json['completeAddress']);
+            $stmt->bindParam(':fatherName', $json['fatherName']);
+            $stmt->bindParam(':motherName', $json['motherName']);
+            $stmt->bindParam(':guardianName', $json['guardianName']);
+            $stmt->bindParam(':guardianRelationship', $json['guardianRelationship']);
+            $stmt->bindParam(':userId', $userId);
+        } else {
+            // Update admin/teacher profile
+            $sql = "UPDATE tbluser 
+                    SET firstname = :firstname, 
+                        lastname = :lastname, 
+                        email = :email,
+                        gradeLevelId = :gradeLevelId,
+                        sectionId = :sectionId
+                    WHERE id = :userId";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bindParam(':firstname', $json['firstname']);
+            $stmt->bindParam(':lastname', $json['lastname']);
+            $stmt->bindParam(':email', $json['email']);
+            $stmt->bindParam(':gradeLevelId', $json['gradeLevelId']);
+            $stmt->bindParam(':sectionId', $json['sectionId']);
+            $stmt->bindParam(':userId', $userId);
+        }
+
+        if ($stmt->execute()) {
+            return json_encode(['success' => true, 'message' => 'Profile updated successfully']);
+        } else {
+            return json_encode(['error' => 'Failed to update profile']);
+        }
+
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
    }
 }
 
@@ -840,8 +1013,17 @@ switch ($operation) {
   case "getSection":
     echo $user->getSection();
     break;
+  case "getAllSections":
+    echo $user->getAllSections();
+    break;
   case "checkUserExists":
     echo $user->checkUserExists($json);
+    break;
+  case "getUserProfile":
+    echo $user->getUserProfile($json);
+    break;
+  case "updateUserProfile":
+    echo $user->updateUserProfile($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

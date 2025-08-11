@@ -41,6 +41,7 @@ import DashboardContent from "./components/DashboardContent";
 import UsersContent from "./components/UsersContent";
 import StudentsContent from "./components/StudentsContent";
 import Sidebar from "../../components/shared/Sidebar";
+import UserProfileModal from "./modal/UserProfileModal";
 
 const SECRET_KEY = "mogchs_secret_key";
 
@@ -77,6 +78,11 @@ export default function AdminDashboard() {
 	const [studentsLoading, setStudentsLoading] = useState(false);
 	const [selectedSectionFilter, setSelectedSectionFilter] = useState("");
 	const [selectedSchoolYearFilter, setSelectedSchoolYearFilter] = useState("");
+	const [showProfileModal, setShowProfileModal] = useState(false);
+	const [selectedProfileUser, setSelectedProfileUser] = useState({
+		id: "",
+		type: "",
+	});
 
 	// Initialize sidebar state based on screen size
 	useEffect(() => {
@@ -235,6 +241,21 @@ export default function AdminDashboard() {
 		toast.success("User list updated");
 	};
 
+	const handleViewProfile = (userId, userType) => {
+		setSelectedProfileUser({ id: userId, type: userType });
+		setShowProfileModal(true);
+	};
+
+	const handleProfileSuccess = () => {
+		// Refresh data based on current section
+		if (activeSection === "Users") {
+			fetchUsers();
+		} else if (activeSection === "Students") {
+			fetchStudents();
+		}
+		toast.success("Profile updated successfully");
+	};
+
 	// Chart data for request status
 	const requestStatusChartData = {
 		labels: dashboardData.requestStats.map((stat) => stat.status),
@@ -305,6 +326,7 @@ export default function AdminDashboard() {
 						users={users}
 						loading={loading}
 						onAddUser={() => setShowAddUserModal(true)}
+						onViewProfile={handleViewProfile}
 					/>
 				);
 			case "Students":
@@ -323,6 +345,7 @@ export default function AdminDashboard() {
 							setSelectedSchoolYearFilter(e.target.value)
 						}
 						onAddStudent={() => setShowAddStudentModal(true)}
+						onViewProfile={handleViewProfile}
 					/>
 				);
 			case "Reports":
@@ -441,6 +464,17 @@ export default function AdminDashboard() {
 				schoolYearOptions={schoolYearOptions}
 				createdBy={currentUserId}
 			/>
+
+			{/* User Profile Modal */}
+			{showProfileModal && (
+				<UserProfileModal
+					isOpen={showProfileModal}
+					onClose={() => setShowProfileModal(false)}
+					userId={selectedProfileUser.id}
+					userType={selectedProfileUser.type}
+					onSuccess={handleProfileSuccess}
+				/>
+			)}
 		</div>
 	);
 }

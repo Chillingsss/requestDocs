@@ -9,6 +9,7 @@ import {
 	ChevronDown,
 	User,
 	FolderOpen,
+	User2,
 } from "lucide-react";
 import CryptoJS from "crypto-js";
 import Cookies from "js-cookie";
@@ -21,6 +22,7 @@ export default function Sidebar({
 	activeSection,
 	handleNavClick,
 	onLogout,
+	onProfileClick,
 	navItems,
 	userType = "admin", // optional fallback, panel type is determined from userLevel in cookie
 }) {
@@ -184,6 +186,16 @@ export default function Sidebar({
 												{currentUser?.email || "user@mogchs.edu.ph"}
 											</div>
 										</div>
+										{/* Profile button - only show for students */}
+										{panelType === "student" && (
+											<button
+												onClick={onProfileClick}
+												className="flex items-center p-3 space-x-3 w-full text-left text-blue-400 rounded-b-lg transition-colors hover:bg-slate-700"
+											>
+												<User2 className="w-4 h-4" />
+												<span className="text-sm">Profile</span>
+											</button>
+										)}
 										<button
 											onClick={onLogout}
 											className="flex items-center p-3 space-x-3 w-full text-left text-red-400 rounded-b-lg transition-colors hover:bg-slate-700"
