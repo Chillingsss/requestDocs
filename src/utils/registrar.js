@@ -252,3 +252,46 @@ export async function getStrands() {
 		throw error;
 	}
 }
+
+export async function getSf10DocumentId() {
+	const formData = new FormData();
+	formData.append("operation", "getSf10DocumentId");
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addIndividualStudent(studentData, sf10File, documentId) {
+	const formData = new FormData();
+
+	// Add student data
+	formData.append("operation", "addIndividualStudent");
+	formData.append("studentData", JSON.stringify(studentData));
+	formData.append("documentId", documentId);
+
+	// Add SF10 file
+	if (sf10File) {
+		formData.append("sf10File", sf10File);
+	}
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

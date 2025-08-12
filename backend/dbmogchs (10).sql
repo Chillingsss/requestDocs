@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 10, 2025 at 03:45 AM
+-- Generation Time: Aug 12, 2025 at 08:19 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,27 @@ SET time_zone = "+00:00";
 --
 -- Database: `dbmogchs`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sms_logs`
+--
+
+CREATE TABLE `sms_logs` (
+  `id` int(11) NOT NULL,
+  `to_number` varchar(20) NOT NULL,
+  `message` text NOT NULL,
+  `sent_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` varchar(50) DEFAULT 'sent'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `sms_logs`
+--
+
+INSERT INTO `sms_logs` (`id`, `to_number`, `message`, `sent_at`, `status`) VALUES
+(1, '+639056548089', 'asd', '2025-08-12 04:46:15', 'failed');
 
 -- --------------------------------------------------------
 
@@ -86,7 +107,8 @@ CREATE TABLE `tblrequest` (
 INSERT INTO `tblrequest` (`id`, `studentId`, `documentId`, `purpose`, `createdAt`) VALUES
 (1, '22-2222-2222', 6, 'College Application', '2025-08-06 06:03:42'),
 (2, '22-2222-2222', 5, 'College Application', '2025-08-06 06:46:44'),
-(3, '33333333', 5, 'enrollment', '2025-08-06 08:53:39');
+(4, '33333333', 5, 'shesh', '2025-08-10 10:02:50'),
+(5, '33333333', 8, 'hehe', '2025-08-10 10:45:26');
 
 -- --------------------------------------------------------
 
@@ -109,7 +131,8 @@ CREATE TABLE `tblrequeststatus` (
 INSERT INTO `tblrequeststatus` (`id`, `requestId`, `statusId`, `userId`, `createdAt`) VALUES
 (1, 1, 1, NULL, '2025-08-06 06:03:42'),
 (2, 2, 1, NULL, '2025-08-06 06:46:44'),
-(3, 3, 1, NULL, '2025-08-06 08:53:39');
+(4, 4, 1, NULL, '2025-08-10 10:02:50'),
+(5, 5, 1, NULL, '2025-08-10 10:45:26');
 
 -- --------------------------------------------------------
 
@@ -285,7 +308,8 @@ INSERT INTO `tblsfrecord` (`id`, `fileName`, `studentId`, `gradeLevelId`, `userI
 (60, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '118350130019', 1, '02-1819-01500', '2025-08-06 20:31:21'),
 (61, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127942140389', 1, '02-1819-01500', '2025-08-06 20:31:21'),
 (62, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '126625130039', 1, '02-1819-01500', '2025-08-06 20:31:21'),
-(63, 'SF10 - Patty.xlsx', '33333333', 1, '02-1819-01509', '2025-08-06 20:42:47');
+(63, 'SF10 - Patty (2).xlsx', '33333333', 1, '02-1819-01509', '2025-08-06 20:42:47'),
+(66, 'SF10 - Patty - grade 12.xlsx', '33333333', 2, '47718333', '2025-08-10 10:05:27');
 
 -- --------------------------------------------------------
 
@@ -345,12 +369,11 @@ CREATE TABLE `tblstudent` (
   `firstname` varchar(50) NOT NULL,
   `middlename` varchar(50) NOT NULL,
   `lastname` varchar(50) NOT NULL,
-  `email` varchar(100) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `userLevel` int(11) NOT NULL,
   `lrn` varchar(50) DEFAULT NULL,
   `strandId` int(11) DEFAULT NULL,
-  `section` varchar(50) NOT NULL,
   `birthDate` date DEFAULT NULL,
   `age` int(11) DEFAULT NULL,
   `religion` varchar(100) DEFAULT NULL,
@@ -369,68 +392,71 @@ CREATE TABLE `tblstudent` (
 -- Dumping data for table `tblstudent`
 --
 
-INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, `password`, `userLevel`, `lrn`, `strandId`, `section`, `birthDate`, `age`, `religion`, `completeAddress`, `fatherName`, `motherName`, `guardianName`, `guardianRelationship`, `sectionId`, `schoolyearId`, `createdAt`, `updatedAt`) VALUES
-('104819130115', 'MIKAELA', 'ESTOQUE', 'BUNGCAYAO', 'mikaela.bungcayao@student.mogchs.edu.ph', '$2y$10$269ejV/FS3bN1Y9Ak.ycAupGWEgvrH5omJ2XZyzYsmkGQjv4fiaQ.', 4, '104819130115', 4, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('117851130016', 'STEPHEN', 'CABALLERO', 'JOHNSON', 'stephen.johnson@student.mogchs.edu.ph', '$2y$10$5kCOu3DVlR0UohSVVM12c.4w.dOMJDJnqMm5enjzxBX/LEh4uhmHO', 4, '117851130016', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('118350130019', 'PEARL', 'MARIE AMPARO', 'PERILLO', 'pearl.perillo@student.mogchs.edu.ph', '$2y$10$Af8vQzGDdZBcu6UJn/vEgOcleXLxy8ubN7Dzvt/B/Ke.mKrGBUFaC', 4, '118350130019', 4, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:21', '2025-08-06 12:31:21'),
-('126421150124', 'ALDREEVE', '-', 'COMPOSA', 'aldreeve.composa@student.mogchs.edu.ph', '$2y$10$KUUfW3ldrgt2Sxjp89P46O1wpsYU63WNL5JoRxLwwcevi/xJpORWu', 4, '126421150124', 4, '', '0000-00-00', 15, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('126577140110', 'JELYN', 'ORONG', 'GUINLAMON', 'jelyn.guinlamon@student.mogchs.edu.ph', '$2y$10$2CSdpQ0kcTH1t/jLo4ggUOh6Iqtj7NUJ7XsQfPU1z4lWbpdgxio2e', 4, '126577140110', 1, '', '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('126625130035', 'JAY', 'DAVE TEOFILO', 'GICA', 'jay.gica@student.mogchs.edu.ph', '$2y$10$HgYyogvVFGSW8rQAQKrO2OrN1JAPgOLO3SOSoyK9ydxcMRySph86y', 4, '126625130035', 4, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('126625130039', 'NICOLE', 'DAVE TAYCO', 'TEOFILO', 'nicole.teofilo@student.mogchs.edu.ph', '$2y$10$cTzp1NhgGpZ/fj9qWh0WUuu/qQwfWffc2A8HfBowU6AYd5qP/wY2W', 4, '126625130039', 4, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:21', '2025-08-06 12:31:21'),
-('126917140008', 'JHANSSEN', 'DEMETERIO', 'GONZALES', 'jhanssen.gonzales@student.mogchs.edu.ph', '$2y$10$tU.4Nsv3fDQDtQRyI8Mdl.YAvIFFAKqbB8msfR4st5NKP/UbyPyRe', 4, '126917140008', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127739130002', 'ZACHARY', 'JOFER MONTEJO', 'JUELE', 'zachary.juele@student.mogchs.edu.ph', '$2y$10$Fme3fnb.h8lJsK71cjXtoO3zqwQwF1gT/UTwuUTXjFwcRYjJ02y5K', 4, '127739130002', 1, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127867140141', 'PRINCESS', 'NICOLE UNABIA', 'SARANGA', 'princess.saranga@student.mogchs.edu.ph', '$2y$10$R5gePJCxdAmnmzWiUogT1OiZTLjaSPGMDfeNNKKhvVMay.WVv0saW', 4, '127867140141', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('127940120016', 'JHON', 'ELMER CAILING', 'BALDONADE', 'jhon.baldonade@student.mogchs.edu.ph', '$2y$10$3Lli4p7QIa62v6biTpdpu.Tb1jYd6ra5U55fsZFWkrxNey59Lwwpq', 4, '127940120016', 1, '', '0000-00-00', 18, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127940120831', 'AVA', 'KRISTA MARCELINO', 'CABAYACRUZ', 'ava.cabayacruz@student.mogchs.edu.ph', '$2y$10$LyH5m3.UlCVtpqOZ4RTg3uvVgprT3bKosfoEoPvKGaOt.RKhX2i5i', 4, '127940120831', 1, '', '0000-00-00', 19, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('127940140193', 'LOUISE', 'MIGUEL SUMAMPONG', 'KUIZON', 'louise.kuizon@student.mogchs.edu.ph', '$2y$10$/jACQmxet19xRVSrN69EbOfRy3L0qB.aTGmnSbckkWw1FVbGvaJZK', 4, '127940140193', 1, '', '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127940140219', 'ALJADE', 'METODA', 'CABAÑEROS', 'aljade.cabaeros@student.mogchs.edu.ph', '$2y$10$J82qP05HssaiR9ORRzD32OFaIK3m9ktz9ub9jcdhiqu/8cjrsvATu', 4, '127940140219', 1, '', '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127940140437', 'JOEL', 'CUTANDA', 'AMPER', 'joel.amper@student.mogchs.edu.ph', '$2y$10$sRS1wPPN8BqHlPHcwn0nouz6Ekp9bM4tkPL0LnJJluFtB0HJc0tAq', 4, '127940140437', 1, '', '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127940140626', 'KENT', 'PATRICK MONDILLA', 'ESCABARTE', 'kent.escabarte@student.mogchs.edu.ph', '$2y$10$W0ZBUr1Wy635ukqQdSdb5.LhjexizWppjahpxhg9NW76E/sYSt6fq', 4, '127940140626', 4, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('127940140743', 'JENNIFER', 'GONZAGA', 'OCLARIT', 'jennifer.oclarit@student.mogchs.edu.ph', '$2y$10$Tfe5NfYPTJmUscOedjJmIOei93Svhw7r8SR6SSzmkoxRUUcl/U1UO', 4, '127940140743', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('127940140983', 'SANTINO', 'RHYNE CAW-IT', 'LONGGAKIT', 'santino.longgakit@student.mogchs.edu.ph', '$2y$10$ExBGeyT1JQFN.j0VJiQXBeEUQAmxMGvgCGnPB.kE7.3TtXbNggV2G', 4, '127940140983', 1, '', '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127940141023', 'HUNLEY', 'GEMILLA', 'PADIÑO', 'hunley.padio@student.mogchs.edu.ph', '$2y$10$tVy2mRACg55ZC2Tts9dosOLroSf.sBuu/y/rWzW.4BBKy6HNa/Hsa', 4, '127940141023', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('127940150938', 'EDZEHL', 'JAKIM PALER', 'SAMSON', 'edzehl.samson@student.mogchs.edu.ph', '$2y$10$tW5dJ5XEo0GeztpoDZ7cs.Aevdn2ZYgUIfH7cTmaapDCizhtVWfNK', 4, '127940150938', 4, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('127941130349', 'RAYSHELLE', 'SALARDA', 'REALISTA', 'rayshelle.realista@student.mogchs.edu.ph', '$2y$10$3uHgoK..ReUT65danoZtIegWg0va4mRil8eqCI73HVRYgPCK9NrYm', 4, '127941130349', 1, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('127941140331', 'JUSTINE', 'MAE MENDOZA', 'YANO', 'justine.yano@student.mogchs.edu.ph', '$2y$10$nc4yZBzE4N6.mLQmrIXS2eVaVgb9ZYzYS1PzuAs/0Yz3ckokv2iFu', 4, '127941140331', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('127941140398', 'LEXXY', 'REALISTA', 'PAHUNANG', 'lexxy.pahunang@student.mogchs.edu.ph', '$2y$10$3wxE1SaOsSz/sZT5WYuhN.X05u5Qr9zQAO95gLqujrXWtby71/txu', 4, '127941140398', 1, '', '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('127941140475', 'SHERRY', 'DELA CRUZ', 'YOUNG', 'sherry.young@student.mogchs.edu.ph', '$2y$10$km1DnNYYzHddvTa9qaEA5.VPz0KtjKWk60e9RZcqW2CIUXZ6vLpK2', 4, '127941140475', 1, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('127942130392', 'ANDRE', 'QUINTO', 'JORILLA', 'andre.jorilla@student.mogchs.edu.ph', '$2y$10$xUk/l.gEnjRK3XLeAjyEiu7wqBX.B5SLqi5qb5bRduk8GNbtz8ycO', 4, '127942130392', 4, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('127942140389', 'TRECIA', 'JOYCE TACULOD', 'RODRIGUEZ', 'trecia.rodriguez@student.mogchs.edu.ph', '$2y$10$xK3AGvtwefouKIuCxjeoFOWCO56CSyatBQQ.HHjQrvyMyRYcCkeHe', 4, '127942140389', 4, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:21', '2025-08-06 12:31:21'),
-('127942140607', 'JESSA', 'LASTIMOSO', 'GENTAPA', 'jessa.gentapa@student.mogchs.edu.ph', '$2y$10$Hz94DWrOMAfATlU1oNnu1ecbsyzM5QQZqkiDSlVruRHdt.U2gLTPG', 4, '127942140607', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('127955080148', 'NASIFAH', 'BATUA', 'H SAID', 'nasifah.hsaid@student.mogchs.edu.ph', '$2y$10$J4.ftyUJk36UvRwFOYIfsuudwq6VdiWfAkn/3qOUJB6RmbNrXTwqK', 4, '127955080148', 1, '', '0000-00-00', 25, 'Islam', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('127955130057', 'KRAM', 'EMPIALES', 'SALAS', 'kram.salas@student.mogchs.edu.ph', '$2y$10$gibKen/JsWDBAeUdU9ci3OKm8XSEmdxcyZo8E2AyBvapXBYQ8vfTy', 4, '127955130057', 1, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('127955130399', 'RICKMERS', 'BASLI-AN', 'MINISTER', 'rickmers.minister@student.mogchs.edu.ph', '$2y$10$gN4msZUevNfA6Te8zKPw0.2NFYQj4elsbmNejmiBp0p4lILH/pr.C', 4, '127955130399', 1, '', '0000-00-00', 18, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('127955160159', 'JEAMWHELL', 'DINOPOL', 'GENERALAO', 'jeamwhell.generalao@student.mogchs.edu.ph', '$2y$10$XFNXe/hwNZghVowH4mIk3OmsJe.cF/cNKf12wZTCUrq2ehkwcd0VW', 4, '127955160159', 1, '', '0000-00-00', 18, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127956120328', 'MARICEL', '-', 'CABACTULAN', 'maricel.cabactulan@student.mogchs.edu.ph', '$2y$10$GwpRrKFmn.rubflB8SiKXuuTI3L6bmZbluoWrw9/gO/anRSM0POCe', 4, '127956120328', 1, '', '0000-00-00', 18, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('127956140332', 'SAMANTHA', 'ABECIA', 'TIBURON', 'samantha.tiburon@student.mogchs.edu.ph', '$2y$10$S9eB6paJRBY0/dI9U5bh7Oo9YS6QtHMrCPYfDgJr9jw.OUymyEfhK', 4, '127956140332', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('127958120001', 'SAMUEL', 'TURA', 'ALOZO', 'samuel.alozo@student.mogchs.edu.ph', '$2y$10$bfyRIy.z69RejScgHL2pKuEv24xzJkmYwLv8.AshG.Aqbg7zZsgb6', 4, '127958120001', 4, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('127963130087', 'KHALEL', 'JO ANG', 'AMARGA', 'khalel.amarga@student.mogchs.edu.ph', '$2y$10$DZHaBT.T9hTIwEJxKsTFxOyw04SK7BrVX9Yq/uE5Jh/kx5r12UYku', 4, '127963130087', 4, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('127964120138', 'ULYAR', 'DAIRO', 'ALFANTE', 'ulyar.alfante@student.mogchs.edu.ph', '$2y$10$PNkRAHNW6EN6E2z444tatOQq0d0eKqzkQtVt7cQiB2pSfplPxxIN6', 4, '127964120138', 1, '', '0000-00-00', 19, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127966120298', 'RAMELLA', 'BONCALES', 'YORDAN', 'ramella.yordan@student.mogchs.edu.ph', '$2y$10$PEgc8tM/5Dm9WBwHLcRr6el8sLxpjDUWI0avrd0WJ/CyUk0vtzZmi', 4, '127966120298', 1, '', '0000-00-00', 18, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('127967140004', 'KING', 'CHANDLER MENDEZ', 'GENTILES', 'king.gentiles@student.mogchs.edu.ph', '$2y$10$yqGM0YvTSC1X4EEeXcu0qu5gACvapDy9MYQVv4K2oEj4nc/RyxcR.', 4, '127967140004', 1, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127967140604', 'ALFRED', 'ANTIPAS', 'YAP', 'alfred.yap@student.mogchs.edu.ph', '$2y$10$oyvhffhmL.Mgb6vU7zb/Ru0ws1V4A70ExpBXNrpRlhHvWFI7SFrbO', 4, '127967140604', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('127992130267', 'WIN', 'RAPIRAP', 'GO', 'win.go@student.mogchs.edu.ph', '$2y$10$5eUD8MWtVWy.IpfUF7aa6uSfcxiVI./EyC7u5oKW1fV35DIi1dtWm', 4, '127992130267', 1, '', '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127992140071', 'ED', 'RYAN PIMENTEL', 'ABELLON', 'ed.abellon@student.mogchs.edu.ph', '$2y$10$0WKaNfPzct8u7BNs6aJ3TOOe00XMvE/gE9T2DdPD.pKag15GR9d9C', 4, '127992140071', 4, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('127993140162', 'JETRRY', 'GABUT', 'SIBOC', 'jetrry.siboc@student.mogchs.edu.ph', '$2y$10$Y92xjmKqznNSN4Io3PFt.eHCsQVDKpEW8gprXhq6aibog0Kx0yuDm', 4, '127993140162', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('127993150140', 'JOHN', 'VINCENT -', 'ESPADILLA', 'john.espadilla@student.mogchs.edu.ph', '$2y$10$fbtwSoWLgViYSxx5Oe2nke.VovbfD8ROBuM1qhkj0hzIX0NzeyHv6', 4, '127993150140', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127995120980', 'MARK', 'ANTHONY RACAL', 'ABELLANOSA', 'mark.abellanosa@student.mogchs.edu.ph', '$2y$10$mIiG./DbJU8Ww47Hllx2POCe9CpcxjXGwiO9zcV/FgKufy.xj8GZ.', 4, '127995120980', 4, '', '0000-00-00', 18, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('127995140316', 'RANDY', 'JR CUICO', 'SALVADOR', 'randy.salvador@student.mogchs.edu.ph', '$2y$10$OZad5QApu0iHnaReaehFJO9Pcq8B9dqIW9DHqC4aNEK/62AiVLs5G', 4, '127995140316', 1, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('127995140395', 'MARK', 'SEBASTIAN GALOPE', 'FABRIA', 'mark.fabria@student.mogchs.edu.ph', '$2y$10$5oVemUhlQ.RuukkuY0E6kupA5L55lhKxnKX4ErG8dWKtnZC3L3x5C', 4, '127995140395', 1, '', '0000-00-00', 19, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('127995140980', 'ELLYZA', 'YASOL', 'PILO', 'ellyza.pilo@student.mogchs.edu.ph', '$2y$10$hFFf.SyiJg5.8JfggTX61.fOcgt6sZ/Thy/lAEMSb7ndjIZ8hs77.', 4, '127995140980', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('127995141346', 'PRINCESS', 'ALTHEA NADELA', 'YAMUT', 'princess.yamut@student.mogchs.edu.ph', '$2y$10$hk2jci7NhwQUbWYdR0baduZD5bmlffZGLMN82hEGTewKIINcKzpqG', 4, '127995141346', 1, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('128164140135', 'JABEZ', 'YORONG', 'ACAPULCO', 'jabez.acapulco@student.mogchs.edu.ph', '$2y$10$s1kMWqni0o7dNqCOlkrz2uzWcwsN08y8NjfzhkMsIYZhTKtEvWpbG', 4, '128164140135', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:32', '2025-08-06 09:22:32'),
-('131632140039', 'JOELIE', 'MARIE MARIQUIT', 'RABAGO', 'joelie.rabago@student.mogchs.edu.ph', '$2y$10$m0Esz13rINPaIVFN7GbSoeXXzwdkzawclu2HJkI29Oz2.1XjI0KlC', 4, '131632140039', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
-('132050130173', 'JUMAR', 'BUSANO', 'CELERES', 'jumar.celeres@student.mogchs.edu.ph', '$2y$10$w3wAVnnPfVrJqsOWM7qIlexpalDDUHepu8HuN/RAye6nfMMr214F6', 4, '132050130173', 4, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('132287150182', 'DANICE', 'ROSS XENIA ESTRELLA', 'GALVAN', 'danice.galvan@student.mogchs.edu.ph', '$2y$10$lw.chcBSsYo/t.ciETdgR.jvgo7ZuIVwucMsr2z7B5h43ortNWX.O', 4, '132287150182', 1, '', '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('133218140022', 'JAPAR', 'DIBA', 'DAUD', 'japar.daud@student.mogchs.edu.ph', '$2y$10$JTk6OVTBmD/MEzXEXjA8N.wTzxMKTNkLgXP5MkNbTLMNcH4Hw4C.O', 4, '133218140022', 1, '', '0000-00-00', 16, 'Islam', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('136913130093', 'HERMINE', 'GUMBAY', 'DIMASINSIL', 'hermine.dimasinsil@student.mogchs.edu.ph', '$2y$10$OzU8pLquAHGZpSqqgpDvbeJwoPBEQ3T99Hepo2naBN0A5cP.3lgum', 4, '136913130093', 1, '', '0000-00-00', 17, 'Islam', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
-('201511140006', 'CARL', 'KESTER LIGUTOM', 'PELIGRO', 'carl.peligro@student.mogchs.edu.ph', '$2y$10$ekIKipYY8hNdEUwNjaG0CeVhZ9pIk19DZfWCbFUZ7uwLEaE2QBNSW', 4, '201511140006', 1, '', '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('22-2222-2222', 'Mary', '', 'Canonce', 'rape.gallegos.coc@phinmaed.com', '$2y$10$1NWwcwH/L8sWlNQvMqyuquNXriD9HlsvB8V3bgt8tzjb6N4vEZmdm', 4, '22-2222-2222', 1, '', '2002-02-22', 22, 'Roman Catholic', 'Iponan', '', '', '', '', 10, 4, '2025-08-06 09:48:41', '2025-08-06 10:40:19'),
-('33333333', 'Patricia', '', 'Aspirass', 'pattyaspiras@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '', '2003-02-22', 20, 'Roman Catholic', 'Iponan', '', '', '', '', 10, 4, '2025-08-06 12:42:47', '2025-08-06 12:49:54'),
-('405155150193', 'MARICEL', 'SIBOLON', 'MANOS', 'maricel.manos@student.mogchs.edu.ph', '$2y$10$8ExvtvZGLgb.Vj8S/fYwx.7GgQaXjldhUDJMsTXf0mRUSrAoC6oTm', 4, '405155150193', 1, '', '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('405235150610', 'MARC', 'GABRIEL MACALAM', 'ANDOY', 'marc.andoy@student.mogchs.edu.ph', '$2y$10$D6jsrHPkSMBWQFnITRZJF.1FOh78eqBrmY1FP2rw9OkAaIkTjA55i', 4, '405235150610', 4, '', '0000-00-00', 20, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
-('405241150066', 'ARJAY', 'PALMARES', 'REYES', 'arjay.reyes@student.mogchs.edu.ph', '$2y$10$wIQktkFy37H7TGzYE3vuie2HU1pezlSmKwS8OFmEyN8EDzPFzWxoK', 4, '405241150066', 1, '', '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('510062400004', 'JOHAYVER', 'CALIPAPA', 'MAKI', 'johayver.maki@student.mogchs.edu.ph', '$2y$10$fiDYe3jG.9PUg2tiT199eOD8.qa9UNMiQ89zfTWALuAi0mwHXGDzi', 4, '510062400004', 1, '', '0000-00-00', 18, 'Islam', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34');
+INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, `password`, `userLevel`, `lrn`, `strandId`, `birthDate`, `age`, `religion`, `completeAddress`, `fatherName`, `motherName`, `guardianName`, `guardianRelationship`, `sectionId`, `schoolyearId`, `createdAt`, `updatedAt`) VALUES
+('104819130115', 'MIKAELA', 'ESTOQUE', 'BUNGCAYAO', 'mikaela.bungcayao@student.mogchs.edu.ph', '$2y$10$269ejV/FS3bN1Y9Ak.ycAupGWEgvrH5omJ2XZyzYsmkGQjv4fiaQ.', 4, '104819130115', 4, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('117851130016', 'STEPHEN', 'CABALLERO', 'JOHNSON', 'stephen.johnson@student.mogchs.edu.ph', '$2y$10$5kCOu3DVlR0UohSVVM12c.4w.dOMJDJnqMm5enjzxBX/LEh4uhmHO', 4, '117851130016', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('118350130019', 'PEARL', 'MARIE AMPARO', 'PERILLO', 'pearl.perillo@student.mogchs.edu.ph', '$2y$10$Af8vQzGDdZBcu6UJn/vEgOcleXLxy8ubN7Dzvt/B/Ke.mKrGBUFaC', 4, '118350130019', 4, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:21', '2025-08-06 12:31:21'),
+('126421150124', 'ALDREEVE', '-', 'COMPOSA', 'aldreeve.composa@student.mogchs.edu.ph', '$2y$10$KUUfW3ldrgt2Sxjp89P46O1wpsYU63WNL5JoRxLwwcevi/xJpORWu', 4, '126421150124', 4, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('126577140110', 'JELYN', 'ORONG', 'GUINLAMON', 'jelyn.guinlamon@student.mogchs.edu.ph', '$2y$10$2CSdpQ0kcTH1t/jLo4ggUOh6Iqtj7NUJ7XsQfPU1z4lWbpdgxio2e', 4, '126577140110', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('126625130035', 'JAY', 'DAVE TEOFILO', 'GICA', 'jay.gica@student.mogchs.edu.ph', '$2y$10$HgYyogvVFGSW8rQAQKrO2OrN1JAPgOLO3SOSoyK9ydxcMRySph86y', 4, '126625130035', 4, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('126625130039', 'NICOLE', 'DAVE TAYCO', 'TEOFILO', 'nicole.teofilo@student.mogchs.edu.ph', '$2y$10$cTzp1NhgGpZ/fj9qWh0WUuu/qQwfWffc2A8HfBowU6AYd5qP/wY2W', 4, '126625130039', 4, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:21', '2025-08-06 12:31:21'),
+('126917140008', 'JHANSSEN', 'DEMETERIO', 'GONZALES', 'jhanssen.gonzales@student.mogchs.edu.ph', '$2y$10$tU.4Nsv3fDQDtQRyI8Mdl.YAvIFFAKqbB8msfR4st5NKP/UbyPyRe', 4, '126917140008', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127739130002', 'ZACHARY', 'JOFER MONTEJO', 'JUELE', 'zachary.juele@student.mogchs.edu.ph', '$2y$10$Fme3fnb.h8lJsK71cjXtoO3zqwQwF1gT/UTwuUTXjFwcRYjJ02y5K', 4, '127739130002', 1, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127867140141', 'PRINCESS', 'NICOLE UNABIA', 'SARANGA', 'princess.saranga@student.mogchs.edu.ph', '$2y$10$R5gePJCxdAmnmzWiUogT1OiZTLjaSPGMDfeNNKKhvVMay.WVv0saW', 4, '127867140141', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('127940120016', 'JHON', 'ELMER CAILING', 'BALDONADE', 'jhon.baldonade@student.mogchs.edu.ph', '$2y$10$3Lli4p7QIa62v6biTpdpu.Tb1jYd6ra5U55fsZFWkrxNey59Lwwpq', 4, '127940120016', 1, '0000-00-00', 18, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127940120831', 'AVA', 'KRISTA MARCELINO', 'CABAYACRUZ', 'ava.cabayacruz@student.mogchs.edu.ph', '$2y$10$LyH5m3.UlCVtpqOZ4RTg3uvVgprT3bKosfoEoPvKGaOt.RKhX2i5i', 4, '127940120831', 1, '0000-00-00', 19, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('127940140193', 'LOUISE', 'MIGUEL SUMAMPONG', 'KUIZON', 'louise.kuizon@student.mogchs.edu.ph', '$2y$10$/jACQmxet19xRVSrN69EbOfRy3L0qB.aTGmnSbckkWw1FVbGvaJZK', 4, '127940140193', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127940140219', 'ALJADE', 'METODA', 'CABAÑEROS', 'aljade.cabaeros@student.mogchs.edu.ph', '$2y$10$J82qP05HssaiR9ORRzD32OFaIK3m9ktz9ub9jcdhiqu/8cjrsvATu', 4, '127940140219', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127940140437', 'JOEL', 'CUTANDA', 'AMPER', 'joel.amper@student.mogchs.edu.ph', '$2y$10$sRS1wPPN8BqHlPHcwn0nouz6Ekp9bM4tkPL0LnJJluFtB0HJc0tAq', 4, '127940140437', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127940140626', 'KENT', 'PATRICK MONDILLA', 'ESCABARTE', 'kent.escabarte@student.mogchs.edu.ph', '$2y$10$W0ZBUr1Wy635ukqQdSdb5.LhjexizWppjahpxhg9NW76E/sYSt6fq', 4, '127940140626', 4, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('127940140743', 'JENNIFER', 'GONZAGA', 'OCLARIT', 'jennifer.oclarit@student.mogchs.edu.ph', '$2y$10$Tfe5NfYPTJmUscOedjJmIOei93Svhw7r8SR6SSzmkoxRUUcl/U1UO', 4, '127940140743', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('127940140983', 'SANTINO', 'RHYNE CAW-IT', 'LONGGAKIT', 'santino.longgakit@student.mogchs.edu.ph', '$2y$10$ExBGeyT1JQFN.j0VJiQXBeEUQAmxMGvgCGnPB.kE7.3TtXbNggV2G', 4, '127940140983', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127940141023', 'HUNLEY', 'GEMILLA', 'PADIÑO', 'hunley.padio@student.mogchs.edu.ph', '$2y$10$tVy2mRACg55ZC2Tts9dosOLroSf.sBuu/y/rWzW.4BBKy6HNa/Hsa', 4, '127940141023', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('127940150938', 'EDZEHL', 'JAKIM PALER', 'SAMSON', 'edzehl.samson@student.mogchs.edu.ph', '$2y$10$tW5dJ5XEo0GeztpoDZ7cs.Aevdn2ZYgUIfH7cTmaapDCizhtVWfNK', 4, '127940150938', 4, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('127941130349', 'RAYSHELLE', 'SALARDA', 'REALISTA', 'rayshelle.realista@student.mogchs.edu.ph', '$2y$10$3uHgoK..ReUT65danoZtIegWg0va4mRil8eqCI73HVRYgPCK9NrYm', 4, '127941130349', 1, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('127941140331', 'JUSTINE', 'MAE MENDOZA', 'YANO', 'justine.yano@student.mogchs.edu.ph', '$2y$10$nc4yZBzE4N6.mLQmrIXS2eVaVgb9ZYzYS1PzuAs/0Yz3ckokv2iFu', 4, '127941140331', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('127941140398', 'LEXXY', 'REALISTA', 'PAHUNANG', 'lexxy.pahunang@student.mogchs.edu.ph', '$2y$10$3wxE1SaOsSz/sZT5WYuhN.X05u5Qr9zQAO95gLqujrXWtby71/txu', 4, '127941140398', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('127941140475', 'SHERRY', 'DELA CRUZ', 'YOUNG', 'sherry.young@student.mogchs.edu.ph', '$2y$10$km1DnNYYzHddvTa9qaEA5.VPz0KtjKWk60e9RZcqW2CIUXZ6vLpK2', 4, '127941140475', 1, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('127942130392', 'ANDRE', 'QUINTO', 'JORILLA', 'andre.jorilla@student.mogchs.edu.ph', '$2y$10$xUk/l.gEnjRK3XLeAjyEiu7wqBX.B5SLqi5qb5bRduk8GNbtz8ycO', 4, '127942130392', 4, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('127942140389', 'TRECIA', 'JOYCE TACULOD', 'RODRIGUEZ', 'trecia.rodriguez@student.mogchs.edu.ph', '$2y$10$xK3AGvtwefouKIuCxjeoFOWCO56CSyatBQQ.HHjQrvyMyRYcCkeHe', 4, '127942140389', 4, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:21', '2025-08-06 12:31:21'),
+('127942140607', 'JESSA', 'LASTIMOSO', 'GENTAPA', 'jessa.gentapa@student.mogchs.edu.ph', '$2y$10$Hz94DWrOMAfATlU1oNnu1ecbsyzM5QQZqkiDSlVruRHdt.U2gLTPG', 4, '127942140607', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('127955080148', 'NASIFAH', 'BATUA', 'H SAID', 'nasifah.hsaid@student.mogchs.edu.ph', '$2y$10$J4.ftyUJk36UvRwFOYIfsuudwq6VdiWfAkn/3qOUJB6RmbNrXTwqK', 4, '127955080148', 1, '0000-00-00', 25, 'Islam', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('127955130057', 'KRAM', 'EMPIALES', 'SALAS', 'kram.salas@student.mogchs.edu.ph', '$2y$10$gibKen/JsWDBAeUdU9ci3OKm8XSEmdxcyZo8E2AyBvapXBYQ8vfTy', 4, '127955130057', 1, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('127955130399', 'RICKMERS', 'BASLI-AN', 'MINISTER', 'rickmers.minister@student.mogchs.edu.ph', '$2y$10$gN4msZUevNfA6Te8zKPw0.2NFYQj4elsbmNejmiBp0p4lILH/pr.C', 4, '127955130399', 1, '0000-00-00', 18, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('127955160159', 'JEAMWHELL', 'DINOPOL', 'GENERALAO', 'jeamwhell.generalao@student.mogchs.edu.ph', '$2y$10$XFNXe/hwNZghVowH4mIk3OmsJe.cF/cNKf12wZTCUrq2ehkwcd0VW', 4, '127955160159', 1, '0000-00-00', 18, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127956120328', 'MARICEL', '-', 'CABACTULAN', 'maricel.cabactulan@student.mogchs.edu.ph', '$2y$10$GwpRrKFmn.rubflB8SiKXuuTI3L6bmZbluoWrw9/gO/anRSM0POCe', 4, '127956120328', 1, '0000-00-00', 18, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('127956140332', 'SAMANTHA', 'ABECIA', 'TIBURON', 'samantha.tiburon@student.mogchs.edu.ph', '$2y$10$S9eB6paJRBY0/dI9U5bh7Oo9YS6QtHMrCPYfDgJr9jw.OUymyEfhK', 4, '127956140332', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('127958120001', 'SAMUEL', 'TURA', 'ALOZO', 'samuel.alozo@student.mogchs.edu.ph', '$2y$10$bfyRIy.z69RejScgHL2pKuEv24xzJkmYwLv8.AshG.Aqbg7zZsgb6', 4, '127958120001', 4, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('127963130087', 'KHALEL', 'JO ANG', 'AMARGA', 'khalel.amarga@student.mogchs.edu.ph', '$2y$10$DZHaBT.T9hTIwEJxKsTFxOyw04SK7BrVX9Yq/uE5Jh/kx5r12UYku', 4, '127963130087', 4, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('127964120138', 'ULYAR', 'DAIRO', 'ALFANTE', 'ulyar.alfante@student.mogchs.edu.ph', '$2y$10$PNkRAHNW6EN6E2z444tatOQq0d0eKqzkQtVt7cQiB2pSfplPxxIN6', 4, '127964120138', 1, '0000-00-00', 19, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127966120298', 'RAMELLA', 'BONCALES', 'YORDAN', 'ramella.yordan@student.mogchs.edu.ph', '$2y$10$PEgc8tM/5Dm9WBwHLcRr6el8sLxpjDUWI0avrd0WJ/CyUk0vtzZmi', 4, '127966120298', 1, '0000-00-00', 18, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('127967140004', 'KING', 'CHANDLER MENDEZ', 'GENTILES', 'king.gentiles@student.mogchs.edu.ph', '$2y$10$yqGM0YvTSC1X4EEeXcu0qu5gACvapDy9MYQVv4K2oEj4nc/RyxcR.', 4, '127967140004', 1, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127967140604', 'ALFRED', 'ANTIPAS', 'YAP', 'alfred.yap@student.mogchs.edu.ph', '$2y$10$oyvhffhmL.Mgb6vU7zb/Ru0ws1V4A70ExpBXNrpRlhHvWFI7SFrbO', 4, '127967140604', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('127992130267', 'WIN', 'RAPIRAP', 'GO', 'win.go@student.mogchs.edu.ph', '$2y$10$5eUD8MWtVWy.IpfUF7aa6uSfcxiVI./EyC7u5oKW1fV35DIi1dtWm', 4, '127992130267', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127992140071', 'ED', 'RYAN PIMENTEL', 'ABELLON', 'ed.abellon@student.mogchs.edu.ph', '$2y$10$0WKaNfPzct8u7BNs6aJ3TOOe00XMvE/gE9T2DdPD.pKag15GR9d9C', 4, '127992140071', 4, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('127993140162', 'JETRRY', 'GABUT', 'SIBOC', 'jetrry.siboc@student.mogchs.edu.ph', '$2y$10$Y92xjmKqznNSN4Io3PFt.eHCsQVDKpEW8gprXhq6aibog0Kx0yuDm', 4, '127993140162', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('127993150140', 'JOHN', 'VINCENT -', 'ESPADILLA', 'john.espadilla@student.mogchs.edu.ph', '$2y$10$fbtwSoWLgViYSxx5Oe2nke.VovbfD8ROBuM1qhkj0hzIX0NzeyHv6', 4, '127993150140', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127995120980', 'MARK', 'ANTHONY RACAL', 'ABELLANOSA', 'mark.abellanosa@student.mogchs.edu.ph', '$2y$10$mIiG./DbJU8Ww47Hllx2POCe9CpcxjXGwiO9zcV/FgKufy.xj8GZ.', 4, '127995120980', 4, '0000-00-00', 18, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('127995140316', 'RANDY', 'JR CUICO', 'SALVADOR', 'randy.salvador@student.mogchs.edu.ph', '$2y$10$OZad5QApu0iHnaReaehFJO9Pcq8B9dqIW9DHqC4aNEK/62AiVLs5G', 4, '127995140316', 1, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('127995140395', 'MARK', 'SEBASTIAN GALOPE', 'FABRIA', 'mark.fabria@student.mogchs.edu.ph', '$2y$10$5oVemUhlQ.RuukkuY0E6kupA5L55lhKxnKX4ErG8dWKtnZC3L3x5C', 4, '127995140395', 1, '0000-00-00', 19, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('127995140980', 'ELLYZA', 'YASOL', 'PILO', 'ellyza.pilo@student.mogchs.edu.ph', '$2y$10$hFFf.SyiJg5.8JfggTX61.fOcgt6sZ/Thy/lAEMSb7ndjIZ8hs77.', 4, '127995140980', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('127995141346', 'PRINCESS', 'ALTHEA NADELA', 'YAMUT', 'princess.yamut@student.mogchs.edu.ph', '$2y$10$hk2jci7NhwQUbWYdR0baduZD5bmlffZGLMN82hEGTewKIINcKzpqG', 4, '127995141346', 1, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('128164140135', 'JABEZ', 'YORONG', 'ACAPULCO', 'jabez.acapulco@student.mogchs.edu.ph', '$2y$10$s1kMWqni0o7dNqCOlkrz2uzWcwsN08y8NjfzhkMsIYZhTKtEvWpbG', 4, '128164140135', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:32', '2025-08-06 09:22:32'),
+('131632140039', 'JOELIE', 'MARIE MARIQUIT', 'RABAGO', 'joelie.rabago@student.mogchs.edu.ph', '$2y$10$m0Esz13rINPaIVFN7GbSoeXXzwdkzawclu2HJkI29Oz2.1XjI0KlC', 4, '131632140039', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:35', '2025-08-06 09:22:35'),
+('132050130173', 'JUMAR', 'BUSANO', 'CELERES', 'jumar.celeres@student.mogchs.edu.ph', '$2y$10$w3wAVnnPfVrJqsOWM7qIlexpalDDUHepu8HuN/RAye6nfMMr214F6', 4, '132050130173', 4, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('132287150182', 'DANICE', 'ROSS XENIA ESTRELLA', 'GALVAN', 'danice.galvan@student.mogchs.edu.ph', '$2y$10$lw.chcBSsYo/t.ciETdgR.jvgo7ZuIVwucMsr2z7B5h43ortNWX.O', 4, '132287150182', 1, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('133218140022', 'JAPAR', 'DIBA', 'DAUD', 'japar.daud@student.mogchs.edu.ph', '$2y$10$JTk6OVTBmD/MEzXEXjA8N.wTzxMKTNkLgXP5MkNbTLMNcH4Hw4C.O', 4, '133218140022', 1, '0000-00-00', 16, 'Islam', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('136913130093', 'HERMINE', 'GUMBAY', 'DIMASINSIL', 'hermine.dimasinsil@student.mogchs.edu.ph', '$2y$10$OzU8pLquAHGZpSqqgpDvbeJwoPBEQ3T99Hepo2naBN0A5cP.3lgum', 4, '136913130093', 1, '0000-00-00', 17, 'Islam', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
+('201511140006', 'CARL', 'KESTER LIGUTOM', 'PELIGRO', 'carl.peligro@student.mogchs.edu.ph', '$2y$10$ekIKipYY8hNdEUwNjaG0CeVhZ9pIk19DZfWCbFUZ7uwLEaE2QBNSW', 4, '201511140006', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('22-2222-2222', 'Mary', '', 'Canonce', 'rape.gallegos.coc@phinmaed.com', '$2y$10$1NWwcwH/L8sWlNQvMqyuquNXriD9HlsvB8V3bgt8tzjb6N4vEZmdm', 4, '22-2222-2222', 1, '2002-02-22', 22, 'Roman Catholic', 'Iponan', '', '', '', '', 10, 4, '2025-08-06 09:48:41', '2025-08-06 10:40:19'),
+('33333333', 'Patricia', '', 'Aspirass', 'pattyaspiras@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '2003-02-21', 20, 'Roman Catholic', 'Iponan', 'ralph jan gallegos', '', '', '', 10, 4, '2025-08-06 12:42:47', '2025-08-11 13:34:14'),
+('405155150193', 'MARICEL', 'SIBOLON', 'MANOS', 'maricel.manos@student.mogchs.edu.ph', '$2y$10$8ExvtvZGLgb.Vj8S/fYwx.7GgQaXjldhUDJMsTXf0mRUSrAoC6oTm', 4, '405155150193', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('405235150610', 'MARC', 'GABRIEL MACALAM', 'ANDOY', 'marc.andoy@student.mogchs.edu.ph', '$2y$10$D6jsrHPkSMBWQFnITRZJF.1FOh78eqBrmY1FP2rw9OkAaIkTjA55i', 4, '405235150610', 4, '0000-00-00', 20, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
+('405241150066', 'ARJAY', 'PALMARES', 'REYES', 'arjay.reyes@student.mogchs.edu.ph', '$2y$10$wIQktkFy37H7TGzYE3vuie2HU1pezlSmKwS8OFmEyN8EDzPFzWxoK', 4, '405241150066', 1, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('44444444', 'John', '', 'Doe', 'ralphjanpelino@gmail.com', '$2y$10$mfu9gSoChPrDytBex.O/Te8QRO88.O/ZWtYqMr6FBcMrz01sAJGGK', 4, '44444444', 2, '2001-11-08', 23, 'Roman Catholic', 'Iponan', '', '', '', '', 2, 4, '2025-08-11 13:28:31', '2025-08-11 13:28:31'),
+('510062400004', 'JOHAYVER', 'CALIPAPA', 'MAKI', 'johayver.maki@student.mogchs.edu.ph', '$2y$10$fiDYe3jG.9PUg2tiT199eOD8.qa9UNMiQ89zfTWALuAi0mwHXGDzi', 4, '510062400004', 1, '0000-00-00', 18, 'Islam', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
+('55555', 'Marry', '', 'Canonce', NULL, '$2y$10$UNJLMdHoFMvVvEYYQ.GyUOW4go0F7L1MYLTMGbltEh4/F8jqmuVXK', 4, '55555', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, 4, '2025-08-12 06:15:29', '2025-08-12 06:15:29'),
+('66666', 'Patricia', '', 'Patty', NULL, '$2y$10$6LqbK7JbSvmHsX3SDb9dku7wuH48hwIRRWEPoZH38MCmpELUfy4uq', 4, '66666', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 9, 1, '2025-08-12 06:15:29', '2025-08-12 06:15:29');
 
 -- --------------------------------------------------------
 
@@ -447,6 +473,16 @@ CREATE TABLE `tblstudentdocument` (
   `userId` varchar(50) DEFAULT NULL,
   `createdAt` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblstudentdocument`
+--
+
+INSERT INTO `tblstudentdocument` (`id`, `studentId`, `fileName`, `documentId`, `gradeLevelId`, `userId`, `createdAt`) VALUES
+(1, '33333333', 'SF10 - Patty (2).xlsx', 5, 1, '47718333', '2025-08-10 09:55:55'),
+(2, '33333333', 'SF10 - Patty - grade 12.xlsx', 5, 2, '4771833', '2025-08-10 10:06:44'),
+(3, '55555', '1754979329_SF-10-SHS-Senior-High-School-Student-Permanent-Record-CANONCEsample.pdf', 5, 2, NULL, '2025-08-12 14:15:29'),
+(4, '66666', '1754979329_SF10 - Patty.pdf', 5, 2, NULL, '2025-08-12 14:15:29');
 
 -- --------------------------------------------------------
 
@@ -479,7 +515,7 @@ CREATE TABLE `tbluser` (
   `firstname` varchar(50) NOT NULL,
   `lastname` varchar(50) NOT NULL,
   `middlename` varchar(50) NOT NULL,
-  `email` varchar(50) NOT NULL,
+  `email` varchar(50) DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `userLevel` int(11) NOT NULL,
   `pinCode` varchar(255) NOT NULL,
@@ -496,7 +532,7 @@ INSERT INTO `tbluser` (`id`, `firstname`, `lastname`, `middlename`, `email`, `pa
 ('02-1819-01509', 'Patty', 'Aspiras', '', 'patty@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL),
 ('02-22240755', 'krystyll', 'Plaza', '', 'krystyllp@gmail.com', '$2y$10$kdoseuywdW9Qa5zy6Wk9.OGLfDnyee.xJAaro9nA2w1ZeFV/tC2Xe', 2, '$2y$10$tGS6ocEEixbxH4APISaJHe6PUWfGlWhk1l7EdAtSYoJqIrt2rYd.2', NULL, NULL),
 ('0222240755', 'krystyll', 'plaza', '', 'krystyllp@gmail.com', '$2y$10$FeQhThcTYXdfl/a0dLmPIuYzFRxwLQR4SrQGRsMqX/mtxf1apUWRK', 2, '$2y$10$JIuhsatF8O/fPkmACqwaauC7qOZcyQ5HqtATz.QlbBnE08Aqeyrba', NULL, NULL),
-('4771830', 'Maribelle', 'Acas', '', 'ralp.pelino11@gmail.com', '$2y$10$ctnwlF7uLi9nctvFw13T3OPMpVyS5Y0K7VZtGzG3xT9QAxya8eFl.', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 1),
+('4771830', 'Maribelle', 'Acas', '', 'ralp.pelino11@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 1),
 ('4771833', 'Alexis', 'Gonzaga', '', 'alex@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 2, 10),
 ('47718333', 'Mary', 'Aspiras', '', 'ralphjangallegos@gmail.com', '$2y$10$JooVcuK3ntZQdiPGcAhvle9y1Q9z0vKeeDJWui0ybvjLgXYcZboNq', 3, '$2y$10$YOD62VSS2kaYsIhX9LQqzOhs2AZ6Er0qdkakw4Gd67WxoeSgRk8wq', 1, 2);
 
@@ -525,6 +561,12 @@ INSERT INTO `tbluserlevel` (`id`, `name`, `createdAt`) VALUES
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `sms_logs`
+--
+ALTER TABLE `sms_logs`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `tbldocument`
@@ -657,6 +699,12 @@ ALTER TABLE `tbluserlevel`
 --
 
 --
+-- AUTO_INCREMENT for table `sms_logs`
+--
+ALTER TABLE `sms_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `tbldocument`
 --
 ALTER TABLE `tbldocument`
@@ -672,13 +720,13 @@ ALTER TABLE `tblgradelevel`
 -- AUTO_INCREMENT for table `tblrequest`
 --
 ALTER TABLE `tblrequest`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `tblrequeststatus`
 --
 ALTER TABLE `tblrequeststatus`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `tblrequirements`
@@ -708,7 +756,7 @@ ALTER TABLE `tblsection`
 -- AUTO_INCREMENT for table `tblsfrecord`
 --
 ALTER TABLE `tblsfrecord`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- AUTO_INCREMENT for table `tblstatus`
@@ -726,7 +774,7 @@ ALTER TABLE `tblstrand`
 -- AUTO_INCREMENT for table `tblstudentdocument`
 --
 ALTER TABLE `tblstudentdocument`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `tbltrack`

@@ -585,6 +585,150 @@ class User {
     return json_encode([]);
   }
   
+  function getSf10DocumentId() {
+    include "connection.php";
+    
+    try {
+      $sql = "SELECT id FROM tbldocument WHERE name = 'SF10' LIMIT 1";
+      $stmt = $conn->prepare($sql);
+      $stmt->execute();
+      
+      if ($stmt->rowCount() > 0) {
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return json_encode(['success' => true, 'documentId' => $result['id']]);
+      }
+      
+      return json_encode(['success' => false, 'error' => 'SF10 document not found']);
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    }
+  }
+
+  function addIndividualStudent() {
+    include "connection.php";
+    
+    try {
+      // Get student data
+      $studentData = json_decode($_POST['studentData'], true);
+      $documentId = $_POST['documentId'];
+      
+      // Validate required fields
+      $requiredFields = ['firstname', 'lastname', 'lrn', 'password', 'strandId', 'schoolYearId', 'gradeLevelId'];
+      foreach ($requiredFields as $field) {
+        if (empty($studentData[$field])) {
+          return json_encode(['error' => "Missing required field: $field"]);
+        }
+      }
+      
+      if (!isset($_FILES['sf10File']) || $_FILES['sf10File']['error'] !== UPLOAD_ERR_OK) {
+        return json_encode(['error' => 'SF10 file is required']);
+      }
+      
+      $sf10File = $_FILES['sf10File'];
+      
+      // Validate file type
+      if ($sf10File['type'] !== 'application/pdf') {
+        return json_encode(['error' => 'Only PDF files are allowed for SF10']);
+      }
+      
+      // Check file size (max 10MB)
+      if ($sf10File['size'] > 10 * 1024 * 1024) {
+        return json_encode(['error' => 'File size too large. Maximum size is 10MB.']);
+      }
+      
+      $conn->beginTransaction();
+      
+      // Use the gradeLevelId directly from frontend for sectionId
+      $sectionId = $studentData['gradeLevelId'];
+      
+      // Use original filename for SF10
+      $fileName = $sf10File['name'];
+      $uploadPath = 'documents/' . $fileName;
+      
+      // Move uploaded file
+      if (!move_uploaded_file($sf10File['tmp_name'], $uploadPath)) {
+        $conn->rollBack();
+        return json_encode(['error' => 'Failed to upload SF10 file']);
+      }
+      
+      // Generate email from LRN
+      $email = null;
+      
+      // Insert student record with all required fields
+      $insertStudentSql = "INSERT INTO tblstudent (
+        id, firstname, middlename, lastname, email, password, userLevel, 
+        lrn, strandId, sectionId, schoolyearId, createdAt, updatedAt
+      ) VALUES (
+        :lrn, :firstname, :middlename, :lastname, :email, :password, :userLevel,
+        :lrn, :strandId, :sectionId, :schoolyearId, NOW(), NOW()
+      )";
+      
+      $insertStudentStmt = $conn->prepare($insertStudentSql);
+      $insertStudentStmt->bindParam(':lrn', $studentData['lrn']);
+      $insertStudentStmt->bindParam(':firstname', $studentData['firstname']);
+      $insertStudentStmt->bindParam(':middlename', $studentData['middlename']);
+      $insertStudentStmt->bindParam(':lastname', $studentData['lastname']);
+      $insertStudentStmt->bindParam(':email', $email);
+      $insertStudentStmt->bindParam(':password', password_hash($studentData['password'], PASSWORD_DEFAULT));
+      $insertStudentStmt->bindParam(':userLevel', $studentData['userLevel']);
+      $insertStudentStmt->bindParam(':strandId', $studentData['strandId']);
+      $insertStudentStmt->bindParam(':sectionId', $sectionId);
+      $insertStudentStmt->bindParam(':schoolyearId', $studentData['schoolYearId']);
+      
+      if (!$insertStudentStmt->execute()) {
+        $conn->rollBack();
+        unlink($uploadPath); // Remove uploaded file
+        $errorInfo = $insertStudentStmt->errorInfo();
+        return json_encode([
+          'error' => 'Failed to insert student record: ' . implode(" ", $errorInfo),
+          'details' => [
+            'sql' => $insertStudentSql,
+            'data' => $studentData,
+            'errorInfo' => $errorInfo
+          ]
+        ]);
+      }
+      
+      // Insert SF10 document record
+      $insertDocumentSql = "INSERT INTO tblstudentdocument (
+        studentId, documentId, fileName, gradeLevelId, createdAt
+      ) VALUES (
+        :studentId, :documentId, :fileName, :gradeLevelId, NOW()
+      )";
+      
+      $insertDocumentStmt = $conn->prepare($insertDocumentSql);
+      $insertDocumentStmt->bindParam(':studentId', $studentData['lrn']);
+      $insertDocumentStmt->bindParam(':documentId', $documentId);
+      $insertDocumentStmt->bindParam(':fileName', $fileName);
+      $insertDocumentStmt->bindParam(':gradeLevelId', $studentData['gradeLevelId']);
+      
+      if (!$insertDocumentStmt->execute()) {
+        $conn->rollBack();
+        unlink($uploadPath); // Remove uploaded file
+        $documentErrorInfo = $insertDocumentStmt->errorInfo();
+        return json_encode(['error' => 'Failed to insert document record: ' . implode(" ", $documentErrorInfo)]);
+      }
+      
+      $conn->commit();
+      
+      return json_encode([
+        'success' => true,
+        'message' => 'Student added successfully with SF10 document',
+        'studentId' => $studentData['lrn'],
+        'fileName' => $fileName
+      ]);
+      
+    } catch (Exception $e) {
+      if (isset($conn)) {
+        $conn->rollBack();
+      }
+      if (isset($uploadPath) && file_exists($uploadPath)) {
+        unlink($uploadPath);
+      }
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
 }
 
 $operation = isset($_POST["operation"]) ? $_POST["operation"] : "0";
@@ -634,6 +778,12 @@ switch ($operation) {
     break;
   case "getStrands":
     echo $user->getStrands();
+    break;
+  case "getSf10DocumentId":
+    echo $user->getSf10DocumentId();
+    break;
+  case "addIndividualStudent":
+    echo $user->addIndividualStudent();
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

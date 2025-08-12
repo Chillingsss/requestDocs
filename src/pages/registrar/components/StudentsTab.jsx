@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
-import { Upload, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+	Upload,
+	Filter,
+	ChevronLeft,
+	ChevronRight,
+	UserPlus,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import StudentImport from "../../../components/StudentImport";
+import AddStudentModal from "../../../components/AddStudentModal";
 import { getStudent } from "../../../utils/teacher";
 import { getSection } from "../../../utils/registrar";
 import { getStrands } from "../../../utils/registrar";
@@ -15,6 +22,7 @@ export default function StudentsTab() {
 	const [sections, setSections] = useState([]);
 	const [studentsLoading, setStudentsLoading] = useState(true);
 	const [showImportModal, setShowImportModal] = useState(false);
+	const [showAddStudentModal, setShowAddStudentModal] = useState(false);
 
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
@@ -210,6 +218,13 @@ export default function StudentsTab() {
 		toast.success(`Successfully imported ${results.imported} students!`);
 	};
 
+	// Handle add student completion
+	const handleAddStudentComplete = (results) => {
+		fetchStudents(); // Refresh students list
+		setShowAddStudentModal(false);
+		toast.success("Student added successfully!");
+	};
+
 	// Generate page numbers for pagination
 	const getPageNumbers = () => {
 		const pageNumbers = [];
@@ -254,12 +269,20 @@ export default function StudentsTab() {
 						<div className="text-lg font-semibold text-slate-900 dark:text-white">
 							Students ({filteredStudents.length})
 						</div>
-						<Button
-							onClick={() => setShowImportModal(true)}
-							className="flex gap-2 items-center text-white bg-green-600 hover:bg-green-700"
-						>
-							<Upload className="w-4 h-4" /> Import Students
-						</Button>
+						<div className="flex gap-2">
+							<Button
+								onClick={() => setShowAddStudentModal(true)}
+								className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700"
+							>
+								<UserPlus className="w-4 h-4" /> Add Student
+							</Button>
+							<Button
+								onClick={() => setShowImportModal(true)}
+								className="flex gap-2 items-center text-white bg-green-600 hover:bg-green-700"
+							>
+								<Upload className="w-4 h-4" /> Import Students
+							</Button>
+						</div>
 					</div>
 
 					{/* Filter Controls */}
@@ -476,6 +499,15 @@ export default function StudentsTab() {
 					<StudentImport
 						onClose={() => setShowImportModal(false)}
 						onImportComplete={handleImportComplete}
+					/>
+				)}
+
+				{/* Add Student Modal */}
+				{showAddStudentModal && (
+					<AddStudentModal
+						isOpen={showAddStudentModal}
+						onClose={() => setShowAddStudentModal(false)}
+						onSuccess={handleAddStudentComplete}
 					/>
 				)}
 			</Card>
