@@ -25,7 +25,7 @@ import {
 } from "../../../utils/registrar";
 import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
-export default function StudentsTab() {
+export default function StudentsTab({ refreshTrigger }) {
 	const [students, setStudents] = useState([]);
 	const [filteredStudents, setFilteredStudents] = useState([]);
 	const [sections, setSections] = useState([]);
@@ -57,6 +57,16 @@ export default function StudentsTab() {
 		fetchStrands();
 		fetchSchoolYears();
 	}, []);
+
+	// Refresh data when refreshTrigger changes
+	useEffect(() => {
+		if (refreshTrigger && refreshTrigger > 0) {
+			fetchStudents();
+			fetchSections();
+			fetchStrands();
+			fetchSchoolYears();
+		}
+	}, [refreshTrigger]);
 
 	// Apply section filter when selectedSection, selectedStrand, or selectedSchoolYear changes
 	useEffect(() => {

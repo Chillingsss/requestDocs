@@ -20,6 +20,7 @@ import StudentsTab from "./components/StudentsTab";
 import DocumentsTab from "./components/DocumentsTab";
 import ThemeToggle from "../../components/ThemeToggle";
 import Sidebar from "../../components/shared/Sidebar";
+import { getStudent } from "../../utils/teacher";
 
 export default function RegistrarDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,6 +33,7 @@ export default function RegistrarDashboard() {
 	const [activeFilter, setActiveFilter] = useState("today");
 	const [customDate, setCustomDate] = useState("");
 	const [activeTab, setActiveTab] = useState("requests");
+	const [refreshTrigger, setRefreshTrigger] = useState(0);
 	const navigate = useNavigate();
 
 	// Helper function to get Philippine date in YYYY-MM-DD format
@@ -101,10 +103,14 @@ export default function RegistrarDashboard() {
 			const [requestsData, statsData] = await Promise.all([
 				getAllRequests(),
 				getRequestStats(),
+				getStudent(),
 			]);
 
 			setRecentRequests(Array.isArray(requestsData) ? requestsData : []);
 			setRequestStats(Array.isArray(statsData) ? statsData : []);
+
+			// Trigger refresh for StudentsTab and other components
+			setRefreshTrigger((prev) => prev + 1);
 		} catch (error) {
 			console.error("Failed to fetch data:", error);
 			toast.error("Failed to load dashboard data");
@@ -617,7 +623,7 @@ export default function RegistrarDashboard() {
 						</>
 					) : activeTab === "students" ? (
 						/* Students Tab - Now using the separate component */
-						<StudentsTab />
+						<StudentsTab refreshTrigger={refreshTrigger} />
 					) : activeTab === "documents" ? (
 						/* Documents Tab - New component for student documents */
 						<DocumentsTab />

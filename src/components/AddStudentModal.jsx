@@ -2,7 +2,15 @@ import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { X, UserPlus, Upload, FileText, Plus, Trash2 } from "lucide-react";
+import {
+	X,
+	UserPlus,
+	Upload,
+	FileText,
+	Plus,
+	Trash2,
+	Users,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import {
 	getStrands,
@@ -34,6 +42,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
 	]);
 	const [loading, setLoading] = useState(false);
 	const [sf10DocumentId, setSf10DocumentId] = useState(null);
+	const [activeStudent, setActiveStudent] = useState(0);
 
 	// Fetch data when modal opens
 	useEffect(() => {
@@ -117,7 +126,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
 	};
 
 	const addStudent = () => {
-		setStudents([
+		const newStudents = [
 			...students,
 			{
 				firstname: "",
@@ -131,13 +140,29 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
 				userLevel: "4",
 				sf10File: null,
 			},
-		]);
+		];
+		setStudents(newStudents);
+		setActiveStudent(newStudents.length - 1);
 	};
 
 	const removeStudent = (index) => {
 		if (students.length > 1) {
 			const updatedStudents = students.filter((_, i) => i !== index);
 			setStudents(updatedStudents);
+			// Adjust active student if needed
+			if (activeStudent >= updatedStudents.length) {
+				setActiveStudent(updatedStudents.length - 1);
+			} else if (activeStudent > index) {
+				setActiveStudent(activeStudent - 1);
+			}
+		}
+	};
+
+	const scrollToStudent = (index) => {
+		setActiveStudent(index);
+		const element = document.getElementById(`student-${index}`);
+		if (element) {
+			element.scrollIntoView({ behavior: "smooth", block: "start" });
 		}
 	};
 
@@ -175,6 +200,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
 			const error = validateStudent(students[i]);
 			if (error) {
 				toast.error(`Student ${i + 1}: ${error}`);
+				scrollToStudent(i);
 				return;
 			}
 		}
@@ -261,279 +287,134 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
 				sf10File: null,
 			},
 		]);
+		setActiveStudent(0);
 		setLoading(false);
 		onClose();
+	};
+
+	const isStudentComplete = (student) => {
+		return (
+			student.firstname &&
+			student.lastname &&
+			student.lrn &&
+			student.schoolYearId &&
+			student.strandId &&
+			student.gradeLevelId &&
+			student.sf10File
+		);
+	};
+
+	const areAllStudentsComplete = () => {
+		return (
+			students.length > 0 &&
+			students.every((student) => isStudentComplete(student))
+		);
 	};
 
 	if (!isOpen) return null;
 
 	return (
 		<div className="flex fixed inset-0 z-50 justify-center items-center bg-black/50 dark:bg-black/70">
-			<div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-				{/* Header */}
-				<div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-					<div className="flex items-center space-x-2">
-						<UserPlus className="w-6 h-6 text-blue-500" />
-						<h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-							Add New Student(s)
-						</h2>
+			<div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[90vh] flex overflow-hidden">
+				{/* Sticky Left Sidebar */}
+				<div className="flex flex-col w-80 bg-gray-50 border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+					{/* Header */}
+					<div className="p-6 border-b border-gray-200 dark:border-gray-700">
+						<div className="flex justify-between items-center">
+							<div className="flex items-center space-x-2">
+								<UserPlus className="w-6 h-6 text-blue-500" />
+								<h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+									Add Students
+								</h2>
+							</div>
+							<button
+								onClick={handleClose}
+								className="text-gray-500 transition-colors dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+							>
+								<X className="w-5 h-5" />
+							</button>
+						</div>
 					</div>
-					<button
-						onClick={handleClose}
-						className="text-gray-500 transition-colors dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-					>
-						<X className="w-6 h-6" />
-					</button>
-				</div>
 
-				<form onSubmit={handleSubmit} className="p-6">
-					{/* Add Student Button */}
-					<div className="flex justify-between items-center mb-6">
-						<div className="text-sm text-gray-600 dark:text-gray-400">
-							{students.length} student(s) ready to add
+					{/* Student Count & Add Button */}
+					<div className="p-4 border-b border-gray-200 dark:border-gray-700">
+						<div className="flex justify-between items-center mb-4">
+							<div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+								<Users className="w-4 h-4" />
+								<span>
+									{students.length} student{students.length > 1 ? "s" : ""}{" "}
+									ready
+								</span>
+							</div>
 						</div>
 						<Button
 							type="button"
 							onClick={addStudent}
-							variant="outline"
-							className="flex items-center space-x-2"
+							className="flex justify-center items-center space-x-2 w-full bg-blue-600 hover:bg-blue-700"
 						>
 							<Plus className="w-4 h-4" />
 							<span>Add Another Student</span>
 						</Button>
 					</div>
 
-					{/* Students Forms */}
-					{students.map((student, index) => (
-						<div
-							key={index}
-							className="p-6 mb-8 rounded-lg border border-gray-200 dark:border-gray-700"
-						>
-							{/* Student Header */}
-							<div className="flex justify-between items-center mb-4">
-								<h3 className="text-lg font-medium text-gray-900 dark:text-white">
-									Student {index + 1}
-								</h3>
-								{students.length > 1 && (
-									<Button
-										type="button"
-										onClick={() => removeStudent(index)}
-										variant="outline"
-										size="sm"
-										className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-									>
-										<Trash2 className="w-4 h-4" />
-									</Button>
-								)}
-							</div>
-
-							<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-								{/* Personal Information */}
-								<div className="space-y-4">
-									<h4 className="pb-2 font-medium text-gray-900 border-b text-md dark:text-white">
-										Personal Information
-									</h4>
-
-									<div>
-										<Label htmlFor={`firstname-${index}`}>First Name *</Label>
-										<Input
-											id={`firstname-${index}`}
-											value={student.firstname}
-											onChange={(e) =>
-												handleInputChange(index, "firstname", e.target.value)
-											}
-											required
-											className="mt-1"
-										/>
-									</div>
-
-									<div>
-										<Label htmlFor={`middlename-${index}`}>Middle Name</Label>
-										<Input
-											id={`middlename-${index}`}
-											value={student.middlename}
-											onChange={(e) =>
-												handleInputChange(index, "middlename", e.target.value)
-											}
-											className="mt-1"
-										/>
-									</div>
-
-									<div>
-										<Label htmlFor={`lastname-${index}`}>Last Name *</Label>
-										<Input
-											id={`lastname-${index}`}
-											value={student.lastname}
-											onChange={(e) =>
-												handleInputChange(index, "lastname", e.target.value)
-											}
-											required
-											className="mt-1"
-										/>
-									</div>
-
-									<div>
-										<Label htmlFor={`lrn-${index}`}>LRN *</Label>
-										<Input
-											id={`lrn-${index}`}
-											value={student.lrn}
-											onChange={(e) =>
-												handleInputChange(index, "lrn", e.target.value)
-											}
-											required
-											className="mt-1"
-										/>
-									</div>
-
-									<div>
-										<Label htmlFor={`password-${index}`}>
-											Password (Auto-set to Last Name) *
-										</Label>
-										<Input
-											id={`password-${index}`}
-											type="text"
-											value={student.password}
-											onChange={(e) =>
-												handleInputChange(index, "password", e.target.value)
-											}
-											required
-											className="mt-1 bg-gray-100 dark:bg-gray-700"
-											readOnly
-										/>
-									</div>
-								</div>
-
-								{/* Academic Information */}
-								<div className="space-y-4">
-									<h4 className="pb-2 font-medium text-gray-900 border-b text-md dark:text-white">
-										Academic Information
-									</h4>
-
-									<div>
-										<Label htmlFor={`gradeLevelId-${index}`}>
-											Grade Level *
-										</Label>
-										<select
-											id={`gradeLevelId-${index}`}
-											value={student.gradeLevelId}
-											onChange={(e) =>
-												handleInputChange(index, "gradeLevelId", e.target.value)
-											}
-											required
-											className="px-3 py-2 w-full text-sm bg-white rounded-md border border-gray-300 dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
-										>
-											<option value="">Select Grade Level</option>
-											{gradeLevels.map((level) => (
-												<option key={level.id} value={level.id}>
-													{level.name}
-												</option>
-											))}
-										</select>
-									</div>
-
-									<div>
-										<Label htmlFor={`schoolYearId-${index}`}>
-											School Year *
-										</Label>
-										<select
-											id={`schoolYearId-${index}`}
-											value={student.schoolYearId}
-											onChange={(e) =>
-												handleInputChange(index, "schoolYearId", e.target.value)
-											}
-											required
-											className="px-3 py-2 w-full text-sm bg-white rounded-md border border-gray-300 dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
-										>
-											<option value="">Select School Year</option>
-											{schoolYears.map((year) => (
-												<option key={year.id} value={year.id}>
-													{year.year}
-												</option>
-											))}
-										</select>
-									</div>
-
-									<div>
-										<Label htmlFor={`strandId-${index}`}>Strand *</Label>
-										<select
-											id={`strandId-${index}`}
-											value={student.strandId}
-											onChange={(e) =>
-												handleInputChange(index, "strandId", e.target.value)
-											}
-											required
-											className="px-3 py-2 w-full text-sm bg-white rounded-md border border-gray-300 dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
-										>
-											<option value="">Select Strand</option>
-											{strands.map((strand) => (
-												<option key={strand.id} value={strand.id}>
-													{strand.name} ({strand.trackName})
-												</option>
-											))}
-										</select>
-									</div>
-								</div>
-							</div>
-
-							{/* SF10 Document Upload */}
-							<div className="mt-6 space-y-4">
-								<h4 className="pb-2 font-medium text-gray-900 border-b text-md dark:text-white">
-									SF10 Document Upload *
-								</h4>
-
-								<div className="p-4 rounded-lg border-2 border-gray-300 border-dashed dark:border-gray-600">
-									<div className="text-center">
-										<FileText className="mx-auto mb-4 w-12 h-12 text-gray-400" />
-										<div className="mb-4">
-											<Label
-												htmlFor={`sf10-file-${index}`}
-												className="cursor-pointer"
-											>
-												<div className="flex justify-center items-center space-x-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-													<Upload className="w-5 h-5" />
-													<span>Upload SF10 Document (PDF)</span>
-												</div>
-											</Label>
-											<input
-												id={`sf10-file-${index}`}
-												type="file"
-												accept=".pdf"
-												onChange={(e) =>
-													handleFileSelect(index, e.target.files[0])
-												}
-												className="hidden"
+					{/* Student Navigation List */}
+					<div className="overflow-y-auto flex-1 p-4">
+						<div className="space-y-2">
+							{students.map((student, index) => (
+								<div
+									key={index}
+									onClick={() => scrollToStudent(index)}
+									className={`p-3 rounded-lg border cursor-pointer transition-all ${
+										activeStudent === index
+											? "bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700"
+											: "bg-white border-gray-200 dark:bg-gray-700 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
+									}`}
+								>
+									<div className="flex justify-between items-center">
+										<div className="flex items-center space-x-2">
+											<div
+												className={`w-2 h-2 rounded-full ${
+													isStudentComplete(student)
+														? "bg-green-500"
+														: "bg-gray-300 dark:bg-gray-500"
+												}`}
 											/>
+											<span className="font-medium text-gray-900 dark:text-white">
+												Student {index + 1}
+											</span>
 										</div>
-
-										{student.sf10File ? (
-											<div className="text-sm text-green-600 dark:text-green-400">
-												✓ {student.sf10File.name} selected
-											</div>
-										) : (
-											<div className="text-sm text-gray-500 dark:text-gray-400">
-												Only PDF files are allowed. Maximum size: 10MB
-											</div>
+										{students.length > 1 && (
+											<button
+												onClick={(e) => {
+													e.stopPropagation();
+													removeStudent(index);
+												}}
+												className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+											>
+												<Trash2 className="w-4 h-4" />
+											</button>
 										)}
 									</div>
+									<div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+										{student.firstname && student.lastname
+											? `${student.firstname} ${student.lastname}`
+											: "Incomplete"}
+									</div>
 								</div>
-							</div>
+							))}
 						</div>
-					))}
+					</div>
 
-					{/* Submit Buttons */}
-					<div className="flex justify-end mt-6 space-x-3">
+					{/* Submit Button */}
+					<div className="p-4 border-t border-gray-200 dark:border-gray-700">
 						<Button
-							type="button"
-							variant="outline"
-							onClick={handleClose}
-							disabled={loading}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							disabled={loading}
-							className="flex items-center space-x-2"
+							onClick={handleSubmit}
+							disabled={loading || !areAllStudentsComplete()}
+							className={`flex justify-center items-center space-x-2 w-full ${
+								areAllStudentsComplete() && !loading
+									? "bg-green-600 hover:bg-green-700"
+									: "bg-gray-400 cursor-not-allowed"
+							}`}
 						>
 							{loading ? (
 								<>
@@ -544,14 +425,256 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
 								<>
 									<UserPlus className="w-4 h-4" />
 									<span>
-										Add {students.length} Student
-										{students.length > 1 ? "s" : ""}
+										{areAllStudentsComplete()
+											? `Add ${students.length} Student${
+													students.length > 1 ? "s" : ""
+											  }`
+											: "Complete all students to continue"}
 									</span>
 								</>
 							)}
 						</Button>
+						{!areAllStudentsComplete() && !loading && (
+							<p className="mt-2 text-xs text-center text-red-500">
+								Please complete all student information before submitting
+							</p>
+						)}
 					</div>
-				</form>
+				</div>
+
+				{/* Main Content Area */}
+				<div className="overflow-y-auto flex-1">
+					<form onSubmit={handleSubmit} className="p-6">
+						{/* Students Forms */}
+						{students.map((student, index) => (
+							<div
+								key={index}
+								id={`student-${index}`}
+								className={`p-6 mb-8 rounded-lg border-2 transition-all ${
+									activeStudent === index
+										? "border-blue-300 bg-blue-50/30 dark:border-blue-600 dark:bg-blue-900/10"
+										: "border-gray-200 dark:border-gray-700"
+								}`}
+							>
+								{/* Student Header */}
+								<div className="flex justify-between items-center mb-6">
+									<h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900 dark:text-white">
+										<div
+											className={`w-3 h-3 rounded-full ${
+												isStudentComplete(student)
+													? "bg-green-500"
+													: "bg-gray-300 dark:bg-gray-500"
+											}`}
+										/>
+										<span>Student {index + 1}</span>
+									</h3>
+									<div className="text-sm text-gray-500 dark:text-gray-400">
+										{isStudentComplete(student) ? "Complete" : "Incomplete"}
+									</div>
+								</div>
+
+								<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+									{/* Personal Information */}
+									<div className="space-y-4">
+										<h4 className="pb-2 text-lg font-medium text-gray-900 border-b dark:text-white">
+											Personal Information
+										</h4>
+
+										<div>
+											<Label htmlFor={`firstname-${index}`}>First Name *</Label>
+											<Input
+												id={`firstname-${index}`}
+												value={student.firstname}
+												onChange={(e) =>
+													handleInputChange(index, "firstname", e.target.value)
+												}
+												required
+												className="mt-1"
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor={`middlename-${index}`}>Middle Name</Label>
+											<Input
+												id={`middlename-${index}`}
+												value={student.middlename}
+												onChange={(e) =>
+													handleInputChange(index, "middlename", e.target.value)
+												}
+												className="mt-1"
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor={`lastname-${index}`}>Last Name *</Label>
+											<Input
+												id={`lastname-${index}`}
+												value={student.lastname}
+												onChange={(e) =>
+													handleInputChange(index, "lastname", e.target.value)
+												}
+												required
+												className="mt-1"
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor={`lrn-${index}`}>LRN *</Label>
+											<Input
+												id={`lrn-${index}`}
+												value={student.lrn}
+												onChange={(e) =>
+													handleInputChange(index, "lrn", e.target.value)
+												}
+												required
+												className="mt-1"
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor={`password-${index}`}>
+												Password (Auto-set to Last Name) *
+											</Label>
+											<Input
+												id={`password-${index}`}
+												type="text"
+												value={student.password}
+												onChange={(e) =>
+													handleInputChange(index, "password", e.target.value)
+												}
+												required
+												className="mt-1 bg-gray-100 dark:bg-gray-700"
+												readOnly
+											/>
+										</div>
+									</div>
+
+									{/* Academic Information */}
+									<div className="space-y-4">
+										<h4 className="pb-2 text-lg font-medium text-gray-900 border-b dark:text-white">
+											Academic Information
+										</h4>
+
+										<div>
+											<Label htmlFor={`gradeLevelId-${index}`}>
+												Grade Level *
+											</Label>
+											<select
+												id={`gradeLevelId-${index}`}
+												value={student.gradeLevelId}
+												onChange={(e) =>
+													handleInputChange(
+														index,
+														"gradeLevelId",
+														e.target.value
+													)
+												}
+												required
+												className="px-3 py-2 mt-1 w-full text-sm bg-white rounded-md border border-gray-300 dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+											>
+												<option value="">Select Grade Level</option>
+												{gradeLevels.map((level) => (
+													<option key={level.id} value={level.id}>
+														{level.name}
+													</option>
+												))}
+											</select>
+										</div>
+
+										<div>
+											<Label htmlFor={`schoolYearId-${index}`}>
+												School Year *
+											</Label>
+											<select
+												id={`schoolYearId-${index}`}
+												value={student.schoolYearId}
+												onChange={(e) =>
+													handleInputChange(
+														index,
+														"schoolYearId",
+														e.target.value
+													)
+												}
+												required
+												className="px-3 py-2 mt-1 w-full text-sm bg-white rounded-md border border-gray-300 dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+											>
+												<option value="">Select School Year</option>
+												{schoolYears.map((year) => (
+													<option key={year.id} value={year.id}>
+														{year.year}
+													</option>
+												))}
+											</select>
+										</div>
+
+										<div>
+											<Label htmlFor={`strandId-${index}`}>Strand *</Label>
+											<select
+												id={`strandId-${index}`}
+												value={student.strandId}
+												onChange={(e) =>
+													handleInputChange(index, "strandId", e.target.value)
+												}
+												required
+												className="px-3 py-2 mt-1 w-full text-sm bg-white rounded-md border border-gray-300 dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+											>
+												<option value="">Select Strand</option>
+												{strands.map((strand) => (
+													<option key={strand.id} value={strand.id}>
+														{strand.name} ({strand.trackName})
+													</option>
+												))}
+											</select>
+										</div>
+									</div>
+								</div>
+
+								{/* SF10 Document Upload */}
+								<div className="mt-6 space-y-4">
+									<h4 className="pb-2 text-lg font-medium text-gray-900 border-b dark:text-white">
+										SF10 Document Upload *
+									</h4>
+
+									<div className="p-6 rounded-lg border-2 border-gray-300 border-dashed dark:border-gray-600">
+										<div className="text-center">
+											<FileText className="mx-auto mb-4 w-12 h-12 text-gray-400" />
+											<div className="mb-4">
+												<Label
+													htmlFor={`sf10-file-${index}`}
+													className="cursor-pointer"
+												>
+													<div className="flex justify-center items-center space-x-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+														<Upload className="w-5 h-5" />
+														<span>Upload SF10 Document (PDF)</span>
+													</div>
+												</Label>
+												<input
+													id={`sf10-file-${index}`}
+													type="file"
+													accept=".pdf"
+													onChange={(e) =>
+														handleFileSelect(index, e.target.files[0])
+													}
+													className="hidden"
+												/>
+											</div>
+
+											{student.sf10File ? (
+												<div className="text-sm text-green-600 dark:text-green-400">
+													✓ {student.sf10File.name} selected
+												</div>
+											) : (
+												<div className="text-sm text-gray-500 dark:text-gray-400">
+													Only PDF files are allowed. Maximum size: 10MB
+												</div>
+											)}
+										</div>
+									</div>
+								</div>
+							</div>
+						))}
+					</form>
+				</div>
 			</div>
 		</div>
 	);
