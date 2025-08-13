@@ -642,7 +642,7 @@ export default function ProcessedRequest({
 							<Button
 								onClick={onClose}
 								variant="outline"
-								className="py-3 w-full text-base font-medium sm:flex-1 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600"
+								className="py-3 w-full text-base font-medium sm:flex-1 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-900 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-900"
 							>
 								Cancel
 							</Button>

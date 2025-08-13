@@ -7,20 +7,67 @@ class User {
   {
     include "connection.php";
 
-    $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.lrn, a.email, a.password, a.userLevel, a.birthDate, a.age, a.religion, a.completeAddress, a.fatherName, a.motherName, a.guardianName, a.guardianRelationship, a.sectionId, a.schoolyearId, b.name as sectionName, s.name as strand, t.name as track, a.strandId, sy.year as schoolYear
-    FROM tblstudent a
-    LEFT JOIN tblsection b ON a.sectionId = b.id
-    LEFT JOIN tblstrand s ON a.strandId = s.id
-    LEFT JOIN tbltrack t ON s.trackId = t.id
-    LEFT JOIN tblschoolyear sy ON a.schoolyearId = sy.id";
-    $stmt = $conn->prepare($sql); 
-    $stmt->execute();
+    try {
+      // First, get all students
+      $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.lrn, a.email, a.password, a.userLevel, a.birthDate, a.age, a.religion, a.completeAddress, a.fatherName, a.motherName, a.guardianName, a.guardianRelationship, a.sectionId, a.schoolyearId, b.name as sectionName, s.name as strand, t.name as track, a.strandId, sy.year as schoolYear
+      FROM tblstudent a
+      LEFT JOIN tblsection b ON a.sectionId = b.id
+      LEFT JOIN tblstrand s ON a.strandId = s.id
+      LEFT JOIN tbltrack t ON s.trackId = t.id
+      LEFT JOIN tblschoolyear sy ON a.schoolyearId = sy.id
+      ORDER BY a.createdAt DESC";
+      $stmt = $conn->prepare($sql); 
+      $stmt->execute();
 
-    if ($stmt->rowCount() > 0) {
-      $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
-      return json_encode($students);
+      if ($stmt->rowCount() > 0) {
+        $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Now get all documents for all students in one query
+        $documentsSql = "SELECT 
+                          sd.id,
+                          sd.studentId,
+                          sd.fileName,
+                          sd.createdAt,
+                          sd.gradeLevelId,
+                          d.name as documentType,
+                          gl.name as gradeLevelName
+                        FROM tblstudentdocument sd
+                        LEFT JOIN tbldocument d ON sd.documentId = d.id
+                        LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
+                        ORDER BY sd.id DESC";
+        
+        $documentsStmt = $conn->prepare($documentsSql);
+        $documentsStmt->execute();
+        
+        $allDocuments = [];
+        if ($documentsStmt->rowCount() > 0) {
+          $documents = $documentsStmt->fetchAll(PDO::FETCH_ASSOC);
+          
+          // Filter documents to only include those that actually exist in the filesystem
+          // and group by studentId
+          foreach ($documents as $document) {
+            $filePath = __DIR__ . '/documents/' . $document['fileName'];
+            if (file_exists($filePath)) {
+              $studentId = $document['studentId'];
+              if (!isset($allDocuments[$studentId])) {
+                $allDocuments[$studentId] = [];
+              }
+              $allDocuments[$studentId][] = $document;
+            }
+          }
+        }
+        
+        // Add documents to each student
+        foreach ($students as &$student) {
+          $student['documents'] = isset($allDocuments[$student['id']]) ? $allDocuments[$student['id']] : [];
+        }
+        
+        return json_encode($students);
+      }
+      return json_encode([]);
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
-    return json_encode([]);
   }
 
   function getStudentRecords()

@@ -50,6 +50,7 @@ export default function CertificateTemplateModal({
 						onCancel={onClose}
 						isEditable={true}
 						fetchStudentInfo={fetchStudentInfo}
+						request={request}
 					/>
 				);
 			case "ABM":
@@ -60,6 +61,7 @@ export default function CertificateTemplateModal({
 						onCancel={onClose}
 						isEditable={true}
 						fetchStudentInfo={fetchStudentInfo}
+						request={request}
 					/>
 				);
 			case "HUMSS":
@@ -70,6 +72,7 @@ export default function CertificateTemplateModal({
 						onCancel={onClose}
 						isEditable={true}
 						fetchStudentInfo={fetchStudentInfo}
+						request={request}
 					/>
 				);
 			case "GAS":
@@ -80,6 +83,7 @@ export default function CertificateTemplateModal({
 						onCancel={onClose}
 						isEditable={true}
 						fetchStudentInfo={fetchStudentInfo}
+						request={request}
 					/>
 				);
 			case "TVL":
@@ -90,6 +94,7 @@ export default function CertificateTemplateModal({
 						onCancel={onClose}
 						isEditable={true}
 						fetchStudentInfo={fetchStudentInfo}
+						request={request}
 					/>
 				);
 			default:
@@ -100,6 +105,7 @@ export default function CertificateTemplateModal({
 						onCancel={onClose}
 						isEditable={true}
 						fetchStudentInfo={fetchStudentInfo}
+						request={request}
 					/>
 				);
 		}

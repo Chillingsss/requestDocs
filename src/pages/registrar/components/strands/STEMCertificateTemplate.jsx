@@ -7,6 +7,7 @@ export default function STEMCertificateTemplate({
 	onCancel,
 	isEditable = true,
 	fetchStudentInfo,
+	request,
 }) {
 	// STEM-specific default values
 	const stemDefaults = {
@@ -44,6 +45,7 @@ export default function STEMCertificateTemplate({
 			fetchStudentInfo={fetchStudentInfo}
 			strandDefaults={stemDefaults}
 			strandType="STEM"
+			request={request}
 		/>
 	);
 }

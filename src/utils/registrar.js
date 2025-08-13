@@ -295,3 +295,20 @@ export async function addIndividualStudent(studentData, sf10File, documentId) {
 		throw error;
 	}
 }
+
+export async function getAllStudentDocuments() {
+	const formData = new FormData();
+	formData.append("operation", "getAllStudentDocuments");
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

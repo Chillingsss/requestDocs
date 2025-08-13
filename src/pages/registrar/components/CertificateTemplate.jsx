@@ -13,6 +13,7 @@ export default function CertificateTemplate({
 	isEditable = true,
 	strandDefaults,
 	strandType,
+	request,
 }) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -76,7 +77,7 @@ export default function CertificateTemplate({
 		semester: "Second Semester",
 		schoolYear: "2024-2025",
 		dateIssued: "",
-		purpose: "scholarship application purposes only",
+		purpose: "",
 		principalName: "MELENDE B. CATID, PhD",
 		principalTitle: "School Principal IV",
 		strandId: "",
@@ -103,6 +104,10 @@ export default function CertificateTemplate({
 				studentInfo.strand ||
 				"Science, Technology, Engineering, and Mathematics (STEM)";
 
+			// Get purpose from request data or use default
+			const requestPurpose =
+				request?.purpose || "scholarship application purposes only";
+
 			setCertificateData((prev) => ({
 				...prev,
 				// DB-driven or name display fields update from studentInfo
@@ -121,7 +126,7 @@ export default function CertificateTemplate({
 				schoolYear: prev.schoolYear || "2024-2025",
 				dateIssued:
 					prev.dateIssued || `${ordinalSuffix} day of ${month} ${year}`,
-				purpose: prev.purpose || "scholarship application purposes only",
+				purpose: prev.purpose || requestPurpose,
 				principalName: prev.principalName || "MELENDE B. CATID, PhD",
 				principalTitle: prev.principalTitle || "School Principal IV",
 			}));
@@ -145,7 +150,7 @@ export default function CertificateTemplate({
 			}
 		};
 		fetchStrands();
-	}, [studentInfo, strandDefaults]);
+	}, [studentInfo, strandDefaults, request]);
 
 	// When strands load, if we don't yet have a strandId, try to derive it from the strand text/acronym
 	useEffect(() => {

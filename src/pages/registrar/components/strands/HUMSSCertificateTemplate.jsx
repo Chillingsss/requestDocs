@@ -7,6 +7,7 @@ export default function HUMSSCertificateTemplate({
 	onCancel,
 	isEditable = true,
 	fetchStudentInfo,
+	request,
 }) {
 	// HUMSS-specific default values
 	const humssDefaults = {
@@ -46,6 +47,7 @@ export default function HUMSSCertificateTemplate({
 			fetchStudentInfo={fetchStudentInfo}
 			strandDefaults={humssDefaults}
 			strandType="Humanities and Social Sciences (HUMSS)"
+			request={request}
 		/>
 	);
 }

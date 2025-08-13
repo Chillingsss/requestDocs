@@ -262,10 +262,13 @@ class User {
     $requestId = $json['requestId'];
 
     try {
-      // First get the student ID and document ID from the request
-      $studentSql = "SELECT r.studentId, r.documentId, d.name as requestedDocumentType 
+      // First get the student ID, document ID, and student's current grade level from the request
+      // Get grade level through student -> section -> grade level relationship
+      $studentSql = "SELECT r.studentId, r.documentId, d.name as requestedDocumentType, sec.gradeLevelId as currentGradeLevelId
                      FROM tblrequest r
                      INNER JOIN tbldocument d ON r.documentId = d.id
+                     INNER JOIN tblstudent s ON r.studentId = s.id
+                     LEFT JOIN tblsection sec ON s.sectionId = sec.id
                      WHERE r.id = :requestId";
       $studentStmt = $conn->prepare($studentSql);
       $studentStmt->bindParam(':requestId', $requestId);
@@ -278,26 +281,74 @@ class User {
       $requestData = $studentStmt->fetch(PDO::FETCH_ASSOC);
       $studentId = $requestData['studentId'];
       $documentId = $requestData['documentId'];
+      $currentGradeLevelId = $requestData['currentGradeLevelId'];
 
-      // Get student documents that match the requested document type only, including grade level information
-      $sql = "SELECT 
-                sd.id,
-                sd.documentId,
-                sd.fileName,
-                sd.createdAt,
-                sd.gradeLevelId,
-                d.name as documentType,
-                gl.name as gradeLevelName
-              FROM tblstudentdocument sd
-              LEFT JOIN tbldocument d ON sd.documentId = d.id
-              LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
-              WHERE sd.studentId = :studentId 
-              AND sd.documentId = :documentId
-              ORDER BY sd.gradeLevelId ASC, sd.createdAt DESC";
+      // Check if this is an SF10 document request
+      $isSf10Request = strtolower($requestData['requestedDocumentType']) === 'sf10';
+
+      // Build the SQL query based on document type
+      if ($isSf10Request) {
+        // For SF10 documents, show documents that match the student's current grade level
+        // If currentGradeLevelId is null, show all SF10 documents for this student
+        if ($currentGradeLevelId) {
+          $sql = "SELECT 
+                    sd.id,
+                    sd.documentId,
+                    sd.fileName,
+                    sd.createdAt,
+                    sd.gradeLevelId,
+                    d.name as documentType,
+                    gl.name as gradeLevelName
+                  FROM tblstudentdocument sd
+                  LEFT JOIN tbldocument d ON sd.documentId = d.id
+                  LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
+                  WHERE sd.studentId = :studentId 
+                  AND sd.documentId = :documentId
+                  AND sd.gradeLevelId = :currentGradeLevelId
+                  ORDER BY sd.id DESC";
+        } else {
+          // If student doesn't have a grade level set, show all SF10 documents
+          $sql = "SELECT 
+                    sd.id,
+                    sd.documentId,
+                    sd.fileName,
+                    sd.createdAt,
+                    sd.gradeLevelId,
+                    d.name as documentType,
+                    gl.name as gradeLevelName
+                  FROM tblstudentdocument sd
+                  LEFT JOIN tbldocument d ON sd.documentId = d.id
+                  LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
+                  WHERE sd.studentId = :studentId 
+                  AND sd.documentId = :documentId
+                  ORDER BY sd.gradeLevelId ASC, sd.createdAt DESC";
+        }
+      } else {
+        // For other document types, show all documents of that type
+        $sql = "SELECT 
+                  sd.id,
+                  sd.documentId,
+                  sd.fileName,
+                  sd.createdAt,
+                  sd.gradeLevelId,
+                  d.name as documentType,
+                  gl.name as gradeLevelName
+                FROM tblstudentdocument sd
+                LEFT JOIN tbldocument d ON sd.documentId = d.id
+                LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
+                WHERE sd.studentId = :studentId 
+                AND sd.documentId = :documentId
+                ORDER BY sd.gradeLevelId ASC, sd.createdAt DESC";
+      }
       
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':studentId', $studentId);
       $stmt->bindParam(':documentId', $documentId);
+      
+      if ($isSf10Request && $currentGradeLevelId) {
+        $stmt->bindParam(':currentGradeLevelId', $currentGradeLevelId);
+      }
+      
       $stmt->execute();
 
       if ($stmt->rowCount() > 0) {
@@ -321,6 +372,49 @@ class User {
     }
   }
 
+  function debugStudentGradeLevel($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $requestId = $json['requestId'];
+
+    try {
+      // Debug query to see student and document grade levels using correct relationships
+      $sql = "SELECT 
+                r.id as requestId,
+                r.studentId,
+                s.sectionId,
+                sec.gradeLevelId as studentGradeLevel,
+                gl.name as studentGradeLevelName,
+                d.name as requestedDocument,
+                GROUP_CONCAT(DISTINCT sd.gradeLevelId) as documentGradeLevels,
+                GROUP_CONCAT(DISTINCT sd.fileName) as documentFiles
+              FROM tblrequest r
+              INNER JOIN tblstudent s ON r.studentId = s.id
+              LEFT JOIN tblsection sec ON s.sectionId = sec.id
+              LEFT JOIN tblgradelevel gl ON sec.gradeLevelId = gl.id
+              INNER JOIN tbldocument d ON r.documentId = d.id
+              LEFT JOIN tblstudentdocument sd ON sd.studentId = s.id AND sd.documentId = d.id
+              WHERE r.id = :requestId
+              GROUP BY r.id";
+      
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':requestId', $requestId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $debugInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+        return json_encode($debugInfo);
+      }
+      
+      return json_encode(['error' => 'Request not found']);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
   function getStudentInfo($json)
   {
     include "connection.php";
@@ -329,7 +423,7 @@ class User {
     $requestId = $json['requestId'];
 
     try {
-      // Get student information from the request
+      // Get student information from the request including grade level through section
       $sql = "SELECT 
                 s.id,
                 s.firstname,
@@ -339,12 +433,16 @@ class User {
                 s.strandId,
                 st.name as strand,
                 t.name as track,
-                s.email
+                s.email,
+                sec.gradeLevelId,
+                gl.name as gradeLevel
               FROM tblrequest r
               INNER JOIN tblstudent s ON r.studentId = s.id
               LEFT JOIN tblstrand st ON s.strandId = st.id
               LEFT JOIN tbltrack t ON st.trackId = t.id
-              WHERE r.id = :requestId";
+              LEFT JOIN tblsection sec ON s.sectionId = sec.id
+              LEFT JOIN tblgradelevel gl ON sec.gradeLevelId = gl.id
+              WHERE r.id = :requestId ORDER BY s.createdAt ASC";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':requestId', $requestId);
       $stmt->execute();
@@ -729,6 +827,49 @@ class User {
     }
   }
 
+  function getAllStudentDocuments() {
+    include "connection.php";
+    
+    try {
+      $sql = "SELECT 
+                sd.id,
+                sd.studentId,
+                sd.fileName,
+                sd.createdAt,
+                sd.gradeLevelId,
+                d.name as documentType,
+                gl.name as gradeLevelName,
+                CONCAT(s.firstname, ' ', s.lastname) as studentName
+              FROM tblstudentdocument sd
+              LEFT JOIN tbldocument d ON sd.documentId = d.id
+              LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
+              LEFT JOIN tblstudent s ON sd.studentId = s.id
+              ORDER BY sd.id DESC";
+      
+      $stmt = $conn->prepare($sql);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $documents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Filter documents to only include those that actually exist in the filesystem
+        $validDocuments = [];
+        foreach ($documents as $document) {
+          $filePath = __DIR__ . '/documents/' . $document['fileName'];
+          if (file_exists($filePath)) {
+            $validDocuments[] = $document;
+          }
+        }
+        
+        return json_encode($validDocuments);
+      }
+      return json_encode([]);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
 }
 
 $operation = isset($_POST["operation"]) ? $_POST["operation"] : "0";
@@ -785,10 +926,16 @@ switch ($operation) {
   case "addIndividualStudent":
     echo $user->addIndividualStudent();
     break;
+  case "debugStudentGradeLevel":
+    echo $user->debugStudentGradeLevel($json);
+    break;
+  case "getAllStudentDocuments":
+    echo $user->getAllStudentDocuments();
+    break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");
     http_response_code(400); // Bad Request
     break;
 }
 
-?>
+?>  

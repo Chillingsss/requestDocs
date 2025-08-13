@@ -7,6 +7,7 @@ export default function GASCertificateTemplate({
 	onCancel,
 	isEditable = true,
 	fetchStudentInfo,
+	request,
 }) {
 	// GAS-specific default values
 	const gasDefaults = {
@@ -46,6 +47,7 @@ export default function GASCertificateTemplate({
 			fetchStudentInfo={fetchStudentInfo}
 			strandDefaults={gasDefaults}
 			strandType="General Academic Strand (GAS)"
+			request={request}
 		/>
 	);
 }

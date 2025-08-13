@@ -7,14 +7,23 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	UserPlus,
+	FileText,
+	Eye,
+	Download,
+	ChevronDown,
+	ChevronUp,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import StudentImport from "../../../components/StudentImport";
 import AddStudentModal from "../../../components/AddStudentModal";
+import DocumentViewer from "../../../components/DocumentViewer";
 import { getStudent } from "../../../utils/teacher";
-import { getSection } from "../../../utils/registrar";
-import { getStrands } from "../../../utils/registrar";
-import { getSchoolYear } from "../../../utils/registrar";
+import {
+	getSection,
+	getStrands,
+	getSchoolYear,
+} from "../../../utils/registrar";
+import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
 export default function StudentsTab() {
 	const [students, setStudents] = useState([]);
@@ -23,6 +32,12 @@ export default function StudentsTab() {
 	const [studentsLoading, setStudentsLoading] = useState(true);
 	const [showImportModal, setShowImportModal] = useState(false);
 	const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+
+	// Document management state
+	const [studentDocuments, setStudentDocuments] = useState({});
+	const [expandedStudents, setExpandedStudents] = useState(new Set());
+	const [selectedDocument, setSelectedDocument] = useState(null);
+	const [showDocumentViewer, setShowDocumentViewer] = useState(false);
 
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
@@ -66,7 +81,27 @@ export default function StudentsTab() {
 					studentsArray = [];
 				}
 			}
+
+			// Extract documents from student data and populate studentDocuments
+			const documentsMap = {};
+			if (Array.isArray(studentsArray)) {
+				studentsArray.forEach((student) => {
+					if (student.documents && Array.isArray(student.documents)) {
+						documentsMap[student.id] = student.documents;
+						console.log(
+							`Student ${student.id} has ${student.documents.length} documents:`,
+							student.documents.map((doc) => ({
+								id: doc.id,
+								type: doc.documentType,
+							}))
+						);
+					}
+				});
+			}
+
 			setStudents(Array.isArray(studentsArray) ? studentsArray : []);
+			setStudentDocuments(documentsMap);
+			setExpandedStudents(new Set());
 		} catch (error) {
 			console.error("Error fetching students:", error);
 			toast.error("Failed to load students");
@@ -261,6 +296,55 @@ export default function StudentsTab() {
 		return pageNumbers;
 	};
 
+	// Document management functions - documents are now loaded with students
+
+	const toggleStudentDocuments = (studentId) => {
+		const newExpanded = new Set(expandedStudents);
+		if (newExpanded.has(studentId)) {
+			newExpanded.delete(studentId);
+		} else {
+			newExpanded.add(studentId);
+			// Documents are already loaded with student data, no need to fetch
+		}
+		setExpandedStudents(newExpanded);
+	};
+
+	const handleViewDocument = (documentData) => {
+		setSelectedDocument(documentData);
+		setShowDocumentViewer(true);
+	};
+
+	const handleDownloadDocument = (documentData) => {
+		const apiUrl = getDecryptedApiUrl();
+		const fileUrl = `${apiUrl}/documents/${documentData.fileName}`;
+		const link = document.createElement("a");
+		link.href = fileUrl;
+		link.download = documentData.fileName;
+		link.target = "_blank";
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
+
+	const handleViewDocumentInTab = (documentData) => {
+		const apiUrl = getDecryptedApiUrl();
+		const fileUrl = `${apiUrl}/documents/${documentData.fileName}`;
+		window.open(fileUrl, "_blank");
+	};
+
+	const getFileExtension = (filename) => {
+		return filename.split(".").pop().toLowerCase();
+	};
+
+	const isViewableFile = (filename) => {
+		const extension = getFileExtension(filename);
+		return ["pdf", "jpg", "jpeg", "png", "gif"].includes(extension);
+	};
+
+	const isPdfFile = (filename) => {
+		return getFileExtension(filename) === "pdf";
+	};
+
 	return (
 		<>
 			<Card className="dark:bg-slate-800 dark:border-slate-700">
@@ -375,59 +459,151 @@ export default function StudentsTab() {
 											<th className="px-3 py-2 font-semibold text-left lg:px-4">
 												Track & Strand
 											</th>
+											<th className="px-3 py-2 font-semibold text-left lg:px-4">
+												Documents
+											</th>
 										</tr>
 									</thead>
 									<tbody>
 										{currentStudents.map((student) => (
-											<tr
-												key={student.id}
-												className="border-b transition-colors border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-											>
-												<td className="px-3 py-3 lg:px-4 lg:py-2">
-													<div className="flex items-center">
-														<div className="flex-shrink-0 mr-3 w-8 h-8">
-															<div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-full dark:bg-blue-900">
-																<span className="text-xs font-medium text-blue-600 dark:text-blue-300">
-																	{student.firstname?.[0]}
-																	{student.lastname?.[0]}
-																</span>
+											<React.Fragment key={student.id}>
+												<tr className="border-b transition-colors border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
+													<td className="px-3 py-3 lg:px-4 lg:py-2">
+														<div className="flex items-center">
+															<div className="flex-shrink-0 mr-3 w-8 h-8">
+																<div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-full dark:bg-blue-900">
+																	<span className="text-xs font-medium text-blue-600 dark:text-blue-300">
+																		{student.firstname?.[0]}
+																		{student.lastname?.[0]}
+																	</span>
+																</div>
+															</div>
+															<div>
+																<div className="font-medium dark:text-white">
+																	{student.firstname} {student.middlename}{" "}
+																	{student.lastname}
+																</div>
 															</div>
 														</div>
+													</td>
+													<td className="px-3 py-3 lg:px-4 lg:py-2 dark:text-white">
+														{student.lrn || "N/A"}
+													</td>
+													<td className="hidden px-3 py-3 lg:px-4 lg:py-2 sm:table-cell dark:text-white">
+														{student.email || "N/A"}
+													</td>
+													<td className="px-3 py-3 lg:px-4 lg:py-2">
+														<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-300 dark:bg-blue-900/20">
+															{student.sectionName || "N/A"}
+														</span>
+													</td>
+													<td className="px-3 py-3 lg:px-4 lg:py-2">
+														<span className="inline-flex px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:text-green-300 dark:bg-green-900/20">
+															{student.schoolYear || "N/A"}
+														</span>
+													</td>
+													<td className="px-3 py-3 lg:px-4 lg:py-2">
 														<div>
-															<div className="font-medium dark:text-white">
-																{student.firstname} {student.middlename}{" "}
-																{student.lastname}
+															<div className="text-xs font-medium dark:text-white">
+																{student.track || "N/A"}
+															</div>
+															<div className="text-xs text-slate-500 dark:text-slate-400">
+																{student.strand || "N/A"}
 															</div>
 														</div>
-													</div>
-												</td>
-												<td className="px-3 py-3 lg:px-4 lg:py-2 dark:text-white">
-													{student.lrn || "N/A"}
-												</td>
-												<td className="hidden px-3 py-3 lg:px-4 lg:py-2 sm:table-cell dark:text-white">
-													{student.email || "N/A"}
-												</td>
-												<td className="px-3 py-3 lg:px-4 lg:py-2">
-													<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-300 dark:bg-blue-900/20">
-														{student.sectionName || "N/A"}
-													</span>
-												</td>
-												<td className="px-3 py-3 lg:px-4 lg:py-2">
-													<span className="inline-flex px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:text-green-300 dark:bg-green-900/20">
-														{student.schoolYear || "N/A"}
-													</span>
-												</td>
-												<td className="px-3 py-3 lg:px-4 lg:py-2">
-													<div>
-														<div className="text-xs font-medium dark:text-white">
-															{student.track || "N/A"}
-														</div>
-														<div className="text-xs text-slate-500 dark:text-slate-400">
-															{student.strand || "N/A"}
-														</div>
-													</div>
-												</td>
-											</tr>
+													</td>
+													<td className="px-3 py-3 lg:px-4 lg:py-2">
+														<Button
+															onClick={() => toggleStudentDocuments(student.id)}
+															variant="outline"
+															size="sm"
+															className="flex gap-1 items-center"
+														>
+															{expandedStudents.has(student.id) ? (
+																<ChevronUp className="w-3 h-3" />
+															) : (
+																<ChevronDown className="w-3 h-3" />
+															)}
+															<FileText className="w-3 h-3" />
+															Documents
+														</Button>
+													</td>
+												</tr>
+
+												{/* Expanded Documents Row */}
+												{expandedStudents.has(student.id) && (
+													<tr className="bg-slate-50 dark:bg-slate-800">
+														<td colSpan="7" className="px-3 py-4 lg:px-4">
+															{studentDocuments[student.id]?.length > 0 ? (
+																<div className="space-y-2">
+																	<h4 className="text-sm font-medium text-slate-900 dark:text-white">
+																		Student Documents:
+																	</h4>
+																	<div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+																		{studentDocuments[student.id]
+																			.sort((a, b) => b.id - a.id)
+																			.map((doc) => (
+																				<div
+																					key={doc.id}
+																					className="flex justify-between items-center p-3 bg-white rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+																				>
+																					<div className="flex-1 min-w-0">
+																						<div className="flex gap-2 items-center">
+																							<FileText className="flex-shrink-0 w-4 h-4 text-blue-600 dark:text-blue-400" />
+																							<div className="min-w-0">
+																								<p className="text-xs font-medium truncate text-slate-900 dark:text-white">
+																									{doc.documentType}
+																								</p>
+																								<p className="text-xs truncate text-slate-500 dark:text-slate-400">
+																									{doc.gradeLevelName} •{" "}
+																									{new Date(
+																										doc.createdAt
+																									).toLocaleDateString()}
+																								</p>
+																							</div>
+																						</div>
+																					</div>
+																					<div className="flex gap-1 ml-2">
+																						{isViewableFile(doc.fileName) && (
+																							<Button
+																								onClick={() =>
+																									handleViewDocument(doc)
+																								}
+																								size="sm"
+																								variant="outline"
+																								className="p-1 w-7 h-7"
+																								title="View in Modal"
+																							>
+																								<Eye className="w-3 h-3" />
+																							</Button>
+																						)}
+																						<Button
+																							onClick={() =>
+																								handleDownloadDocument(doc)
+																							}
+																							size="sm"
+																							variant="outline"
+																							className="p-1 w-7 h-7 text-green-600 bg-green-50 border-green-200 hover:bg-green-100"
+																							title="Download Document"
+																						>
+																							<Download className="w-3 h-3" />
+																						</Button>
+																					</div>
+																				</div>
+																			))}
+																	</div>
+																</div>
+															) : (
+																<div className="py-4 text-center">
+																	<p className="text-sm text-slate-500 dark:text-slate-400">
+																		No documents found for this student.
+																	</p>
+																</div>
+															)}
+														</td>
+													</tr>
+												)}
+											</React.Fragment>
 										))}
 									</tbody>
 								</table>
@@ -508,6 +684,18 @@ export default function StudentsTab() {
 						isOpen={showAddStudentModal}
 						onClose={() => setShowAddStudentModal(false)}
 						onSuccess={handleAddStudentComplete}
+					/>
+				)}
+
+				{/* Document Viewer Modal */}
+				{showDocumentViewer && (
+					<DocumentViewer
+						document={selectedDocument}
+						isOpen={showDocumentViewer}
+						onClose={() => {
+							setShowDocumentViewer(false);
+							setSelectedDocument(null);
+						}}
 					/>
 				)}
 			</Card>

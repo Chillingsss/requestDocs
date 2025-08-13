@@ -7,6 +7,7 @@ export default function ABMCertificateTemplate({
 	onCancel,
 	isEditable = true,
 	fetchStudentInfo,
+	request,
 }) {
 	// ABM-specific default values
 	const abmDefaults = {
@@ -44,6 +45,7 @@ export default function ABMCertificateTemplate({
 			fetchStudentInfo={fetchStudentInfo}
 			strandDefaults={abmDefaults}
 			strandType="ABM"
+			request={request}
 		/>
 	);
 }

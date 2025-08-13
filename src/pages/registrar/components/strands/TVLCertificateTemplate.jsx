@@ -7,6 +7,7 @@ export default function TVLCertificateTemplate({
 	onCancel,
 	isEditable = true,
 	fetchStudentInfo,
+	request,
 }) {
 	// TVL-specific default values
 	const tvlDefaults = {
@@ -46,6 +47,7 @@ export default function TVLCertificateTemplate({
 			fetchStudentInfo={fetchStudentInfo}
 			strandDefaults={tvlDefaults}
 			strandType="Technical-Vocational-Livelihood (TVL)"
+			request={request}
 		/>
 	);
 }
