@@ -25,6 +25,7 @@ export default function Sidebar({
 	onProfileClick,
 	navItems,
 	userType = "admin", // optional fallback, panel type is determined from userLevel in cookie
+	userId,
 }) {
 	const [showUserDropdown, setShowUserDropdown] = useState(false);
 	const [currentUser, setCurrentUser] = useState(null);

@@ -25,7 +25,7 @@ import {
 } from "../../../utils/registrar";
 import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
-export default function StudentsTab({ refreshTrigger }) {
+export default function StudentsTab({ refreshTrigger, userId }) {
 	const [students, setStudents] = useState([]);
 	const [filteredStudents, setFilteredStudents] = useState([]);
 	const [sections, setSections] = useState([]);
@@ -694,6 +694,7 @@ export default function StudentsTab({ refreshTrigger }) {
 						isOpen={showAddStudentModal}
 						onClose={() => setShowAddStudentModal(false)}
 						onSuccess={handleAddStudentComplete}
+						userId={userId}
 					/>
 				)}
 

@@ -270,13 +270,19 @@ export async function getSf10DocumentId() {
 	}
 }
 
-export async function addIndividualStudent(studentData, sf10File, documentId) {
+export async function addIndividualStudent(
+	studentData,
+	sf10File,
+	documentId,
+	userId
+) {
 	const formData = new FormData();
 
 	// Add student data
 	formData.append("operation", "addIndividualStudent");
 	formData.append("studentData", JSON.stringify(studentData));
 	formData.append("documentId", documentId);
+	formData.append("userId", userId);
 
 	// Add SF10 file
 	if (sf10File) {

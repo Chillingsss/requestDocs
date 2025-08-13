@@ -21,6 +21,7 @@ import DocumentsTab from "./components/DocumentsTab";
 import ThemeToggle from "../../components/ThemeToggle";
 import Sidebar from "../../components/shared/Sidebar";
 import { getStudent } from "../../utils/teacher";
+import CryptoJS from "crypto-js";
 
 export default function RegistrarDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -35,6 +36,19 @@ export default function RegistrarDashboard() {
 	const [activeTab, setActiveTab] = useState("requests");
 	const [refreshTrigger, setRefreshTrigger] = useState(0);
 	const navigate = useNavigate();
+
+	// Get userId from cookie
+	const COOKIE_KEY = "mogchs_user";
+	const SECRET_KEY = "mogchs_secret_key";
+	let userId = "";
+	const encrypted = Cookies.get(COOKIE_KEY);
+	if (encrypted) {
+		try {
+			const bytes = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
+			const user = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+			userId = user?.id;
+		} catch {}
+	}
 
 	// Helper function to get Philippine date in YYYY-MM-DD format
 	const getPhilippineDate = () => {
@@ -282,6 +296,7 @@ export default function RegistrarDashboard() {
 				handleNavClick={handleNavClick}
 				onLogout={logout}
 				navItems={navItems}
+				userId={userId}
 			/>
 
 			{/* Main Content */}
@@ -623,7 +638,7 @@ export default function RegistrarDashboard() {
 						</>
 					) : activeTab === "students" ? (
 						/* Students Tab - Now using the separate component */
-						<StudentsTab refreshTrigger={refreshTrigger} />
+						<StudentsTab refreshTrigger={refreshTrigger} userId={userId} />
 					) : activeTab === "documents" ? (
 						/* Documents Tab - New component for student documents */
 						<DocumentsTab />

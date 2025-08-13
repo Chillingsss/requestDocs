@@ -19,7 +19,7 @@ import {
 } from "../utils/registrar";
 import { addIndividualStudent } from "../utils/registrar";
 
-export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
+export default function AddStudentModal({ isOpen, onClose, onSuccess, userId }) {
 	const [strands, setStrands] = useState([]);
 	const [schoolYears, setSchoolYears] = useState([]);
 	const [gradeLevels, setGradeLevels] = useState([
@@ -216,7 +216,8 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }) {
 					const result = await addIndividualStudent(
 						students[i],
 						students[i].sf10File,
-						sf10DocumentId
+						sf10DocumentId,
+						userId
 					);
 
 					console.log(`Student ${i + 1} result:`, result);

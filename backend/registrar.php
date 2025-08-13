@@ -709,7 +709,7 @@ class User {
       // Get student data
       $studentData = json_decode($_POST['studentData'], true);
       $documentId = $_POST['documentId'];
-      
+      $userId = $_POST['userId'];
       // Validate required fields
       $requiredFields = ['firstname', 'lastname', 'lrn', 'password', 'strandId', 'schoolYearId', 'gradeLevelId'];
       foreach ($requiredFields as $field) {
@@ -789,9 +789,9 @@ class User {
       
       // Insert SF10 document record
       $insertDocumentSql = "INSERT INTO tblstudentdocument (
-        studentId, documentId, fileName, gradeLevelId, createdAt
+        studentId, documentId, fileName, gradeLevelId, createdAt, userId
       ) VALUES (
-        :studentId, :documentId, :fileName, :gradeLevelId, NOW()
+        :studentId, :documentId, :fileName, :gradeLevelId, NOW(), :userId
       )";
       
       $insertDocumentStmt = $conn->prepare($insertDocumentSql);
@@ -799,7 +799,7 @@ class User {
       $insertDocumentStmt->bindParam(':documentId', $documentId);
       $insertDocumentStmt->bindParam(':fileName', $fileName);
       $insertDocumentStmt->bindParam(':gradeLevelId', $studentData['gradeLevelId']);
-      
+      $insertDocumentStmt->bindParam(':userId', $userId);
       if (!$insertDocumentStmt->execute()) {
         $conn->rollBack();
         unlink($uploadPath); // Remove uploaded file
