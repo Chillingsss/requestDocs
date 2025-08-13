@@ -4,7 +4,7 @@ import { Button } from "../../../components/ui/button";
 import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 import toast from "react-hot-toast";
 
-const ExcelPrintModal = ({ isOpen, onClose, fileName, apiUrl }) => {
+const ExcelPrintModal = ({ isOpen, onClose, fileName }) => {
 	const [loading, setLoading] = useState(false);
 	const [excelHtml, setExcelHtml] = useState(null);
 	const [error, setError] = useState(null);
@@ -18,21 +18,46 @@ const ExcelPrintModal = ({ isOpen, onClose, fileName, apiUrl }) => {
 	const fetchExcelHtml = async () => {
 		setLoading(true);
 		setError(null);
+		const apiUrl = getDecryptedApiUrl();
+
+		console.log("Attempting to fetch from:", apiUrl); // Debug log
+
 		try {
 			const url = `${apiUrl}/excel_to_html.php?file=${encodeURIComponent(
 				fileName
 			)}`;
 
+			console.log("Full URL:", url); // Debug log
+
 			const response = await fetch(url);
+			console.log("Response status:", response.status); // Debug log
+			console.log("Response headers:", response.headers); // Debug log
+
 			const responseText = await response.text();
+			console.log("Response text:", responseText); // Debug log
 
 			let data;
 			try {
 				data = JSON.parse(responseText);
 			} catch (parseError) {
 				console.error("Failed to parse JSON:", parseError);
-				setError("Invalid response from server");
-				toast.error("Invalid response from server");
+				console.error("Raw response:", responseText);
+
+				// Check if it's an HTML error page (common with 500 errors)
+				if (
+					responseText.includes("<html") ||
+					responseText.includes("<!DOCTYPE")
+				) {
+					setError(
+						"Server returned HTML error page. Check if backend is running and PHP dependencies are installed."
+					);
+					toast.error("Backend server error - check PHP setup");
+				} else {
+					setError(
+						"Invalid response from server: " + responseText.substring(0, 200)
+					);
+					toast.error("Invalid response from server");
+				}
 				return;
 			}
 
@@ -48,8 +73,27 @@ const ExcelPrintModal = ({ isOpen, onClose, fileName, apiUrl }) => {
 			}
 		} catch (error) {
 			console.error("Error fetching Excel HTML:", error);
-			setError("Failed to load Excel file");
-			toast.error("Failed to load Excel file");
+
+			// More specific error messages
+			if (
+				error.name === "TypeError" &&
+				error.message.includes("Failed to fetch")
+			) {
+				if (apiUrl.includes("localhost")) {
+					setError(
+						"Cannot connect to backend server. Make sure XAMPP is running and the backend URL is correct."
+					);
+					toast.error("Backend server not accessible - check XAMPP");
+				} else {
+					setError(
+						"Network error: Cannot reach the backend server. Check your internet connection and server status."
+					);
+					toast.error("Network error - cannot reach server");
+				}
+			} else {
+				setError("Failed to load Excel file: " + error.message);
+				toast.error("Failed to load Excel file");
+			}
 		} finally {
 			setLoading(false);
 		}
