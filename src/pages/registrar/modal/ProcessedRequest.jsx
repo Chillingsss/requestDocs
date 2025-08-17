@@ -14,6 +14,7 @@ import AttachmentsSection from "../components/AttachmentsSection";
 import ImageZoomModal from "../components/ImageZoomModal";
 import DiplomaTemplateModal from "../components/DiplomaTemplateModal";
 import CertificateTemplateModal from "../components/CertificateTemplateModal";
+import CavTemplateModal from "../components/CavTemplateModal";
 
 export default function ProcessedRequest({
 	request,
@@ -30,6 +31,7 @@ export default function ProcessedRequest({
 	const [studentInfo, setStudentInfo] = useState(null);
 	const [showDiplomaTemplate, setShowDiplomaTemplate] = useState(false);
 	const [showCertificateTemplate, setShowCertificateTemplate] = useState(false);
+	const [showCavTemplate, setShowCavTemplate] = useState(false);
 	const [currentRequest, setCurrentRequest] = useState(request);
 
 	// Update currentRequest when request prop changes
@@ -48,6 +50,11 @@ export default function ProcessedRequest({
 			currentRequest?.document?.toLowerCase().includes("certificate") &&
 			currentRequest?.document?.toLowerCase().includes("enrollment")
 		);
+	};
+
+	// Check if this is a CAV request
+	const isCavRequest = () => {
+		return currentRequest?.document?.toLowerCase().includes("cav");
 	};
 
 	// Function to get file extension
@@ -85,7 +92,7 @@ export default function ProcessedRequest({
 	};
 
 	const fetchStudentInfo = async () => {
-		if (isDiplomaRequest() || isCertificateRequest()) {
+		if (isDiplomaRequest() || isCertificateRequest() || isCavRequest()) {
 			try {
 				const studentData = await getStudentInfo(currentRequest.id);
 				if (studentData && !studentData.error) {
@@ -245,12 +252,43 @@ export default function ProcessedRequest({
 		}
 	};
 
+	const handleCavSave = async (cavData) => {
+		try {
+			const updateResponse = await updateStudentInfo(
+				currentRequest.id,
+				cavData.lrn,
+				cavData.strandId,
+				cavData.firstname,
+				cavData.middlename,
+				cavData.lastname
+			);
+
+			if (updateResponse.success) {
+				toast.success("CAV information saved successfully!");
+				// Refresh the student information to show updated data
+				await fetchStudentInfo();
+				onSuccess();
+			} else {
+				toast.error(updateResponse.error || "Failed to save CAV information");
+			}
+		} catch (error) {
+			console.error("Failed to save CAV:", error);
+			toast.error("Failed to save CAV information");
+		} finally {
+			setProcessing(false);
+		}
+	};
+
 	const handleDiplomaCancel = () => {
 		setShowDiplomaTemplate(false);
 	};
 
 	const handleCertificateCancel = () => {
 		setShowCertificateTemplate(false);
+	};
+
+	const handleCavCancel = () => {
+		setShowCavTemplate(false);
 	};
 
 	// Function to get button text and color based on status
@@ -266,19 +304,22 @@ export default function ProcessedRequest({
 		const statusName = currentRequest.status.toLowerCase();
 
 		// Check if student documents are required and available for pending status
-		// For diploma and certificate requests, we don't need existing documents since we generate a template
+		// For diploma, certificate, and CAV requests, we don't need existing documents since we generate a template
 		const hasRequiredDocuments =
 			statusName !== "pending" ||
 			studentDocuments.length > 0 ||
 			isDiplomaRequest() ||
-			isCertificateRequest();
+			isCertificateRequest() ||
+			isCavRequest();
 
 		switch (statusName) {
 			case "pending":
-				// Always show 'Mark as Processed' for diploma and certificate requests
+				// Always show 'Mark as Processed' for diploma, certificate, and CAV requests
 				const buttonText = isDiplomaRequest()
 					? "Mark as Processed"
 					: isCertificateRequest()
+					? "Mark as Processed"
+					: isCavRequest()
 					? "Mark as Processed"
 					: "Mark as Processed";
 
@@ -498,12 +539,14 @@ export default function ProcessedRequest({
 							)}
 
 							{/* Student Documents */}
-							{!isDiplomaRequest() && !isCertificateRequest() && (
-								<StudentDocumentsSection
-									studentDocuments={studentDocuments}
-									request={currentRequest}
-								/>
-							)}
+							{!isDiplomaRequest() &&
+								!isCertificateRequest() &&
+								!isCavRequest() && (
+									<StudentDocumentsSection
+										studentDocuments={studentDocuments}
+										request={currentRequest}
+									/>
+								)}
 
 							{/* Diploma Template Info - Show for diploma requests */}
 							{isDiplomaRequest() && (
@@ -605,6 +648,56 @@ export default function ProcessedRequest({
 								</div>
 							)}
 
+							{/* CAV Template Info - Show for CAV requests */}
+							{isCavRequest() && (
+								<div className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200 border-dashed dark:bg-purple-900/20 dark:border-purple-700">
+									<div className="flex gap-3 items-center mb-3">
+										<FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+										<span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+											CAV Template Ready
+										</span>
+									</div>
+									<div className="mb-2 text-sm text-purple-600 dark:text-purple-400">
+										A CAV template will be generated for this student. Click
+										"Generate CAV Template" to review and edit the student
+										information before processing.
+									</div>
+									{studentInfo && (
+										<div className="p-3 mt-3 bg-white rounded border border-purple-200 dark:bg-slate-800 dark:border-purple-600">
+											<div className="mb-2 text-xs font-medium text-purple-600 dark:text-purple-400">
+												Current Student Information:
+											</div>
+											<div className="grid grid-cols-2 gap-2 text-xs text-slate-900 dark:text-white">
+												<div>
+													<span className="font-medium">Name:</span>{" "}
+													{studentInfo.firstname} {studentInfo.middlename}{" "}
+													{studentInfo.lastname}
+												</div>
+												<div>
+													<span className="font-medium">LRN:</span>{" "}
+													{studentInfo.lrn || "Not set"}
+												</div>
+												<div>
+													<span className="font-medium">Track:</span>{" "}
+													{studentInfo.track || "Not set"}
+												</div>
+												<div>
+													<span className="font-medium">Strand:</span>{" "}
+													{studentInfo.strand || "Not set"}
+												</div>
+											</div>
+										</div>
+									)}
+									{/* Generate CAV Template Button */}
+									<Button
+										onClick={() => setShowCavTemplate(true)}
+										className="mt-3 text-white bg-purple-600 hover:bg-purple-700"
+									>
+										Generate CAV Template
+									</Button>
+								</div>
+							)}
+
 							{/* Attachments */}
 							<AttachmentsSection
 								attachments={attachments}
@@ -683,6 +776,18 @@ export default function ProcessedRequest({
 					request={currentRequest}
 					studentInfo={studentInfo}
 					onSave={handleCertificateSave}
+					fetchStudentInfo={fetchStudentInfo}
+				/>
+			)}
+
+			{/* CAV Template Modal */}
+			{showCavTemplate && (
+				<CavTemplateModal
+					isOpen={showCavTemplate}
+					onClose={handleCavCancel}
+					request={currentRequest}
+					studentInfo={studentInfo}
+					onSave={handleCavSave}
 					fetchStudentInfo={fetchStudentInfo}
 				/>
 			)}
