@@ -351,31 +351,240 @@ class User {
     include "connection.php";
 
     try {
-      // Check if file was uploaded
-      if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-        return json_encode(['success' => false, 'error' => 'No file uploaded or upload error']);
+      // Check if files were uploaded
+      if (!isset($_FILES['excelFile']) && !isset($_FILES['pdfFile'])) {
+        return json_encode(['success' => false, 'error' => 'At least one file (Excel or PDF) must be uploaded']);
       }
 
       $studentId = $_POST['studentId'];
-      $gradeLevelId = isset($_POST['gradeLevelId']) ? $_POST['gradeLevelId'] : null; // New parameter
-      $uploadedFile = $_FILES['file'];
+      $gradeLevelId = isset($_POST['gradeLevelId']) ? $_POST['gradeLevelId'] : null;
+      $userId = isset($_POST['userId']) ? $_POST['userId'] : 'system';
 
-      // Validate file type (only Excel files)
-      $allowedTypes = [
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ];
-      
-      $fileExtension = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
-      $allowedExtensions = ['xlsx', 'xls'];
+      // Debug logging
+      error_log("Debug - studentId: " . $studentId);
+      error_log("Debug - gradeLevelId: " . $gradeLevelId);
+      error_log("Debug - userId: " . $userId);
 
-      if (!in_array($fileExtension, $allowedExtensions)) {
-        return json_encode(['success' => false, 'error' => 'Invalid file type. Only Excel files (.xlsx, .xls) are allowed.']);
+      // Create documents directory if it doesn't exist
+      $uploadDir = 'documents/';
+      if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
       }
 
-      // Check file size (max 10MB)
-      if ($uploadedFile['size'] > 10 * 1024 * 1024) {
-        return json_encode(['success' => false, 'error' => 'File size too large. Maximum size is 10MB.']);
+      $results = [];
+      $excelFileName = null;
+      $pdfFileName = null;
+
+      // Handle Excel file upload (for tblsfrecord)
+      if (isset($_FILES['excelFile']) && $_FILES['excelFile']['error'] === UPLOAD_ERR_OK) {
+          $excelFile = $_FILES['excelFile'];
+          
+          // Validate Excel file type
+          $fileExtension = strtolower(pathinfo($excelFile['name'], PATHINFO_EXTENSION));
+          $allowedExtensions = ['xlsx', 'xls'];
+
+          if (!in_array($fileExtension, $allowedExtensions)) {
+              return json_encode(['success' => false, 'error' => 'Invalid Excel file type. Only .xlsx and .xls files are allowed.']);
+          }
+
+          // Check file size (max 10MB)
+          if ($excelFile['size'] > 10 * 1024 * 1024) {
+              return json_encode(['success' => false, 'error' => 'Excel file size too large. Maximum size is 10MB.']);
+          }
+
+          // Use the original filename
+          $excelFileName = $excelFile['name'];
+          $excelFilePath = $uploadDir . $excelFileName;
+
+          // Check if a file with the same name already exists and delete it
+          if (file_exists($excelFilePath)) {
+              unlink($excelFilePath); // Delete the existing file
+          }
+
+          // Move uploaded Excel file
+          if (move_uploaded_file($excelFile['tmp_name'], $excelFilePath)) {
+              $results['excel'] = 'Excel file uploaded successfully';
+          } else {
+              return json_encode(['success' => false, 'error' => 'Failed to save Excel file']);
+          }
+      }
+
+      // Handle PDF file upload (for tblstudentdocument)
+      if (isset($_FILES['pdfFile']) && $_FILES['pdfFile']['error'] === UPLOAD_ERR_OK) {
+          $pdfFile = $_FILES['pdfFile'];
+          
+          // Validate PDF file type
+          $fileExtension = strtolower(pathinfo($pdfFile['name'], PATHINFO_EXTENSION));
+          if ($fileExtension !== 'pdf') {
+              return json_encode(['success' => false, 'error' => 'Invalid PDF file type. Only .pdf files are allowed.']);
+          }
+
+          // Check file size (max 10MB)
+          if ($pdfFile['size'] > 10 * 1024 * 1024) {
+              return json_encode(['success' => false, 'error' => 'PDF file size too large. Maximum size is 10MB.']);
+          }
+
+          // Use the original filename
+          $pdfFileName = $pdfFile['name'];
+          $pdfFilePath = $uploadDir . $pdfFileName;
+
+          // Check if a file with the same name already exists and delete it
+          if (file_exists($pdfFilePath)) {
+              unlink($pdfFilePath); // Delete the existing file
+          }
+
+          // Move uploaded PDF file
+          if (move_uploaded_file($pdfFile['tmp_name'], $pdfFilePath)) {
+              $results['pdf'] = 'PDF file uploaded successfully';
+          } else {
+              return json_encode(['success' => false, 'error' => 'Failed to save PDF file']);
+          }
+      }
+
+      // If no gradeLevelId provided, get the teacher's grade level ID for this student
+      if (!$gradeLevelId) {
+        $gradeLevelSql = "SELECT b.gradeLevelId 
+                          FROM tblstudent a 
+                          LEFT JOIN tblsfrecord b ON a.id = b.studentId 
+                          WHERE a.id = :studentId 
+                          LIMIT 1";
+        $gradeLevelStmt = $conn->prepare($gradeLevelSql);
+        $gradeLevelStmt->bindParam(':studentId', $studentId);
+        $gradeLevelStmt->execute();
+        $gradeLevelResult = $gradeLevelStmt->fetch(PDO::FETCH_ASSOC);
+        
+        $gradeLevelId = $gradeLevelResult ? $gradeLevelResult['gradeLevelId'] : null;
+      }
+
+      // Start transaction
+      $conn->beginTransaction();
+
+      try {
+        // Handle Excel file in tblsfrecord
+        if ($excelFileName) {
+          // Check if record already exists for this specific grade level
+          $checkSql = "SELECT id FROM tblsfrecord WHERE studentId = :studentId AND gradeLevelId = :gradeLevelId";
+          $checkStmt = $conn->prepare($checkSql);
+          $checkStmt->bindParam(':studentId', $studentId);
+          $checkStmt->bindParam(':gradeLevelId', $gradeLevelId);
+          $checkStmt->execute();
+
+          if ($checkStmt->rowCount() > 0) {
+            // Update existing record for this grade level
+            $updateSql = "UPDATE tblsfrecord SET fileName = :fileName, userId = :userId WHERE studentId = :studentId AND gradeLevelId = :gradeLevelId";
+            $updateStmt = $conn->prepare($updateSql);
+            $updateStmt->bindParam(':fileName', $excelFileName);
+            $updateStmt->bindParam(':userId', $userId);
+            $updateStmt->bindParam(':studentId', $studentId);
+            $updateStmt->bindParam(':gradeLevelId', $gradeLevelId);
+            
+            if (!$updateStmt->execute()) {
+              throw new Exception('Failed to update Excel record in tblsfrecord');
+            }
+          } else {
+            // Insert new record for this grade level
+            $insertSql = "INSERT INTO tblsfrecord (studentId, fileName, gradeLevelId, userId, createdAt) 
+                          VALUES (:studentId, :fileName, :gradeLevelId, :userId, NOW())";
+            $insertStmt = $conn->prepare($insertSql);
+            $insertStmt->bindParam(':studentId', $studentId);
+            $insertStmt->bindParam(':fileName', $excelFileName);
+            $insertStmt->bindParam(':gradeLevelId', $gradeLevelId);
+            $insertStmt->bindParam(':userId', $userId);
+            
+            if (!$insertStmt->execute()) {
+              throw new Exception('Failed to insert Excel record in tblsfrecord');
+            }
+          }
+        }
+
+        // Handle PDF file in tblstudentdocument
+        if ($pdfFileName) {
+          // Get the SF10 document ID (assuming it's ID 5 based on the database dump)
+          $documentId = 5; // SF10 document type
+
+          // Check if record already exists in tblstudentdocument for this specific grade level
+          $checkSql = "SELECT id FROM tblstudentdocument WHERE studentId = :studentId AND documentId = :documentId AND gradeLevelId = :gradeLevelId";
+          $checkStmt = $conn->prepare($checkSql);
+          $checkStmt->bindParam(':studentId', $studentId);
+          $checkStmt->bindParam(':documentId', $documentId);
+          $checkStmt->bindParam(':gradeLevelId', $gradeLevelId);
+          $checkStmt->execute();
+
+          if ($checkStmt->rowCount() > 0) {
+            // Update existing record
+            $updateSql = "UPDATE tblstudentdocument SET fileName = :fileName, userId = :userId, createdAt = NOW() 
+                          WHERE studentId = :studentId AND documentId = :documentId AND gradeLevelId = :gradeLevelId";
+            $updateStmt = $conn->prepare($updateSql);
+            $updateStmt->bindParam(':fileName', $pdfFileName);
+            $updateStmt->bindParam(':userId', $userId);
+            $updateStmt->bindParam(':studentId', $studentId);
+            $updateStmt->bindParam(':documentId', $documentId);
+            $updateStmt->bindParam(':gradeLevelId', $gradeLevelId);
+            
+            if (!$updateStmt->execute()) {
+              throw new Exception('Failed to update PDF record in tblstudentdocument');
+            }
+          } else {
+            // Insert new record
+            $insertSql = "INSERT INTO tblstudentdocument (studentId, fileName, documentId, gradeLevelId, userId, createdAt) 
+                          VALUES (:studentId, :fileName, :documentId, :gradeLevelId, :userId, NOW())";
+            $insertStmt = $conn->prepare($insertSql);
+            $insertStmt->bindParam(':studentId', $studentId);
+            $insertStmt->bindParam(':fileName', $pdfFileName);
+            $insertStmt->bindParam(':documentId', $documentId);
+            $insertStmt->bindParam(':gradeLevelId', $gradeLevelId);
+            $insertStmt->bindParam(':userId', $userId);
+            
+            if (!$insertStmt->execute()) {
+              throw new Exception('Failed to insert PDF record in tblstudentdocument');
+            }
+          }
+        }
+
+        // Commit transaction
+        $conn->commit();
+
+        // Prepare success message
+        $uploadedFiles = [];
+        if ($excelFileName) $uploadedFiles[] = 'Excel';
+        if ($pdfFileName) $uploadedFiles[] = 'PDF';
+        
+        $message = 'Successfully uploaded: ' . implode(' and ', $uploadedFiles) . ' file(s)';
+        
+        return json_encode([
+          'success' => true, 
+          'message' => $message,
+          'excelFile' => $excelFileName,
+          'pdfFile' => $pdfFileName
+        ]);
+
+      } catch (Exception $e) {
+        // Rollback transaction on error
+        $conn->rollback();
+        throw $e;
+      }
+
+    } catch (Exception $e) {
+      return json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    }
+  }
+
+  function updateMultipleStudentFiles()
+  {
+    include "connection.php";
+
+    try {
+      $studentIds = json_decode($_POST['studentIds'], true);
+      $gradeLevelId = isset($_POST['gradeLevelId']) ? $_POST['gradeLevelId'] : null;
+      $userId = isset($_POST['userId']) ? $_POST['userId'] : 'system';
+
+      // Debug logging
+      error_log("Debug - studentIds: " . json_encode($studentIds));
+      error_log("Debug - gradeLevelId: " . $gradeLevelId);
+      error_log("Debug - userId: " . $userId);
+
+      if (!$studentIds) {
+        return json_encode(['success' => false, 'error' => 'Student IDs are required']);
       }
 
       // Create documents directory if it doesn't exist
@@ -384,148 +593,184 @@ class User {
         mkdir($uploadDir, 0777, true);
       }
 
-      // Use the original filename
-      $fileName = $uploadedFile['name'];
-      $filePath = $uploadDir . $fileName;
+      $results = [];
+      $successCount = 0;
+      $errorCount = 0;
 
-      // Check if a file with the same name already exists and delete it
-      if (file_exists($filePath)) {
-        unlink($filePath); // Delete the existing file
-      }
+      // Start transaction
+      $conn->beginTransaction();
 
-      // Move uploaded file
-      if (move_uploaded_file($uploadedFile['tmp_name'], $filePath)) {
-        // If gradeLevelId is provided, use it; otherwise, get the teacher's grade level
-        if (!$gradeLevelId) {
-          // Get the teacher's grade level ID for this student
-          $gradeLevelSql = "SELECT b.gradeLevelId 
-                            FROM tblstudent a 
-                            LEFT JOIN tblsfrecord b ON a.id = b.studentId 
-                            WHERE a.id = :studentId 
-                            LIMIT 1";
-          $gradeLevelStmt = $conn->prepare($gradeLevelSql);
-          $gradeLevelStmt->bindParam(':studentId', $studentId);
-          $gradeLevelStmt->execute();
-          $gradeLevelResult = $gradeLevelStmt->fetch(PDO::FETCH_ASSOC);
+      try {
+        foreach ($studentIds as $studentId) {
+          $studentResult = ['studentId' => $studentId, 'success' => false, 'errors' => []];
           
-          $gradeLevelId = $gradeLevelResult ? $gradeLevelResult['gradeLevelId'] : null;
+          // Handle Excel file for this student
+          $excelFileKey = 'excelFile_' . $studentId;
+          if (isset($_FILES[$excelFileKey]) && $_FILES[$excelFileKey]['error'] === UPLOAD_ERR_OK) {
+            $excelFile = $_FILES[$excelFileKey];
+            
+            // Validate Excel file type
+            $fileExtension = strtolower(pathinfo($excelFile['name'], PATHINFO_EXTENSION));
+            $allowedExtensions = ['xlsx', 'xls'];
+
+            if (!in_array($fileExtension, $allowedExtensions)) {
+              $studentResult['errors'][] = 'Invalid Excel file type for student ' . $studentId;
+              continue;
+            }
+
+            // Check file size (max 10MB)
+            if ($excelFile['size'] > 10 * 1024 * 1024) {
+              $studentResult['errors'][] = 'Excel file size too large for student ' . $studentId;
+              continue;
+            }
+
+            // Use the original filename
+            $excelFileName = $excelFile['name'];
+            $excelFilePath = $uploadDir . $excelFileName;
+
+            // Check if a file with the same name already exists and delete it
+            if (file_exists($excelFilePath)) {
+              unlink($excelFilePath); // Delete the existing file
+            }
+
+            // Move uploaded Excel file
+            if (move_uploaded_file($excelFile['tmp_name'], $excelFilePath)) {
+              // Update/insert Excel record in tblsfrecord
+              $checkSql = "SELECT id FROM tblsfrecord WHERE studentId = :studentId AND gradeLevelId = :gradeLevelId";
+              $checkStmt = $conn->prepare($checkSql);
+              $checkStmt->bindParam(':studentId', $studentId);
+              $checkStmt->bindParam(':gradeLevelId', $gradeLevelId);
+              $checkStmt->execute();
+
+              if ($checkStmt->rowCount() > 0) {
+                $updateSql = "UPDATE tblsfrecord SET fileName = :fileName, userId = :userId WHERE studentId = :studentId AND gradeLevelId = :gradeLevelId";
+                $updateStmt = $conn->prepare($updateSql);
+                $updateStmt->bindParam(':fileName', $excelFileName);
+                $updateStmt->bindParam(':userId', $userId);
+                $updateStmt->bindParam(':studentId', $studentId);
+                $updateStmt->bindParam(':gradeLevelId', $gradeLevelId);
+                
+                if (!$updateStmt->execute()) {
+                  $studentResult['errors'][] = 'Failed to update Excel record for student ' . $studentId;
+                }
+              } else {
+                $insertSql = "INSERT INTO tblsfrecord (studentId, fileName, gradeLevelId, userId, createdAt) 
+                              VALUES (:studentId, :fileName, :gradeLevelId, :userId, NOW())";
+                $insertStmt = $conn->prepare($insertSql);
+                $insertStmt->bindParam(':studentId', $studentId);
+                $insertStmt->bindParam(':fileName', $excelFileName);
+                $insertStmt->bindParam(':gradeLevelId', $gradeLevelId);
+                $insertStmt->bindParam(':userId', $userId);
+                if (!$insertStmt->execute()) {
+                  $studentResult['errors'][] = 'Failed to insert Excel record for student ' . $studentId;
+                }
+              }
+            } else {
+              $studentResult['errors'][] = 'Failed to save Excel file for student ' . $studentId;
+            }
+          }
+
+          // Handle PDF file for this student
+          $pdfFileKey = 'pdfFile_' . $studentId;
+          if (isset($_FILES[$pdfFileKey]) && $_FILES[$pdfFileKey]['error'] === UPLOAD_ERR_OK) {
+            $pdfFile = $_FILES[$pdfFileKey];
+            
+            // Validate PDF file type
+            $fileExtension = strtolower(pathinfo($pdfFile['name'], PATHINFO_EXTENSION));
+            if ($fileExtension !== 'pdf') {
+              $studentResult['errors'][] = 'Invalid PDF file type for student ' . $studentId;
+              continue;
+            }
+
+            // Check file size (max 10MB)
+            if ($pdfFile['size'] > 10 * 1024 * 1024) {
+              $studentResult['errors'][] = 'PDF file size too large for student ' . $studentId;
+              continue;
+            }
+
+            // Use the original filename
+            $pdfFileName = $pdfFile['name'];
+            $pdfFilePath = $uploadDir . $pdfFileName;
+
+            // Check if a file with the same name already exists and delete it
+            if (file_exists($pdfFilePath)) {
+              unlink($pdfFilePath); // Delete the existing file
+            }
+
+            // Move uploaded PDF file
+            if (move_uploaded_file($pdfFile['tmp_name'], $pdfFilePath)) {
+              // Update/insert PDF record in tblstudentdocument
+              $documentId = 5; // SF10 document type
+              
+              $checkSql = "SELECT id FROM tblstudentdocument WHERE studentId = :studentId AND documentId = :documentId AND gradeLevelId = :gradeLevelId";
+              $checkStmt = $conn->prepare($checkSql);
+              $checkStmt->bindParam(':studentId', $studentId);
+              $checkStmt->bindParam(':documentId', $documentId);
+              $checkStmt->bindParam(':gradeLevelId', $gradeLevelId);
+              $checkStmt->execute();
+
+              if ($checkStmt->rowCount() > 0) {
+                $updateSql = "UPDATE tblstudentdocument SET fileName = :fileName, userId = :userId, createdAt = NOW() 
+                              WHERE studentId = :studentId AND documentId = :documentId AND gradeLevelId = :gradeLevelId";
+                $updateStmt = $conn->prepare($updateSql);
+                $updateStmt->bindParam(':fileName', $pdfFileName);
+                $updateStmt->bindParam(':userId', $userId);
+                $updateStmt->bindParam(':studentId', $studentId);
+                $updateStmt->bindParam(':documentId', $documentId);
+                $updateStmt->bindParam(':gradeLevelId', $gradeLevelId);
+                
+                if (!$updateStmt->execute()) {
+                  $studentResult['errors'][] = 'Failed to update PDF record for student ' . $studentId;
+                }
+              } else {
+                $insertSql = "INSERT INTO tblstudentdocument (studentId, fileName, documentId, gradeLevelId, userId, createdAt) 
+                              VALUES (:studentId, :fileName, :documentId, :gradeLevelId, :userId, NOW())";
+                $insertStmt = $conn->prepare($insertSql);
+                $insertStmt->bindParam(':studentId', $studentId);
+                $insertStmt->bindParam(':fileName', $pdfFileName);
+                $insertStmt->bindParam(':documentId', $documentId);
+                $insertStmt->bindParam(':gradeLevelId', $gradeLevelId);
+                $insertStmt->bindParam(':userId', $userId);
+                
+                if (!$insertStmt->execute()) {
+                  $studentResult['errors'][] = 'Failed to insert PDF record for student ' . $studentId;
+                }
+              }
+            } else {
+              $studentResult['errors'][] = 'Failed to save PDF file for student ' . $studentId;
+            }
+          }
+
+          // Check if student had any successful uploads
+          if (empty($studentResult['errors'])) {
+            $studentResult['success'] = true;
+            $successCount++;
+          } else {
+            $errorCount++;
+          }
+          
+          $results[] = $studentResult;
         }
 
-        // Check if record already exists for this specific grade level
-        $checkSql = "SELECT id FROM tblsfrecord WHERE studentId = :studentId AND gradeLevelId = :gradeLevelId";
-        $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':studentId', $studentId);
-        $checkStmt->bindParam(':gradeLevelId', $gradeLevelId);
-        $checkStmt->execute();
+        // Commit transaction
+        $conn->commit();
 
-        if ($checkStmt->rowCount() > 0) {
-          // Update existing record for this grade level
-          $updateSql = "UPDATE tblsfrecord SET fileName = :fileName WHERE studentId = :studentId AND gradeLevelId = :gradeLevelId";
-          $updateStmt = $conn->prepare($updateSql);
-          $updateStmt->bindParam(':fileName', $fileName);
-          $updateStmt->bindParam(':studentId', $studentId);
-          $updateStmt->bindParam(':gradeLevelId', $gradeLevelId);
-          
-          if ($updateStmt->execute()) {
-            // Always handle Excel upload to tblstudentdocument for both Grade 11 and Grade 12
-            $excelResult = $this->handleExcelUploadToStudentDocument($conn, $studentId, $fileName, $gradeLevelId);
-            if (!$excelResult['success']) {
-              // Log the error but don't fail the main operation
-              error_log("Excel upload to student document failed: " . $excelResult['error']);
-            }
-            
-            return json_encode(['success' => true, 'message' => 'SF10 file updated successfully']);
-          } else {
-            return json_encode(['success' => false, 'error' => 'Failed to update database record']);
-          }
-        } else {
-          // Insert new record for this grade level
-          $insertSql = "INSERT INTO tblsfrecord (studentId, fileName, gradeLevelId, createdAt) 
-                        VALUES (:studentId, :fileName, :gradeLevelId, NOW())";
-          $insertStmt = $conn->prepare($insertSql);
-          $insertStmt->bindParam(':studentId', $studentId);
-          $insertStmt->bindParam(':fileName', $fileName);
-          $insertStmt->bindParam(':gradeLevelId', $gradeLevelId);
-          
-          if ($insertStmt->execute()) {
-            // Always handle Excel upload to tblstudentdocument for both Grade 11 and Grade 12
-            $excelResult = $this->handleExcelUploadToStudentDocument($conn, $studentId, $fileName, $gradeLevelId);
-            if (!$excelResult['success']) {
-              // Log the error but don't fail the main operation
-              error_log("Excel upload to student document failed: " . $excelResult['error']);
-            }
-            
-            return json_encode(['success' => true, 'message' => 'SF10 file uploaded successfully']);
-          } else {
-            return json_encode(['success' => false, 'error' => 'Failed to insert database record']);
-          }
-        }
-      } else {
-        return json_encode(['success' => false, 'error' => 'Failed to save uploaded file']);
+        return json_encode([
+          'success' => true,
+          'message' => "Successfully processed $successCount students",
+          'successCount' => $successCount,
+          'errorCount' => $errorCount,
+          'results' => $results
+        ]);
+
+      } catch (Exception $e) {
+        // Rollback transaction on error
+        $conn->rollback();
+        throw $e;
       }
 
     } catch (Exception $e) {
       return json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
-    }
-  }
-
-  /**
-   * Handle Excel upload to tblstudentdocument for both Grade 11 and Grade 12 students
-   */
-  private function handleExcelUploadToStudentDocument($conn, $studentId, $excelFileName, $gradeLevelId)
-  {
-    try {
-      // The Excel file was already uploaded and saved, so we just need to insert/update the record
-      // Get the SF10 document ID (assuming it's ID 5 based on the database dump)
-      $documentId = 5; // SF10 document type
-
-      // Get current user ID, provide default if not set
-      $userId = isset($_POST['userId']) ? $_POST['userId'] : 'system';
-
-      // Check if record already exists in tblstudentdocument for this specific grade level
-      $checkSql = "SELECT id FROM tblstudentdocument WHERE studentId = :studentId AND documentId = :documentId AND gradeLevelId = :gradeLevelId";
-      $checkStmt = $conn->prepare($checkSql);
-      $checkStmt->bindParam(':studentId', $studentId);
-      $checkStmt->bindParam(':documentId', $documentId);
-      $checkStmt->bindParam(':gradeLevelId', $gradeLevelId);
-      $checkStmt->execute();
-
-      if ($checkStmt->rowCount() > 0) {
-        // Update existing record
-        $updateSql = "UPDATE tblstudentdocument SET fileName = :fileName, userId = :userId, createdAt = NOW() 
-                      WHERE studentId = :studentId AND documentId = :documentId AND gradeLevelId = :gradeLevelId";
-        $updateStmt = $conn->prepare($updateSql);
-        $updateStmt->bindParam(':fileName', $excelFileName);
-        $updateStmt->bindParam(':userId', $userId);
-        $updateStmt->bindParam(':studentId', $studentId);
-        $updateStmt->bindParam(':documentId', $documentId);
-        $updateStmt->bindParam(':gradeLevelId', $gradeLevelId);
-        
-        if ($updateStmt->execute()) {
-          return ['success' => true, 'message' => 'Excel document updated successfully'];
-        } else {
-          return ['success' => false, 'error' => 'Failed to update Excel document record'];
-        }
-      } else {
-        // Insert new record
-        $insertSql = "INSERT INTO tblstudentdocument (studentId, fileName, documentId, gradeLevelId, userId, createdAt) 
-                      VALUES (:studentId, :fileName, :documentId, :gradeLevelId, :userId, NOW())";
-        $insertStmt = $conn->prepare($insertSql);
-        $insertStmt->bindParam(':studentId', $studentId);
-        $insertStmt->bindParam(':fileName', $excelFileName);
-        $insertStmt->bindParam(':documentId', $documentId);
-        $insertStmt->bindParam(':gradeLevelId', $gradeLevelId);
-        $insertStmt->bindParam(':userId', $userId);
-        
-        if ($insertStmt->execute()) {
-          return ['success' => true, 'message' => 'Excel document uploaded successfully'];
-        } else {
-          return ['success' => false, 'error' => 'Failed to insert Excel document record'];
-        }
-      }
-
-    } catch (Exception $e) {
-      return ['success' => false, 'error' => 'Excel upload error: ' . $e->getMessage()];
     }
   }
     
@@ -557,6 +802,9 @@ switch ($operation) {
     break;
   case "updateStudentFile":
     echo $user->updateStudentFile();
+    break;
+  case "updateMultipleStudentFiles":
+    echo $user->updateMultipleStudentFiles();
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");
