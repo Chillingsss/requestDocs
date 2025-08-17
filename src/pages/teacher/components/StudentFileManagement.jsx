@@ -14,6 +14,7 @@ import {
 	CheckSquare,
 	Square,
 	Users2,
+	Search,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -54,6 +55,9 @@ export default function StudentFileManagement({
 	const [sections, setSections] = useState([]);
 	const [sectionsByGradeLevel, setSectionsByGradeLevel] = useState({});
 
+	// Search state
+	const [searchQuery, setSearchQuery] = useState("");
+
 	// Fetch data on component mount
 	useEffect(() => {
 		if (teacherGradeLevelId) {
@@ -73,12 +77,12 @@ export default function StudentFileManagement({
 	// Apply section filter when selectedSection changes
 	useEffect(() => {
 		applyFilters();
-	}, [students, selectedSection, selectedGradeLevel]);
+	}, [students, selectedSection, selectedGradeLevel, searchQuery]);
 
 	// Reset to page 1 when filters change
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [selectedSection, selectedGradeLevel]);
+	}, [selectedSection, selectedGradeLevel, searchQuery]);
 
 	// Set default grade level when sections are loaded
 	useEffect(() => {
@@ -184,6 +188,17 @@ export default function StudentFileManagement({
 		if (selectedSection && selectedSection !== "") {
 			filtered = filtered.filter(
 				(student) => student.sectionName === selectedSection
+			);
+		}
+
+		// Apply search filter
+		if (searchQuery && searchQuery.trim() !== "") {
+			const query = searchQuery.toLowerCase().trim();
+			filtered = filtered.filter(
+				(student) =>
+					student.firstname?.toLowerCase().includes(query) ||
+					student.lastname?.toLowerCase().includes(query) ||
+					student.lrn?.toLowerCase().includes(query)
 			);
 		}
 
@@ -461,6 +476,16 @@ export default function StudentFileManagement({
 		return pageNumbers;
 	};
 
+	// Handle search input change
+	const handleSearchChange = (e) => {
+		setSearchQuery(e.target.value);
+	};
+
+	// Clear search
+	const clearSearch = () => {
+		setSearchQuery("");
+	};
+
 	return (
 		<Card className="dark:bg-slate-800 dark:border-slate-700">
 			<CardContent className="p-4 lg:p-6">
@@ -517,57 +542,109 @@ export default function StudentFileManagement({
 						))}
 					</div>
 
-					{/* Section Filter */}
+					{/* Section Filter and Search Row */}
 					{selectedGradeLevel && sectionsByGradeLevel[selectedGradeLevel] && (
 						<div className="mb-4">
-							<div className="flex gap-2 items-center mb-2">
-								<Filter className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-								<span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-									Sections in {selectedGradeLevel}:
-								</span>
-							</div>
-							<div className="flex flex-wrap gap-2">
-								{sectionsByGradeLevel[selectedGradeLevel].map((section) => (
-									<Button
-										key={section}
-										variant="outline"
-										size="sm"
-										onClick={() => handleSectionChange(section)}
-										className={`${
-											selectedSection === section
-												? "bg-green-600 text-white border-green-600 hover:bg-green-700 hover:text-white dark:bg-green-600 dark:text-white dark:border-green-600 dark:hover:bg-green-700 dark:hover:text-white"
-												: "hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:text-white"
-										}`}
-									>
-										{section}
-									</Button>
-								))}
+							<div className="flex flex-col gap-4 justify-between items-start lg:flex-row lg:items-center">
+								{/* Section Filter */}
+								<div className="flex-1">
+									<div className="flex gap-2 items-center mb-2">
+										<Filter className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+										<span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+											Sections in {selectedGradeLevel}:
+										</span>
+									</div>
+									<div className="flex flex-wrap gap-2">
+										{sectionsByGradeLevel[selectedGradeLevel].map((section) => (
+											<Button
+												key={section}
+												variant="outline"
+												size="sm"
+												onClick={() => handleSectionChange(section)}
+												className={`${
+													selectedSection === section
+														? "bg-green-600 text-white border-green-600 hover:bg-green-700 hover:text-white dark:bg-green-600 dark:text-white dark:border-green-600 dark:hover:bg-green-700 dark:hover:text-white"
+														: "hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:text-white"
+												}`}
+											>
+												{section}
+											</Button>
+										))}
+									</div>
+								</div>
+
+								{/* Search Bar */}
+								<div className="w-full lg:w-auto lg:min-w-[300px]">
+									<div className="relative">
+										<Search className="absolute left-3 top-1/2 w-4 h-4 transform -translate-y-1/2 text-slate-400" />
+										<input
+											type="text"
+											placeholder="Search by name or LRN..."
+											value={searchQuery}
+											onChange={handleSearchChange}
+											className="py-2 pr-10 pl-10 w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400"
+										/>
+										{searchQuery && (
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={clearSearch}
+												className="absolute right-1 top-1/2 p-0 w-6 h-6 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+											>
+												×
+											</Button>
+										)}
+									</div>
+									{searchQuery && (
+										<div className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+											Searching for:{" "}
+											<span className="font-medium">"{searchQuery}"</span>
+											{filteredStudents.length > 0 && (
+												<span className="ml-2">
+													({filteredStudents.length} result
+													{filteredStudents.length !== 1 ? "s" : ""})
+												</span>
+											)}
+										</div>
+									)}
+								</div>
 							</div>
 						</div>
 					)}
 				</div>
 
 				{/* Filter Summary */}
-				{selectedSection && (
+				{(selectedSection || searchQuery) && (
 					<div className="p-3 mb-4 bg-blue-50 rounded-lg dark:bg-blue-900/20">
 						<div className="text-sm text-blue-800 dark:text-blue-200">
 							<strong>Current Filters:</strong>
-							<span className="ml-2">
-								Grade Level:{" "}
-								<span className="font-medium">{selectedGradeLevel}</span>
-							</span>
-							<span className="ml-2">
-								Section: <span className="font-medium">{selectedSection}</span>
-							</span>
+							{selectedGradeLevel && (
+								<span className="ml-2">
+									Grade Level:{" "}
+									<span className="font-medium">{selectedGradeLevel}</span>
+								</span>
+							)}
+							{selectedSection && (
+								<span className="ml-2">
+									Section:{" "}
+									<span className="font-medium">{selectedSection}</span>
+								</span>
+							)}
+							{searchQuery && (
+								<span className="ml-2">
+									Search: <span className="font-medium">"{searchQuery}"</span>
+								</span>
+							)}
 							<Button
 								variant="outline"
 								size="sm"
 								onClick={() => {
 									setSelectedSection("");
+									setSearchQuery("");
 								}}
 								className="ml-4"
 							>
-								Clear Section Filter
+								Clear All Filters
 							</Button>
 						</div>
 					</div>
@@ -608,7 +685,9 @@ export default function StudentFileManagement({
 				) : groupedStudents.length === 0 ? (
 					<div className="py-6 text-center lg:py-8">
 						<p className="text-sm text-slate-500 lg:text-base dark:text-slate-400">
-							{selectedSection
+							{searchQuery
+								? `No students found matching "${searchQuery}".`
+								: selectedSection
 								? `No students found in ${selectedGradeLevel} - ${selectedSection}.`
 								: `No students found in ${selectedGradeLevel}.`}
 						</p>
