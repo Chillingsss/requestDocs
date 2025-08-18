@@ -31,12 +31,6 @@ class StudentImporter {
         ];
     }
     
-    function generateEmail($firstName, $lastName, $lrn) {
-        $baseEmail = strtolower($firstName . '.' . $lastName);
-        $baseEmail = preg_replace('/[^a-z0-9.]/', '', $baseEmail);
-        return $baseEmail . '@student.mogchs.edu.ph';
-    }
-    
     function parseDate($dateString) {
         if (empty($dateString)) return null;
         
@@ -193,8 +187,8 @@ if ($operation === 'savePreviewedStudents') {
             $middleName = $nameParts['middleName'];
             $lastName = $nameParts['lastName'];
             
-            // Generate email from name if not provided
-            $email = $importer->generateEmail($firstName, $lastName, $lrn);
+            // Set email to null if not provided
+            $email = null;
             
             // Generate default password using lastName
             $defaultPassword = password_hash($lastName, PASSWORD_DEFAULT);
