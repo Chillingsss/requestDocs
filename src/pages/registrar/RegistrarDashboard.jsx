@@ -651,6 +651,7 @@ export default function RegistrarDashboard() {
 					onClose={handleModalClose}
 					request={selectedRequest}
 					onSuccess={handleProcessSuccess}
+					userId={userId}
 				/>
 			</main>
 		</div>

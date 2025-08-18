@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../../../components/ui/button";
-import { X, FileText, User, Calendar, MessageSquare } from "lucide-react";
+import {
+	X,
+	FileText,
+	User,
+	Calendar,
+	MessageSquare,
+	Clock,
+} from "lucide-react";
 import {
 	processRequest,
+	processRelease,
 	getRequestAttachments,
 	getStudentDocuments,
 	getStudentInfo,
 	updateStudentInfo,
+	getReleaseSchedule,
 } from "../../../utils/registrar";
 import toast from "react-hot-toast";
 import StudentDocumentsSection from "../components/StudentDocumentsSection";
@@ -15,12 +24,14 @@ import ImageZoomModal from "../components/ImageZoomModal";
 import DiplomaTemplateModal from "../components/DiplomaTemplateModal";
 import CertificateTemplateModal from "../components/CertificateTemplateModal";
 import CavTemplateModal from "../components/CavTemplateModal";
+import ReleaseScheduleModal from "./ReleaseScheduleModal";
 
 export default function ProcessedRequest({
 	request,
 	isOpen,
 	onClose,
 	onSuccess,
+	userId,
 }) {
 	const [processing, setProcessing] = useState(false);
 	const [attachments, setAttachments] = useState([]);
@@ -32,7 +43,9 @@ export default function ProcessedRequest({
 	const [showDiplomaTemplate, setShowDiplomaTemplate] = useState(false);
 	const [showCertificateTemplate, setShowCertificateTemplate] = useState(false);
 	const [showCavTemplate, setShowCavTemplate] = useState(false);
+	const [showReleaseSchedule, setShowReleaseSchedule] = useState(false);
 	const [currentRequest, setCurrentRequest] = useState(request);
+	const [releaseSchedule, setReleaseSchedule] = useState(null);
 
 	// Update currentRequest when request prop changes
 	useEffect(() => {
@@ -104,6 +117,20 @@ export default function ProcessedRequest({
 		}
 	};
 
+	const fetchReleaseSchedule = async () => {
+		try {
+			const scheduleData = await getReleaseSchedule(currentRequest.id);
+			if (scheduleData && !scheduleData.error) {
+				setReleaseSchedule(scheduleData);
+			} else {
+				setReleaseSchedule(null);
+			}
+		} catch (error) {
+			console.error("Failed to fetch release schedule:", error);
+			setReleaseSchedule(null);
+		}
+	};
+
 	// Fetch attachments when modal opens
 	useEffect(() => {
 		if (isOpen && currentRequest) {
@@ -145,46 +172,56 @@ export default function ProcessedRequest({
 			fetchAttachments();
 			fetchStudentDocuments();
 			fetchStudentInfo();
+			fetchReleaseSchedule();
 		}
 	}, [isOpen, currentRequest]);
 
 	const handleProcess = async () => {
 		setProcessing(true);
 		try {
-			const response = await processRequest(currentRequest.id);
-			if (response.success) {
-				toast.success(response.message);
+			const currentStatus = currentRequest.status.toLowerCase();
+			let response;
+			let newStatus;
 
-				// Update the local request status based on current status
-				const currentStatus = currentRequest.status.toLowerCase();
-				let newStatus;
-
-				switch (currentStatus) {
-					case "pending":
-						newStatus = "Processed";
-						break;
-					case "processed":
-						newStatus = "Signatory";
-						break;
-					case "signatory":
-						newStatus = "Release";
-						break;
-					case "release":
-						newStatus = "Completed";
-						break;
-					default:
-						newStatus = currentRequest.status;
-				}
-
-				// Update the local currentRequest state
-				setCurrentRequest((prev) => ({
-					...prev,
-					status: newStatus,
-				}));
-
-				onSuccess(); // Refresh the data in parent component
+			if (currentStatus === "signatory") {
+				// For Signatory status, directly show release schedule modal
+				// Don't change status yet - wait for user to set release date
+				setShowReleaseSchedule(true);
+				setProcessing(false);
+				return;
 			} else {
-				toast.error(response.error || "Failed to process request");
+				// For other statuses, use the regular processRequest
+				response = await processRequest(currentRequest.id);
+				if (response.success) {
+					toast.success(response.message);
+
+					// Update the local request status based on current status
+					switch (currentStatus) {
+						case "pending":
+							newStatus = "Processed";
+							break;
+						case "processed":
+							newStatus = "Signatory";
+							break;
+						case "release":
+							newStatus = "Completed";
+							break;
+						default:
+							newStatus = currentRequest.status;
+					}
+
+					// Update the local currentRequest state
+					setCurrentRequest((prev) => ({
+						...prev,
+						status: newStatus,
+					}));
+
+					// Refresh data for status changes
+					onSuccess();
+				} else {
+					// Handle error from processRequest
+					toast.error(response.error || "Failed to process request");
+				}
 			}
 		} catch (error) {
 			console.error("Failed to process request:", error);
@@ -291,6 +328,40 @@ export default function ProcessedRequest({
 		setShowCavTemplate(false);
 	};
 
+	const handleReleaseScheduleClose = () => {
+		setShowReleaseSchedule(false);
+	};
+
+	const handleReleaseScheduleSuccess = async () => {
+		try {
+			// First, change the status to Release
+			const response = await processRelease(currentRequest.id);
+			if (response.success) {
+				toast.success("Document released successfully!");
+
+				// Update local status to Release
+				setCurrentRequest((prev) => ({
+					...prev,
+					status: "Release",
+				}));
+
+				// Fetch the release schedule
+				await fetchReleaseSchedule();
+
+				// Close the release schedule modal
+				setShowReleaseSchedule(false);
+
+				// Refresh the parent data
+				onSuccess();
+			} else {
+				toast.error(response.error || "Failed to release document");
+			}
+		} catch (error) {
+			console.error("Failed to release document:", error);
+			toast.error("Failed to release document");
+		}
+	};
+
 	// Function to get button text and color based on status
 	const getButtonConfig = () => {
 		if (!currentRequest || !currentRequest.status) {
@@ -338,7 +409,7 @@ export default function ProcessedRequest({
 				};
 			case "signatory":
 				return {
-					text: processing ? "Processing..." : "Release Document",
+					text: processing ? "Processing..." : "Set Release Schedule",
 					bgColor: "bg-green-600 hover:bg-green-700",
 					disabled: processing,
 				};
@@ -424,6 +495,18 @@ export default function ProcessedRequest({
 					titleColor: "text-gray-800",
 				};
 		}
+	};
+
+	// Format release date
+	const formatReleaseDate = (dateString) => {
+		if (!dateString) return "";
+		const date = new Date(dateString);
+		return date.toLocaleDateString("en-US", {
+			weekday: "long",
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+		});
 	};
 
 	if (!isOpen || !currentRequest) return null;
@@ -522,6 +605,30 @@ export default function ProcessedRequest({
 									</p>
 								</div>
 							</div>
+
+							{/* Release Schedule Information */}
+							{releaseSchedule && (
+								<div className="p-4 bg-green-50 rounded-lg border-2 border-green-200 dark:bg-green-900/20 dark:border-green-700">
+									<div className="flex gap-3 items-center mb-3">
+										<Clock className="w-5 h-5 text-green-600 dark:text-green-400" />
+										<span className="text-sm font-medium text-green-700 dark:text-green-300">
+											Release Schedule
+										</span>
+									</div>
+									<div className="mb-3 text-sm text-green-600 dark:text-green-400">
+										<strong>Release Date:</strong>{" "}
+										{formatReleaseDate(releaseSchedule.dateSchedule)}
+									</div>
+									<div className="text-xs text-green-600 dark:text-green-400">
+										<strong>Office Hours:</strong> 8:00 AM - 5:00 PM (Monday to
+										Friday)
+									</div>
+									<div className="mt-3 text-xs text-green-600 dark:text-green-400">
+										<strong>Note:</strong> Student has been notified via email
+										about the release schedule.
+									</div>
+								</div>
+							)}
 
 							{/* Purpose */}
 							{currentRequest?.purpose && (
@@ -789,6 +896,17 @@ export default function ProcessedRequest({
 					studentInfo={studentInfo}
 					onSave={handleCavSave}
 					fetchStudentInfo={fetchStudentInfo}
+				/>
+			)}
+
+			{/* Release Schedule Modal */}
+			{showReleaseSchedule && (
+				<ReleaseScheduleModal
+					isOpen={showReleaseSchedule}
+					onClose={handleReleaseScheduleClose}
+					request={currentRequest}
+					onSuccess={handleReleaseScheduleSuccess}
+					userId={userId}
 				/>
 			)}
 		</>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 13, 2025 at 05:33 AM
+-- Generation Time: Aug 18, 2025 at 06:01 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -89,6 +89,20 @@ INSERT INTO `tblgradelevel` (`id`, `name`, `userId`, `createdAt`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tblreleaseschedule`
+--
+
+CREATE TABLE `tblreleaseschedule` (
+  `id` int(11) NOT NULL,
+  `requestId` int(11) NOT NULL,
+  `userId` varchar(50) NOT NULL,
+  `dateSchedule` date NOT NULL,
+  `createdAt` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tblrequest`
 --
 
@@ -108,7 +122,8 @@ INSERT INTO `tblrequest` (`id`, `studentId`, `documentId`, `purpose`, `createdAt
 (1, '22-2222-2222', 6, 'College Application', '2025-08-06 06:03:42'),
 (2, '22-2222-2222', 5, 'College Application', '2025-08-06 06:46:44'),
 (4, '33333333', 5, 'shesh', '2025-08-10 10:02:50'),
-(5, '33333333', 8, 'hehe', '2025-08-10 10:45:26');
+(5, '33333333', 8, 'hehe', '2025-08-10 10:45:26'),
+(6, '33333333', 7, 'for work', '2025-08-17 03:03:28');
 
 -- --------------------------------------------------------
 
@@ -132,7 +147,8 @@ INSERT INTO `tblrequeststatus` (`id`, `requestId`, `statusId`, `userId`, `create
 (1, 1, 1, NULL, '2025-08-06 06:03:42'),
 (2, 2, 1, NULL, '2025-08-06 06:46:44'),
 (4, 4, 1, NULL, '2025-08-10 10:02:50'),
-(5, 5, 1, NULL, '2025-08-10 10:45:26');
+(5, 5, 1, NULL, '2025-08-10 10:45:26'),
+(6, 6, 1, NULL, '2025-08-17 03:03:28');
 
 -- --------------------------------------------------------
 
@@ -153,7 +169,8 @@ CREATE TABLE `tblrequirements` (
 --
 
 INSERT INTO `tblrequirements` (`id`, `requestId`, `filepath`, `typeId`, `createdAt`) VALUES
-(1, 1, '521827746_1955938708539586_392632500952961470_n.jpg', 2, '2025-08-06 06:03:42');
+(1, 1, '521827746_1955938708539586_392632500952961470_n.jpg', 2, '2025-08-06 06:03:42'),
+(2, 6, '494824206_3916111231987718_6769723710186800158_n.jpg', 1, '2025-08-17 03:03:28');
 
 -- --------------------------------------------------------
 
@@ -291,8 +308,6 @@ INSERT INTO `tblsfrecord` (`id`, `fileName`, `studentId`, `gradeLevelId`, `userI
 (42, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127941140331', 1, '02-1819-01500', '2025-08-06 17:22:35'),
 (43, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127966120298', 1, '02-1819-01500', '2025-08-06 17:22:35'),
 (44, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127941140475', 1, '02-1819-01500', '2025-08-06 17:22:35'),
-(45, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record-CANONCE.xlsx', '22-2222-2222', 1, '02-1819-01509', '2025-08-06 17:48:41'),
-(47, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record-CANONCE.xlsx', '22-2222-2222', 2, NULL, '2025-08-06 18:47:29'),
 (48, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127995120980', 1, '02-1819-01500', '2025-08-06 20:31:20'),
 (49, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127992140071', 1, '02-1819-01500', '2025-08-06 20:31:20'),
 (50, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127958120001', 1, '02-1819-01500', '2025-08-06 20:31:20'),
@@ -308,8 +323,8 @@ INSERT INTO `tblsfrecord` (`id`, `fileName`, `studentId`, `gradeLevelId`, `userI
 (60, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '118350130019', 1, '02-1819-01500', '2025-08-06 20:31:21'),
 (61, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127942140389', 1, '02-1819-01500', '2025-08-06 20:31:21'),
 (62, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '126625130039', 1, '02-1819-01500', '2025-08-06 20:31:21'),
-(63, 'SF10 - Patty (2).xlsx', '33333333', 1, '02-1819-01509', '2025-08-06 20:42:47'),
-(66, 'SF10 - Patty - grade 12.xlsx', '33333333', 2, '47718333', '2025-08-10 10:05:27');
+(72, 'SF10 - Patty - grade 12.xlsx', '33333333', 1, '4771830', '2025-08-17 21:57:54'),
+(73, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record-CANONCEsample.xlsx', '22-2222-2222', 1, '4771830', '2025-08-17 21:57:54');
 
 -- --------------------------------------------------------
 
@@ -448,8 +463,8 @@ INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, 
 ('133218140022', 'JAPAR', 'DIBA', 'DAUD', 'japar.daud@student.mogchs.edu.ph', '$2y$10$JTk6OVTBmD/MEzXEXjA8N.wTzxMKTNkLgXP5MkNbTLMNcH4Hw4C.O', 4, '133218140022', 1, '0000-00-00', 16, 'Islam', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
 ('136913130093', 'HERMINE', 'GUMBAY', 'DIMASINSIL', 'hermine.dimasinsil@student.mogchs.edu.ph', '$2y$10$OzU8pLquAHGZpSqqgpDvbeJwoPBEQ3T99Hepo2naBN0A5cP.3lgum', 4, '136913130093', 1, '0000-00-00', 17, 'Islam', '', '', '', '', '', 3, 4, '2025-08-06 09:22:33', '2025-08-06 09:22:33'),
 ('201511140006', 'CARL', 'KESTER LIGUTOM', 'PELIGRO', 'carl.peligro@student.mogchs.edu.ph', '$2y$10$ekIKipYY8hNdEUwNjaG0CeVhZ9pIk19DZfWCbFUZ7uwLEaE2QBNSW', 4, '201511140006', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
-('22-2222-2222', 'Mary', '', 'Canonce', 'rape.gallegos.coc@phinmaed.com', '$2y$10$1NWwcwH/L8sWlNQvMqyuquNXriD9HlsvB8V3bgt8tzjb6N4vEZmdm', 4, '22-2222-2222', 1, '2002-02-22', 22, 'Roman Catholic', 'Iponan', '', '', '', '', 10, 4, '2025-08-06 09:48:41', '2025-08-06 10:40:19'),
-('33333333', 'Patricia', '', 'Aspirass', 'pattyaspiras@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '2003-02-21', 20, 'Roman Catholic', 'Iponan', 'ralph jan gallegos', '', '', '', 10, 4, '2025-08-06 12:42:47', '2025-08-11 13:34:14'),
+('22-2222-2222', 'Mary', '', 'Canonce', 'rape.gallegos.coc@phinmaed.com', '$2y$10$1NWwcwH/L8sWlNQvMqyuquNXriD9HlsvB8V3bgt8tzjb6N4vEZmdm', 4, '22-2222-2222', 1, '2002-02-22', 22, 'Roman Catholic', 'Iponan', '', '', '', '', 3, 4, '2025-08-06 09:48:41', '2025-08-17 13:45:54'),
+('33333333', 'Patricia', '', 'Aspirass', 'pattyaspiras@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '2003-02-21', 20, 'Roman Catholic', 'Iponan', 'ralph jan gallegos', '', '', '', 3, 4, '2025-08-06 12:42:47', '2025-08-17 13:16:12'),
 ('405155150193', 'MARICEL', 'SIBOLON', 'MANOS', 'maricel.manos@student.mogchs.edu.ph', '$2y$10$8ExvtvZGLgb.Vj8S/fYwx.7GgQaXjldhUDJMsTXf0mRUSrAoC6oTm', 4, '405155150193', 1, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
 ('405235150610', 'MARC', 'GABRIEL MACALAM', 'ANDOY', 'marc.andoy@student.mogchs.edu.ph', '$2y$10$D6jsrHPkSMBWQFnITRZJF.1FOh78eqBrmY1FP2rw9OkAaIkTjA55i', 4, '405235150610', 4, '0000-00-00', 20, 'Christianity', '', '', '', '', '', 2, 4, '2025-08-06 12:31:20', '2025-08-06 12:31:20'),
 ('405241150066', 'ARJAY', 'PALMARES', 'REYES', 'arjay.reyes@student.mogchs.edu.ph', '$2y$10$wIQktkFy37H7TGzYE3vuie2HU1pezlSmKwS8OFmEyN8EDzPFzWxoK', 4, '405241150066', 1, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, '2025-08-06 09:22:34', '2025-08-06 09:22:34'),
@@ -479,10 +494,9 @@ CREATE TABLE `tblstudentdocument` (
 --
 
 INSERT INTO `tblstudentdocument` (`id`, `studentId`, `fileName`, `documentId`, `gradeLevelId`, `userId`, `createdAt`) VALUES
-(1, '33333333', 'SF10 - Patty (2).xlsx', 5, 1, '47718333', '2025-08-10 09:55:55'),
-(2, '33333333', 'SF10 - Patty - grade 12.xlsx', 5, 2, '4771833', '2025-08-10 10:06:44'),
-(6, '55555', 'SF-10-SHS-Senior-High-School-Student-Permanent-Record-CANONCEsample.pdf', 5, 2, NULL, '2025-08-12 14:35:56'),
-(7, '66666', 'SF10 - Patty.pdf', 5, 2, NULL, '2025-08-12 14:35:56');
+(7, '66666', 'SF10 - Patty.pdf', 5, 2, NULL, '2025-08-12 14:35:56'),
+(12, '33333333', 'SF10 - Patty22.pdf', 5, 1, '4771830', '2025-08-17 22:01:21'),
+(13, '22-2222-2222', 'SF-10-SHS-Senior-High-School-Student-Permanent-Record-CANONCEsample.pdf', 5, 1, '4771830', '2025-08-17 22:01:21');
 
 -- --------------------------------------------------------
 
@@ -532,7 +546,7 @@ INSERT INTO `tbluser` (`id`, `firstname`, `lastname`, `middlename`, `email`, `pa
 ('02-1819-01509', 'Patty', 'Aspiras', '', 'patty@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL),
 ('02-22240755', 'krystyll', 'Plaza', '', 'krystyllp@gmail.com', '$2y$10$kdoseuywdW9Qa5zy6Wk9.OGLfDnyee.xJAaro9nA2w1ZeFV/tC2Xe', 2, '$2y$10$tGS6ocEEixbxH4APISaJHe6PUWfGlWhk1l7EdAtSYoJqIrt2rYd.2', NULL, NULL),
 ('0222240755', 'krystyll', 'plaza', '', 'krystyllp@gmail.com', '$2y$10$FeQhThcTYXdfl/a0dLmPIuYzFRxwLQR4SrQGRsMqX/mtxf1apUWRK', 2, '$2y$10$JIuhsatF8O/fPkmACqwaauC7qOZcyQ5HqtATz.QlbBnE08Aqeyrba', NULL, NULL),
-('4771830', 'Maribelle', 'Acas', '', 'ralp.pelino11@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 1),
+('4771830', 'Maribelle', 'Acas', '', 'ralp.pelino11@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 3),
 ('4771833', 'Alexis', 'Gonzaga', '', 'alex@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 2, 10),
 ('47718333', 'Mary', 'Aspiras', '', 'ralphjangallegos@gmail.com', '$2y$10$JooVcuK3ntZQdiPGcAhvle9y1Q9z0vKeeDJWui0ybvjLgXYcZboNq', 3, '$2y$10$YOD62VSS2kaYsIhX9LQqzOhs2AZ6Er0qdkakw4Gd67WxoeSgRk8wq', 1, 2);
 
@@ -580,6 +594,14 @@ ALTER TABLE `tbldocument`
 --
 ALTER TABLE `tblgradelevel`
   ADD PRIMARY KEY (`id`),
+  ADD KEY `userId` (`userId`);
+
+--
+-- Indexes for table `tblreleaseschedule`
+--
+ALTER TABLE `tblreleaseschedule`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `requestId` (`requestId`),
   ADD KEY `userId` (`userId`);
 
 --
@@ -717,22 +739,28 @@ ALTER TABLE `tblgradelevel`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `tblreleaseschedule`
+--
+ALTER TABLE `tblreleaseschedule`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `tblrequest`
 --
 ALTER TABLE `tblrequest`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `tblrequeststatus`
 --
 ALTER TABLE `tblrequeststatus`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `tblrequirements`
 --
 ALTER TABLE `tblrequirements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tblrequirementstype`
@@ -756,7 +784,7 @@ ALTER TABLE `tblsection`
 -- AUTO_INCREMENT for table `tblsfrecord`
 --
 ALTER TABLE `tblsfrecord`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- AUTO_INCREMENT for table `tblstatus`
@@ -774,7 +802,7 @@ ALTER TABLE `tblstrand`
 -- AUTO_INCREMENT for table `tblstudentdocument`
 --
 ALTER TABLE `tblstudentdocument`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `tbltrack`
@@ -803,6 +831,13 @@ ALTER TABLE `tbldocument`
 --
 ALTER TABLE `tblgradelevel`
   ADD CONSTRAINT `tblgradelevel_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `tbluser` (`id`);
+
+--
+-- Constraints for table `tblreleaseschedule`
+--
+ALTER TABLE `tblreleaseschedule`
+  ADD CONSTRAINT `tblreleaseschedule_ibfk_1` FOREIGN KEY (`requestId`) REFERENCES `tblrequest` (`id`),
+  ADD CONSTRAINT `tblreleaseschedule_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `tbluser` (`id`);
 
 --
 -- Constraints for table `tblrequest`

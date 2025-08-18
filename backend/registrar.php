@@ -179,9 +179,9 @@ class User {
           $nextStatusId = 3;
           $actionMessage = 'Request sent to signatory successfully';
           break;
-        case 3: // Signatory -> Release
-          $nextStatusId = 4;
-          $actionMessage = 'Request release successfully';
+        case 3: // Signatory -> Ready for Release (don't change status yet)
+          $nextStatusId = 3; // Keep same status
+          $actionMessage = 'Request ready for release scheduling';
           break;
         case 4: // Release -> Completed
           $nextStatusId = 5;
@@ -870,6 +870,326 @@ class User {
     }
   }
 
+  function processRelease($json)
+  {
+    include "connection.php";
+    
+    $json = json_decode($json, true);
+    $requestId = $json['requestId'];
+    
+    // Debug logging
+    error_log("processRelease called with requestId: " . $requestId);
+    
+    // Set Philippine timezone and get current datetime
+    date_default_timezone_set('Asia/Manila');
+    $datetime = date('Y-m-d h:i:s A');
+
+    try {
+      $conn->beginTransaction();
+
+      // Check if current status is "Signatory"
+      $currentStatusSql = "SELECT s.id as statusId, s.name as statusName
+                          FROM tblrequeststatus rs
+                          INNER JOIN tblstatus s ON rs.statusId = s.id
+                          WHERE rs.requestId = :requestId
+                          ORDER BY rs.id DESC
+                          LIMIT 1";
+      
+      $currentStatusStmt = $conn->prepare($currentStatusSql);
+      $currentStatusStmt->bindParam(':requestId', $requestId);
+      $currentStatusStmt->execute();
+      
+      if ($currentStatusStmt->rowCount() == 0) {
+        $conn->rollBack();
+        return json_encode(['error' => 'Request not found']);
+      }
+      
+      $currentStatus = $currentStatusStmt->fetch(PDO::FETCH_ASSOC);
+      
+      // Debug logging
+      error_log("Current status for request " . $requestId . ": " . $currentStatus['statusId'] . " (" . $currentStatus['statusName'] . ")");
+      
+      if ($currentStatus['statusId'] != 3) { // 3 = Signatory
+        $conn->rollBack();
+        error_log("Request " . $requestId . " is not in Signatory status. Current status: " . $currentStatus['statusId']);
+        return json_encode(['error' => 'Request must be in Signatory status to be released']);
+      }
+
+      // Change status to Release (statusId = 4)
+      $sql = "INSERT INTO tblrequeststatus (requestId, statusId, createdAt) VALUES (:requestId, :statusId, :datetime)";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':requestId', $requestId);
+      $statusId = 4; // Release status
+      $stmt->bindParam(':statusId', $statusId);
+      $stmt->bindParam(':datetime', $datetime);
+
+      if (!$stmt->execute()) {
+        $conn->rollBack();
+        return json_encode(['error' => 'Failed to change status to Release']);
+      }
+
+      $conn->commit();
+      return json_encode([
+        'success' => true, 
+        'message' => 'Request status changed to Release successfully',
+        'newStatusId' => 4
+      ]);
+
+    } catch (PDOException $e) {
+      $conn->rollBack();
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function scheduleRelease($json)
+  {
+    include "connection.php";
+    include "vendor/autoload.php";
+
+    $json = json_decode($json, true);
+    $requestId = $json['requestId'];
+    $releaseDate = $json['releaseDate'];
+    $userId = $json['userId'];
+    
+    // Set Philippine timezone and get current datetime
+    date_default_timezone_set('Asia/Manila');
+    $datetime = date('Y-m-d H:i:s');
+
+    try {
+      $conn->beginTransaction();
+
+      // First, get the request details and student information
+      $requestSql = "SELECT 
+                      r.id,
+                      r.studentId,
+                      r.purpose,
+                      d.name as documentName,
+                      s.firstname,
+                      s.lastname,
+                      s.email,
+                      s.middlename
+                    FROM tblrequest r
+                    INNER JOIN tbldocument d ON r.documentId = d.id
+                    INNER JOIN tblstudent s ON r.studentId = s.id
+                    WHERE r.id = :requestId";
+      
+      $requestStmt = $conn->prepare($requestSql);
+      $requestStmt->bindParam(':requestId', $requestId);
+      $requestStmt->execute();
+      
+      if ($requestStmt->rowCount() == 0) {
+        $conn->rollBack();
+        return json_encode(['error' => 'Request not found']);
+      }
+      
+      $requestData = $requestStmt->fetch(PDO::FETCH_ASSOC);
+      
+      // Check if release schedule already exists for this request
+      $checkSql = "SELECT id FROM tblreleaseschedule WHERE requestId = :requestId";
+      $checkStmt = $conn->prepare($checkSql);
+      $checkStmt->bindParam(':requestId', $requestId);
+      $checkStmt->execute();
+      
+      if ($checkStmt->rowCount() > 0) {
+        // Update existing schedule
+        $updateSql = "UPDATE tblreleaseschedule 
+                      SET dateSchedule = :releaseDate, createdAt = :datetime 
+                      WHERE requestId = :requestId";
+        $updateStmt = $conn->prepare($updateSql);
+        $updateStmt->bindParam(':releaseDate', $releaseDate);
+        $updateStmt->bindParam(':datetime', $datetime);
+        $updateStmt->bindParam(':requestId', $requestId);
+        
+        if (!$updateStmt->execute()) {
+          $conn->rollBack();
+          return json_encode(['error' => 'Failed to update release schedule']);
+        }
+      } else {
+        // Insert new schedule
+        $insertSql = "INSERT INTO tblreleaseschedule (requestId, userId, dateSchedule, createdAt) 
+                      VALUES (:requestId, :userId, :releaseDate, :datetime)";
+        $insertStmt = $conn->prepare($insertSql);
+        $insertStmt->bindParam(':requestId', $requestId);
+        $insertStmt->bindParam(':userId', $userId);
+        $insertStmt->bindParam(':releaseDate', $releaseDate);
+        $insertStmt->bindParam(':datetime', $datetime);
+        
+        if (!$insertStmt->execute()) {
+          $conn->rollBack();
+          return json_encode(['error' => 'Failed to create release schedule']);
+        }
+      }
+
+      // Send email notification
+      $emailSent = $this->sendReleaseScheduleEmail($requestData, $releaseDate);
+      
+      if (!$emailSent) {
+        // Log email failure but don't rollback the transaction
+        error_log("Failed to send release schedule email for request ID: " . $requestId);
+      }
+
+      $conn->commit();
+      return json_encode([
+        'success' => true, 
+        'message' => 'Release schedule set successfully for ' . date('F j, Y', strtotime($releaseDate)),
+        'emailSent' => $emailSent
+      ]);
+
+    } catch (PDOException $e) {
+      $conn->rollBack();
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function sendReleaseScheduleEmail($requestData, $releaseDate)
+  {
+    try {
+      // Include email configuration
+      include_once "email_config.php";
+      
+      // Create PHPMailer instance
+      $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+      
+      // Server settings
+      $mail->isSMTP();
+      $mail->Host = SMTP_HOST;
+      $mail->SMTPAuth = true;
+      $mail->Username = SMTP_USERNAME;
+      $mail->Password = SMTP_PASSWORD;
+      $mail->SMTPSecure = SMTP_SECURE === 'tls' ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+      $mail->Port = SMTP_PORT;
+      
+      // Debug mode
+      if (EMAIL_DEBUG) {
+        $mail->SMTPDebug = 2;
+      }
+      
+      // Recipients
+      $mail->setFrom(FROM_EMAIL, FROM_NAME);
+      $mail->addAddress($requestData['email'], $requestData['firstname'] . ' ' . $requestData['lastname']);
+      
+      // Content
+      $mail->isHTML(true);
+      $mail->Subject = EMAIL_SUBJECT_PREFIX . $requestData['documentName'];
+      
+      // Format the release date
+      $formattedDate = date('F j, Y', strtotime($releaseDate));
+      $formattedTime = OFFICE_HOURS;
+      
+      // Email body
+      $mail->Body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+          <div style='background-color: #5409DA; color: white; padding: 20px; text-align: center;'>
+            <h1 style='margin: 0;'>MOGCHS Registrar Office</h1>
+          </div>
+          
+          <div style='padding: 30px; background-color: #f9f9f9;'>
+            <h2 style='color: #333; margin-bottom: 20px;'>Document Release Schedule</h2>
+            
+            <p>Dear <strong>{$requestData['firstname']} {$requestData['lastname']}</strong>,</p>
+            
+            <p>Your document request has been processed and is ready for release.</p>
+            
+            <div style='background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #5409DA; margin: 20px 0;'>
+              <h3 style='color: #5409DA; margin-top: 0;'>Request Details:</h3>
+              <p><strong>Document:</strong> {$requestData['documentName']}</p>
+              <p><strong>Purpose:</strong> {$requestData['purpose']}</p>
+              <p><strong>Release Date:</strong> {$formattedDate}</p>
+              <p><strong>Office Hours:</strong> {$formattedTime}</p>
+            </div>
+            
+                         <div style='background-color: #e8f4fd; padding: 15px; border-radius: 5px; border: 1px solid #bee5eb;'>
+               <h4 style='color: #0c5460; margin-top: 0;'>Important Notes:</h4>
+               <ul style='color: #0c5460; margin: 10px 0; padding-left: 20px;'>
+                 <li>Please bring a valid ID for verification</li>
+                 <li>If you cannot claim on the scheduled date, please contact the registrar office</li>
+                 <li>Documents not claimed within " . RETENTION_DAYS . " days may be disposed of</li>
+               </ul>
+             </div>
+            
+            <p>If you have any questions, please contact the registrar office.</p>
+            
+            <p>Best regards,<br>
+            <strong>MOGCHS Registrar Office</strong></p>
+          </div>
+          
+          <div style='background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;'>
+            <p style='margin: 0;'>This is an automated message. Please do not reply to this email.</p>
+          </div>
+        </div>
+      ";
+      
+      // Plain text version
+      $mail->AltBody = "
+        MOGCHS Registrar Office
+        
+        Document Release Schedule
+        
+        Dear {$requestData['firstname']} {$requestData['lastname']},
+        
+        Your document request has been processed and is ready for release.
+        
+        Request Details:
+        - Document: {$requestData['documentName']}
+        - Purpose: {$requestData['purpose']}
+        - Release Date: {$formattedDate}
+        - Office Hours: {$formattedTime}
+        
+                 Important Notes:
+         - Please bring a valid ID for verification
+         - If you cannot claim on the scheduled date, please contact the registrar office
+         - Documents not claimed within " . RETENTION_DAYS . " days may be disposed of
+        
+        If you have any questions, please contact the registrar office.
+        
+        Best regards,
+        MOGCHS Registrar Office
+      ";
+      
+      $mail->send();
+      return true;
+      
+    } catch (Exception $e) {
+      error_log("Email sending failed: " . $e->getMessage());
+      return false;
+    }
+  }
+
+  function getReleaseSchedule($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $requestId = $json['requestId'];
+
+    try {
+      $sql = "SELECT 
+                rs.id,
+                rs.dateSchedule,
+                rs.createdAt,
+                u.firstname,
+                u.lastname
+              FROM tblreleaseschedule rs
+              LEFT JOIN tbluser u ON rs.userId = u.id
+              WHERE rs.requestId = :requestId
+              ORDER BY rs.createdAt DESC
+              LIMIT 1";
+      
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':requestId', $requestId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
+        return json_encode($schedule);
+      }
+      return json_encode(null);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
 }
 
 $operation = isset($_POST["operation"]) ? $_POST["operation"] : "0";
@@ -931,6 +1251,15 @@ switch ($operation) {
     break;
   case "getAllStudentDocuments":
     echo $user->getAllStudentDocuments();
+    break;
+  case "processRelease":
+    echo $user->processRelease($json);
+    break;
+  case "scheduleRelease":
+    echo $user->scheduleRelease($json);
+    break;
+  case "getReleaseSchedule":
+    echo $user->getReleaseSchedule($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

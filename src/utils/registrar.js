@@ -318,3 +318,57 @@ export async function getAllStudentDocuments() {
 		throw error;
 	}
 }
+
+export async function processRelease(requestId) {
+	const formData = new FormData();
+	formData.append("operation", "processRelease");
+	formData.append("json", JSON.stringify({ requestId }));
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function scheduleRelease(requestId, releaseDate, userId) {
+	const formData = new FormData();
+	formData.append("operation", "scheduleRelease");
+	formData.append("json", JSON.stringify({ requestId, releaseDate, userId }));
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getReleaseSchedule(requestId) {
+	const formData = new FormData();
+	formData.append("operation", "getReleaseSchedule");
+	formData.append("json", JSON.stringify({ requestId }));
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
