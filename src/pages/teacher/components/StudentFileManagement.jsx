@@ -7,10 +7,7 @@ import {
 	ChevronRight,
 	Filter,
 	DownloadCloud,
-	GraduationCap,
 	BookOpen,
-	Eye,
-	Upload,
 	CheckSquare,
 	Square,
 	Users2,
@@ -23,7 +20,6 @@ import {
 	getSectionsByGradeLevel,
 } from "../../../utils/teacher";
 import StudentModal from "./StudentModal";
-import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
 export default function StudentFileManagement({
 	teacherGradeLevelId,
@@ -52,7 +48,6 @@ export default function StudentFileManagement({
 	// Filter state
 	const [selectedSection, setSelectedSection] = useState("");
 	const [selectedGradeLevel, setSelectedGradeLevel] = useState("");
-	const [sections, setSections] = useState([]);
 	const [sectionsByGradeLevel, setSectionsByGradeLevel] = useState({});
 
 	// Search state
@@ -110,16 +105,6 @@ export default function StudentFileManagement({
 				}
 			}
 			setStudents(Array.isArray(studentsArray) ? studentsArray : []);
-
-			// Extract unique sections from student data
-			const uniqueSections = [
-				...new Set(
-					studentsArray
-						.filter((student) => student.sectionName)
-						.map((student) => student.sectionName)
-				),
-			];
-			setSections(uniqueSections);
 
 			setLoading(false);
 		} catch (error) {
