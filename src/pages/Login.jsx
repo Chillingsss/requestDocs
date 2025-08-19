@@ -12,12 +12,13 @@ import { loginUser } from "../utils/security";
 import PinVerification from "../components/PinVerification";
 import PasswordReset from "../components/PasswordReset";
 import ForgotPassword from "../components/ForgotPassword";
+import ForgotLRN from "../components/ForgotLRN";
 import Captcha from "../components/Captcha";
 import ThemeToggle from "../components/ThemeToggle";
 import toast, { Toaster } from "react-hot-toast";
 
 const COOKIE_KEY = "mogchs_user";
-const SECRET_KEY = "mogchs_secret_key"; // You can use a more secure key in production
+const SECRET_KEY = "mogchs_secret_key";
 
 export default function LoginPage() {
 	const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +28,7 @@ export default function LoginPage() {
 	const [showPinVerification, setShowPinVerification] = useState(false);
 	const [showPasswordReset, setShowPasswordReset] = useState(false);
 	const [showForgotPassword, setShowForgotPassword] = useState(false);
+	const [showForgotLRN, setShowForgotLRN] = useState(false);
 	const [pendingUser, setPendingUser] = useState(null);
 	const [error, setError] = useState("");
 	const [showCaptcha, setShowCaptcha] = useState(false);
@@ -136,6 +138,7 @@ export default function LoginPage() {
 
 	const handleBackToLogin = () => {
 		setShowForgotPassword(false);
+		setShowForgotLRN(false);
 		setShowPasswordReset(false);
 		setPendingUser(null);
 		setIsLoading(false);
@@ -274,6 +277,15 @@ export default function LoginPage() {
 		);
 	}
 
+	if (showForgotLRN) {
+		return (
+			<>
+				<Toaster position="top-right" />
+				<ForgotLRN onBackToLogin={handleBackToLogin} />
+			</>
+		);
+	}
+
 	// Show PIN verification screen if needed
 	if (showPinVerification && pendingUser) {
 		return (
@@ -396,16 +408,28 @@ export default function LoginPage() {
 									>
 										Password
 									</Label>
-									<a
-										href="#"
-										onClick={(e) => {
-											e.preventDefault();
-											handleForgotPassword();
-										}}
-										className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
-									>
-										Forgot your password?
-									</a>
+									<div className="space-x-4">
+										<a
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												handleForgotPassword();
+											}}
+											className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+										>
+											Forgot Password?
+										</a>
+										<a
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												setShowForgotLRN(true);
+											}}
+											className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+										>
+											Forgot LRN?
+										</a>
+									</div>
 								</div>
 								<div className="relative">
 									<Input

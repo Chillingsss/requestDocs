@@ -10,6 +10,7 @@ import {
 	Calendar,
 	FolderOpen,
 	Menu,
+	Key,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
@@ -18,6 +19,7 @@ import toast, { Toaster } from "react-hot-toast";
 import ProcessedRequest from "./modal/ProcessedRequest";
 import StudentsTab from "./components/StudentsTab";
 import DocumentsTab from "./components/DocumentsTab";
+import LrnRequestsTab from "./components/LrnRequestsTab";
 import ThemeToggle from "../../components/ThemeToggle";
 import Sidebar from "../../components/shared/Sidebar";
 import { getStudent } from "../../utils/teacher";
@@ -35,6 +37,7 @@ export default function RegistrarDashboard() {
 	const [customDate, setCustomDate] = useState("");
 	const [activeTab, setActiveTab] = useState("requests");
 	const [refreshTrigger, setRefreshTrigger] = useState(0);
+	const [students, setStudents] = useState([]);
 	const navigate = useNavigate();
 
 	// Get userId from cookie
@@ -80,6 +83,11 @@ export default function RegistrarDashboard() {
 			label: "Documents",
 			key: "documents",
 		},
+		{
+			icon: <Key className="w-5 h-5" />,
+			label: "LRN Requests",
+			key: "lrn_requests",
+		},
 	];
 
 	// Initialize sidebar state based on screen size
@@ -114,7 +122,7 @@ export default function RegistrarDashboard() {
 	const fetchData = async () => {
 		setLoading(true);
 		try {
-			const [requestsData, statsData] = await Promise.all([
+			const [requestsData, statsData, studentsData] = await Promise.all([
 				getAllRequests(),
 				getRequestStats(),
 				getStudent(),
@@ -122,6 +130,7 @@ export default function RegistrarDashboard() {
 
 			setRecentRequests(Array.isArray(requestsData) ? requestsData : []);
 			setRequestStats(Array.isArray(statsData) ? statsData : []);
+			setStudents(Array.isArray(studentsData) ? studentsData : []);
 
 			// Trigger refresh for StudentsTab and other components
 			setRefreshTrigger((prev) => prev + 1);
@@ -642,6 +651,9 @@ export default function RegistrarDashboard() {
 					) : activeTab === "documents" ? (
 						/* Documents Tab - New component for student documents */
 						<DocumentsTab />
+					) : activeTab === "lrn_requests" ? (
+						/* LRN Requests Tab */
+						<LrnRequestsTab userId={userId} students={students} />
 					) : null}
 				</div>
 

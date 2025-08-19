@@ -1190,6 +1190,205 @@ class User {
     }
   }
 
+  // Add this to the User class in registrar.php
+function addForgotLrnRequest($json)
+{
+  include "connection.php";
+  
+  $json = json_decode($json, true);
+  $firstname = $json['firstname'];
+  $lastname = $json['lastname'];
+  $email = $json['email'];
+  
+  try {
+    $sql = "INSERT INTO tblforgotlrn (firstname, lastname, email) 
+            VALUES (:firstname, :lastname, :email)";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':firstname', $firstname);
+    $stmt->bindParam(':lastname', $lastname);
+    $stmt->bindParam(':email', $email);
+    
+    if ($stmt->execute()) {
+      return json_encode(['success' => true, 'message' => 'Request submitted successfully']);
+    }
+    return json_encode(['error' => 'Failed to submit request']);
+    
+  } catch (PDOException $e) {
+    return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+  }
+}
+
+function getForgotLrnRequests()
+{
+  include "connection.php";
+  
+  try {
+    $sql = "SELECT f.*, u.firstname as processed_by_name 
+            FROM tblforgotlrn f 
+            LEFT JOIN tbluser u ON f.processed_by = u.id 
+            ORDER BY f.created_at DESC";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    
+    if ($stmt->rowCount() > 0) {
+      $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      return json_encode($requests);
+    }
+    return json_encode([]);
+    
+  } catch (PDOException $e) {
+    return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+  }
+}
+
+function processLrnRequest($json)
+{
+  include "connection.php";
+  include "vendor/autoload.php";
+  
+  $json = json_decode($json, true);
+  $requestId = $json['requestId'];
+  $userId = $json['userId'];
+  $studentId = $json['studentId']; // Add this to accept the selected student's ID
+  $lrn = $json['lrn']; // Add this to accept the selected student's LRN
+  
+  try {
+    $conn->beginTransaction();
+    
+    // Get the request details
+    $sql = "SELECT f.* 
+            FROM tblforgotlrn f
+            WHERE f.id = :requestId";
+            
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':requestId', $requestId);
+    $stmt->execute();
+    
+    if ($stmt->rowCount() == 0) {
+      $conn->rollBack();
+      return json_encode(['error' => 'Request not found']);
+    }
+    
+    $requestData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $requestData['lrn'] = $lrn; // Add the selected LRN to the request data
+    
+    // Update request status
+    $updateSql = "UPDATE tblforgotlrn 
+                  SET is_processed = 1, 
+                      processed_by = :userId,
+                      processed_at = NOW() 
+                  WHERE id = :requestId";
+                  
+    $updateStmt = $conn->prepare($updateSql);
+    $updateStmt->bindParam(':userId', $userId);
+    $updateStmt->bindParam(':requestId', $requestId);
+    
+    if (!$updateStmt->execute()) {
+      $conn->rollBack();
+      return json_encode(['error' => 'Failed to update request status']);
+    }
+    
+    // Send email with LRN
+    $emailSent = $this->sendLrnEmail($requestData);
+    
+    if (!$emailSent) {
+      error_log("Failed to send LRN email for request ID: " . $requestId);
+    }
+    
+    $conn->commit();
+    return json_encode([
+      'success' => true,
+      'message' => 'Request processed successfully',
+      'emailSent' => $emailSent
+    ]);
+    
+  } catch (PDOException $e) {
+    $conn->rollBack();
+    return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+  }
+}
+
+function sendLrnEmail($requestData)
+{
+  try {
+    include_once "email_config.php";
+    
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
+    // Server settings
+    $mail->isSMTP();
+    $mail->Host = SMTP_HOST;
+    $mail->SMTPAuth = true;
+    $mail->Username = SMTP_USERNAME;
+    $mail->Password = SMTP_PASSWORD;
+    $mail->SMTPSecure = SMTP_SECURE === 'tls' ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+    $mail->Port = SMTP_PORT;
+    
+    // Recipients
+    $mail->setFrom(FROM_EMAIL, FROM_NAME);
+    $mail->addAddress($requestData['email']);
+    
+    // Content
+    $mail->isHTML(true);
+    $mail->Subject = EMAIL_SUBJECT_PREFIX . 'Your LRN Information';
+    
+    $mail->Body = "
+      <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+        <div style='background-color: #5409DA; color: white; padding: 20px; text-align: center;'>
+          <h1 style='margin: 0;'>MOGCHS Registrar Office</h1>
+        </div>
+        
+        <div style='padding: 30px; background-color: #f9f9f9;'>
+          <h2 style='color: #333; margin-bottom: 20px;'>LRN Information</h2>
+          
+          <p>Dear <strong>{$requestData['firstname']} {$requestData['lastname']}</strong>,</p>
+          
+          <p>As per your request, here is your Learner Reference Number (LRN):</p>
+          
+          <div style='background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #5409DA; margin: 20px 0;'>
+            <h3 style='color: #5409DA; margin: 0;'>Your LRN: {$requestData['lrn']}</h3>
+          </div>
+          
+          <p>Please keep this information secure and use it for future reference.</p>
+          
+          <p>Best regards,<br>
+          <strong>MOGCHS Registrar Office</strong></p>
+        </div>
+        
+        <div style='background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;'>
+          <p style='margin: 0;'>This is an automated message. Please do not reply to this email.</p>
+        </div>
+      </div>
+    ";
+    
+    $mail->AltBody = "
+      MOGCHS Registrar Office
+      
+      LRN Information
+      
+      Dear {$requestData['firstname']} {$requestData['lastname']},
+      
+      As per your request, here is your Learner Reference Number (LRN):
+      
+      Your LRN: {$requestData['lrn']}
+      
+      Please keep this information secure and use it for future reference.
+      
+      Best regards,
+      MOGCHS Registrar Office
+    ";
+    
+    $mail->send();
+    return true;
+    
+  } catch (Exception $e) {
+    error_log("Email sending failed: " . $e->getMessage());
+    return false;
+  }
+}
+
 }
 
 $operation = isset($_POST["operation"]) ? $_POST["operation"] : "0";
@@ -1261,6 +1460,15 @@ switch ($operation) {
   case "getReleaseSchedule":
     echo $user->getReleaseSchedule($json);
     break;
+  case "addForgotLrnRequest":
+    echo $user->addForgotLrnRequest($json);
+    break;
+  case "getForgotLrnRequests":
+    echo $user->getForgotLrnRequests();
+    break;
+  case "processLrnRequest":
+    echo $user->processLrnRequest($json);
+  break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");
     http_response_code(400); // Bad Request

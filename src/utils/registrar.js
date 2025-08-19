@@ -372,3 +372,62 @@ export async function getReleaseSchedule(requestId) {
 		throw error;
 	}
 }
+
+// Add to registrar.js
+export async function addForgotLrnRequest(firstname, lastname, email) {
+	const formData = new FormData();
+	formData.append("operation", "addForgotLrnRequest");
+	formData.append("json", JSON.stringify({ firstname, lastname, email }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getForgotLrnRequests() {
+	const formData = new FormData();
+	formData.append("operation", "getForgotLrnRequests");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function processLrnRequest(requestId, userId, studentId, lrn) {
+	const formData = new FormData();
+	formData.append("operation", "processLrnRequest");
+	formData.append(
+		"json",
+		JSON.stringify({
+			requestId,
+			userId,
+			studentId,
+			lrn,
+		})
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
