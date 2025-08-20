@@ -230,6 +230,73 @@ class User {
       if ($stmt->execute()) {
         $secondaryRequestId = $conn->lastInsertId();
         
+        // Handle file upload if attachments exist - attach to Diploma request since these are Diploma requirements
+        if (isset($_FILES['attachments'])) {
+          $uploadDir = 'requirements/';
+          
+          // Create directory if it doesn't exist
+          if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+          }
+
+          $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+          $uploadedFiles = 0;
+
+          // Handle multiple files
+          $fileCount = count($_FILES['attachments']['name']);
+          
+          for ($i = 0; $i < $fileCount; $i++) {
+            // Skip if no file or error
+            if ($_FILES['attachments']['error'][$i] !== UPLOAD_ERR_OK) {
+              continue;
+            }
+
+            $originalFileName = $_FILES['attachments']['name'][$i];
+            $fileTmpName = $_FILES['attachments']['tmp_name'][$i];
+            $fileSize = $_FILES['attachments']['size'][$i];
+            
+            $fileExtension = pathinfo($originalFileName, PATHINFO_EXTENSION);
+            
+            // Validate file type
+            if (!in_array(strtolower($fileExtension), $allowedTypes)) {
+              throw new PDOException("Invalid file type for '$originalFileName'. Only JPG, PNG, GIF, and PDF files are allowed.");
+            }
+
+            // Check file size (max 5MB per file)
+            if ($fileSize > 5 * 1024 * 1024) {
+              throw new PDOException("File size too large for '$originalFileName'. Maximum size is 5MB per file.");
+            }
+
+            // Keep original filename
+            $filePath = $uploadDir . $originalFileName;
+
+            if (move_uploaded_file($fileTmpName, $filePath)) {
+              // Get the corresponding typeId for this file
+              $currentTypeId = isset($json['typeIds'][$i]) ? $json['typeIds'][$i] : null;
+              
+              if (!$currentTypeId) {
+                throw new PDOException("Missing requirement type for file '$originalFileName'");
+              }
+
+              // Insert into tblrequirements for the secondary request (Diploma)
+              $reqSql = "INSERT INTO tblrequirements (requestId, filepath, typeId, createdAt) VALUES (:requestId, :filepath, :typeId, :datetime)";
+              $reqStmt = $conn->prepare($reqSql);
+              $reqStmt->bindParam(':requestId', $secondaryRequestId);
+              $reqStmt->bindParam(':filepath', $originalFileName);
+              $reqStmt->bindParam(':typeId', $currentTypeId);
+              $reqStmt->bindParam(':datetime', $philippineDateTime);
+              
+              if ($reqStmt->execute()) {
+                $uploadedFiles++;
+              } else {
+                throw new PDOException("Failed to save file information for '$originalFileName' to database");
+              }
+            } else {
+              throw new PDOException("Failed to upload file '$originalFileName'");
+            }
+          }
+        }
+        
         // Insert status for secondary request
         $statusSql = "INSERT INTO tblrequeststatus (requestId, statusId, createdAt) VALUES (:requestId, :statusId, :datetime)";
         $statusStmt = $conn->prepare($statusSql);
@@ -247,73 +314,6 @@ class User {
 
         if ($stmt2->execute()) {
           $primaryRequestId = $conn->lastInsertId();
-          
-          // Handle file upload if attachments exist
-          if (isset($_FILES['attachments'])) {
-            $uploadDir = 'requirements/';
-            
-            // Create directory if it doesn't exist
-            if (!file_exists($uploadDir)) {
-              mkdir($uploadDir, 0777, true);
-            }
-
-            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
-            $uploadedFiles = 0;
-
-            // Handle multiple files
-            $fileCount = count($_FILES['attachments']['name']);
-            
-            for ($i = 0; $i < $fileCount; $i++) {
-              // Skip if no file or error
-              if ($_FILES['attachments']['error'][$i] !== UPLOAD_ERR_OK) {
-                continue;
-              }
-
-              $originalFileName = $_FILES['attachments']['name'][$i];
-              $fileTmpName = $_FILES['attachments']['tmp_name'][$i];
-              $fileSize = $_FILES['attachments']['size'][$i];
-              
-              $fileExtension = pathinfo($originalFileName, PATHINFO_EXTENSION);
-              
-              // Validate file type
-              if (!in_array(strtolower($fileExtension), $allowedTypes)) {
-                throw new PDOException("Invalid file type for '$originalFileName'. Only JPG, PNG, GIF, and PDF files are allowed.");
-              }
-
-              // Check file size (max 5MB per file)
-              if ($fileSize > 5 * 1024 * 1024) {
-                throw new PDOException("File size too large for '$originalFileName'. Maximum size is 5MB per file.");
-              }
-
-              // Keep original filename
-              $filePath = $uploadDir . $originalFileName;
-
-              if (move_uploaded_file($fileTmpName, $filePath)) {
-                // Get the corresponding typeId for this file
-                $currentTypeId = isset($json['typeIds'][$i]) ? $json['typeIds'][$i] : null;
-                
-                if (!$currentTypeId) {
-                  throw new PDOException("Missing requirement type for file '$originalFileName'");
-                }
-
-                // Insert into tblrequirements for the primary request (CAV)
-                $reqSql = "INSERT INTO tblrequirements (requestId, filepath, typeId, createdAt) VALUES (:requestId, :filepath, :typeId, :datetime)";
-                $reqStmt = $conn->prepare($reqSql);
-                $reqStmt->bindParam(':requestId', $primaryRequestId);
-                $reqStmt->bindParam(':filepath', $originalFileName);
-                $reqStmt->bindParam(':typeId', $currentTypeId);
-                $reqStmt->bindParam(':datetime', $philippineDateTime);
-                
-                if ($reqStmt->execute()) {
-                  $uploadedFiles++;
-                } else {
-                  throw new PDOException("Failed to save file information for '$originalFileName' to database");
-                }
-              } else {
-                throw new PDOException("Failed to upload file '$originalFileName'");
-              }
-            }
-          }
           
           // Insert status for primary request
           $statusStmt2 = $conn->prepare($statusSql);

@@ -28,6 +28,9 @@ export default function RequestDocuments({
 	const [documentRequirements, setDocumentRequirements] = useState([]);
 	const [loadingDocumentRequirements, setLoadingDocumentRequirements] =
 		useState(false);
+	const [secondaryRequirements, setSecondaryRequirements] = useState([]);
+	const [loadingSecondaryRequirements, setLoadingSecondaryRequirements] =
+		useState(false);
 
 	// Fetch documents and request types when modal opens
 	React.useEffect(() => {
@@ -66,8 +69,9 @@ export default function RequestDocuments({
 	// Get filtered requirement types based on selected document
 	const getFilteredRequirementTypes = () => {
 		// If we have dynamic document requirements, use those
-		if (documentRequirements && documentRequirements.length > 0) {
-			return documentRequirements.map((req) => ({
+		const activeReqs = getActiveRequirements();
+		if (activeReqs && activeReqs.length > 0) {
+			return activeReqs.map((req) => ({
 				id: req.requirementId,
 				nameType: req.requirementName,
 			}));
@@ -95,10 +99,20 @@ export default function RequestDocuments({
 		return requestTypes;
 	};
 
+	// Get active requirements depending on selection
+	const getActiveRequirements = () => {
+		const isCav = getSelectedDocumentName().toLowerCase().includes("cav");
+		if (isCav && requestBothDocuments && secondaryRequirements.length > 0) {
+			return secondaryRequirements;
+		}
+		return documentRequirements;
+	};
+
 	// Check if selected document requires attachments
 	const requiresAttachments = () => {
-		// If we have document requirements from the database, use that
-		if (documentRequirements && documentRequirements.length > 0) {
+		// If we have active requirements from the database, use that
+		const activeReqs = getActiveRequirements();
+		if (activeReqs && activeReqs.length > 0) {
 			return true;
 		}
 
@@ -171,6 +185,8 @@ export default function RequestDocuments({
 		setPurpose("");
 		setSelectedFiles([]);
 		setDocumentRequirements([]);
+		setSecondaryRequirements([]);
+		setRequestBothDocuments(false);
 
 		// Reset file inputs
 		const fileInput = document.getElementById("file-upload");
@@ -230,14 +246,12 @@ export default function RequestDocuments({
 			const fileObjects = files.map((file, index) => {
 				let typeId = "";
 
-				if (documentRequirements && documentRequirements.length > 0) {
+				const activeReqs = getActiveRequirements();
+				if (activeReqs && activeReqs.length > 0) {
 					// If we have multiple requirements, assign them in order
 					// If more files than requirements, use the first requirement as default
-					const requirementIndex = Math.min(
-						index,
-						documentRequirements.length - 1
-					);
-					typeId = documentRequirements[requirementIndex]?.requirementId || "";
+					const requirementIndex = Math.min(index, activeReqs.length - 1);
+					typeId = activeReqs[requirementIndex]?.requirementId || "";
 				} else {
 					// Fallback to old logic
 					const isDiploma = getSelectedDocumentName()
@@ -298,12 +312,13 @@ export default function RequestDocuments({
 			const newFileObjects = newFiles.map((file, index) => {
 				let typeId = "";
 
-				if (documentRequirements && documentRequirements.length > 0) {
+				const activeReqs = getActiveRequirements();
+				if (activeReqs && activeReqs.length > 0) {
 					// For additional files, cycle through available requirements
 					const currentFileCount = selectedFiles.length;
 					const requirementIndex =
-						(currentFileCount + index) % documentRequirements.length;
-					typeId = documentRequirements[requirementIndex]?.requirementId || "";
+						(currentFileCount + index) % activeReqs.length;
+					typeId = activeReqs[requirementIndex]?.requirementId || "";
 				} else {
 					// Fallback to old logic
 					const isDiploma = getSelectedDocumentName()
@@ -429,6 +444,7 @@ export default function RequestDocuments({
 			setSelectedFiles([]);
 			setRequestBothDocuments(false);
 			setDocumentRequirements([]);
+			setSecondaryRequirements([]);
 			// Reset file inputs
 			const fileInput = document.getElementById("file-upload");
 			const addMoreInput = document.getElementById("add-more-files");
@@ -450,6 +466,7 @@ export default function RequestDocuments({
 		setSelectedFiles([]);
 		setRequestBothDocuments(false);
 		setDocumentRequirements([]);
+		setSecondaryRequirements([]);
 		// Reset file inputs
 		const fileInput = document.getElementById("file-upload");
 		const addMoreInput = document.getElementById("add-more-files");
@@ -590,6 +607,19 @@ export default function RequestDocuments({
 													" (Optional)"
 												))}
 										</Label>
+										{getActiveRequirements() &&
+											getActiveRequirements().length > 0 && (
+												<div className="p-2 mb-2 bg-green-50 rounded border border-green-200 dark:bg-green-900 dark:border-green-800">
+													<p className="text-xs text-green-800 dark:text-green-200">
+														Required document(s):{" "}
+														<b>
+															{getActiveRequirements()
+																.map((req) => req.requirementName)
+																.join(", ")}
+														</b>
+													</p>
+												</div>
+											)}
 										{/* Only show file input and file management for non-SF10 */}
 										<Input
 											type="file"
@@ -640,9 +670,35 @@ export default function RequestDocuments({
 														type="checkbox"
 														id="requestBothDocuments"
 														checked={requestBothDocuments}
-														onChange={(e) =>
-															setRequestBothDocuments(e.target.checked)
-														}
+														onChange={async (e) => {
+															const checked = e.target.checked;
+															setRequestBothDocuments(checked);
+															if (checked) {
+																// find diploma document id
+																const diplomaDoc = documents.find((d) =>
+																	(String(d.name) || "")
+																		.toLowerCase()
+																		.includes("diploma")
+																);
+																if (diplomaDoc) {
+																	setLoadingSecondaryRequirements(true);
+																	try {
+																		const reqs = await getDocumentRequirements(
+																			diplomaDoc.id
+																		);
+																		setSecondaryRequirements(
+																			Array.isArray(reqs) ? reqs : []
+																		);
+																	} catch (err) {
+																		setSecondaryRequirements([]);
+																	} finally {
+																		setLoadingSecondaryRequirements(false);
+																	}
+																}
+															} else {
+																setSecondaryRequirements([]);
+															}
+														}}
 														className="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-400"
 													/>
 													<div className="flex-1">
@@ -671,8 +727,9 @@ export default function RequestDocuments({
 										<p className="text-sm text-green-800 dark:text-green-200">
 											Please bring{" "}
 											<strong>
-												{documentRequirements && documentRequirements.length > 0
-													? documentRequirements
+												{getActiveRequirements() &&
+												getActiveRequirements().length > 0
+													? getActiveRequirements()
 															.map((req) => req.requirementName)
 															.join(", ")
 													: "Request Letter"}

@@ -266,6 +266,19 @@ export default function RegistrarDashboard() {
 		}
 	};
 
+	const formatShortDateTime = (dateString) => {
+		if (!dateString) return "";
+		const date = new Date(dateString);
+		if (isNaN(date.getTime())) return String(dateString);
+		return date.toLocaleString("en-US", {
+			month: "short",
+			day: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit",
+			hour12: true,
+		});
+	};
+
 	// Handle row click to open modal
 	const handleRequestClick = (request) => {
 		setSelectedRequest(request);
@@ -602,7 +615,7 @@ export default function RegistrarDashboard() {
 																</div>
 															</td>
 															<td className="hidden px-3 py-3 lg:px-4 lg:py-2 sm:table-cell">
-																{req.dateRequested}
+																{formatShortDateTime(req.dateRequested)}
 															</td>
 															<td className="px-3 py-3 lg:px-4 lg:py-2">
 																{req.status === "Pending" && (

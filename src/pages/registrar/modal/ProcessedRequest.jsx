@@ -17,6 +17,7 @@ import {
 	updateStudentInfo,
 	getReleaseSchedule,
 } from "../../../utils/registrar";
+import { getUserRequests } from "../../../utils/student";
 import toast from "react-hot-toast";
 import StudentDocumentsSection from "../components/StudentDocumentsSection";
 import AttachmentsSection from "../components/AttachmentsSection";
@@ -46,6 +47,7 @@ export default function ProcessedRequest({
 	const [showReleaseSchedule, setShowReleaseSchedule] = useState(false);
 	const [currentRequest, setCurrentRequest] = useState(request);
 	const [releaseSchedule, setReleaseSchedule] = useState(null);
+	const [doubleRequestNote, setDoubleRequestNote] = useState(null);
 
 	// Update currentRequest when request prop changes
 	useEffect(() => {
@@ -131,6 +133,66 @@ export default function ProcessedRequest({
 		}
 	};
 
+	// Detect if this CAV request is part of a combined request with Diploma on the same date (no attachments yet)
+	const detectCombinedCavDiploma = async () => {
+		try {
+			if (!currentRequest || !isCavRequest()) {
+				setDoubleRequestNote(null);
+				return;
+			}
+
+			// Load all requests for this student
+			// We need the studentId, but currentRequest only has requestId. The API getUserRequests expects userId (studentId)
+			// currentRequest does not include studentId here, so we infer via getStudentInfo endpoint we already called (which returned student data)
+			// However getStudentInfo in registrar utils takes requestId and returns student info including id, strand, etc.
+			// We already set studentInfo in fetchStudentInfo(). Use it if available.
+
+			// If studentInfo not yet loaded, skip
+			if (!studentInfo || !studentInfo.id) {
+				setDoubleRequestNote(null);
+				return;
+			}
+
+			const allRequests = await getUserRequests(studentInfo.id);
+			if (!Array.isArray(allRequests)) {
+				setDoubleRequestNote(null);
+				return;
+			}
+
+			// Find requests on the same date for Diploma and CAV
+			const sameDay = (a, b) =>
+				String(a.dateRequested) === String(b.dateRequested);
+			const isDiploma = (r) =>
+				(r.document || "").toLowerCase().includes("diploma");
+			const isCav = (r) => (r.document || "").toLowerCase().includes("cav");
+
+			const thisReq = allRequests.find(
+				(r) => Number(r.id) === Number(currentRequest.id)
+			);
+			if (!thisReq) {
+				setDoubleRequestNote(null);
+				return;
+			}
+
+			const pairedDiploma = allRequests.find(
+				(r) => isDiploma(r) && sameDay(r, thisReq)
+			);
+
+			// Show note only when attachments of current CAV are empty AND there is a paired Diploma same-day
+			if (pairedDiploma && attachments.length === 0) {
+				setDoubleRequestNote({
+					pairedDiplomaId: pairedDiploma.id,
+					date: thisReq.dateRequested,
+				});
+			} else {
+				setDoubleRequestNote(null);
+			}
+		} catch (e) {
+			console.error("Failed to detect combined CAV+Diploma request", e);
+			setDoubleRequestNote(null);
+		}
+	};
+
 	// Fetch attachments when modal opens
 	useEffect(() => {
 		if (isOpen && currentRequest) {
@@ -173,8 +235,16 @@ export default function ProcessedRequest({
 			fetchStudentDocuments();
 			fetchStudentInfo();
 			fetchReleaseSchedule();
+			detectCombinedCavDiploma(); // Call detectCombinedCavDiploma here
 		}
 	}, [isOpen, currentRequest]);
+
+	// Re-run detection when data changes
+	useEffect(() => {
+		if (isOpen) {
+			detectCombinedCavDiploma();
+		}
+	}, [isOpen, currentRequest, attachments, studentInfo]);
 
 	const handleProcess = async () => {
 		setProcessing(true);
@@ -509,6 +579,20 @@ export default function ProcessedRequest({
 		});
 	};
 
+	// Friendly short date-time (e.g., "Aug 20, 08:13 AM")
+	const formatShortDateTime = (dateString) => {
+		if (!dateString) return "";
+		const date = new Date(dateString);
+		if (isNaN(date.getTime())) return String(dateString);
+		return date.toLocaleString("en-US", {
+			month: "short",
+			day: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit",
+			hour12: true,
+		});
+	};
+
 	if (!isOpen || !currentRequest) return null;
 
 	return (
@@ -572,7 +656,7 @@ export default function ProcessedRequest({
 										</span>
 									</div>
 									<p className="text-lg font-semibold text-slate-900 dark:text-white">
-										{currentRequest.dateRequested}
+										{formatShortDateTime(currentRequest.dateRequested)}
 									</p>
 								</div>
 
@@ -812,6 +896,13 @@ export default function ProcessedRequest({
 								setGroupByType={setGroupByType}
 								openImageZoom={openImageZoom}
 								isImageFile={isImageFile}
+								note={
+									isCavRequest() &&
+									attachments.length === 0 &&
+									doubleRequestNote
+										? `Note: This looks like a combined request (Diploma + CAV) submitted on ${formatShortDateTime(currentRequest.dateRequested)}. Please process the Diploma first; once completed, proceed with the CAV.`
+										: undefined
+								}
 							/>
 						</div>
 					</div>
