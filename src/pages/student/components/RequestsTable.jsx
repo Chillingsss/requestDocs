@@ -60,7 +60,9 @@ const RequestsTable = ({
 											{req.releaseDateFormatted && (
 												<div className="flex items-center gap-1 mt-1 text-sm text-green-600 dark:text-green-400">
 													<Calendar className="w-3 h-3" />
-													<span>Release: {req.releaseDateFormatted}</span>
+													<span>
+														Releasing Date: {req.releaseDateFormatted}
+													</span>
 												</div>
 											)}
 										</div>
@@ -83,9 +85,6 @@ const RequestsTable = ({
 										<th className="px-4 py-3 font-semibold text-left text-slate-900 dark:text-white">
 											Progress
 										</th>
-										<th className="px-4 py-3 font-semibold text-left text-slate-900 dark:text-white">
-											Release Date
-										</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -94,7 +93,7 @@ const RequestsTable = ({
 											key={req.id}
 											className={`transition-colors ${
 												index !== userRequests.length - 1
-													? "border-b border-slate-100 dark:border-slate-700"
+													? "border-b border-slate-200 dark:border-slate-700"
 													: ""
 											}`}
 										>
@@ -102,23 +101,17 @@ const RequestsTable = ({
 												<div className="font-medium text-slate-900 dark:text-white">
 													{req.document}
 												</div>
+												{req.releaseDateFormatted && (
+													<div className="flex items-center gap-1 mt-1 text-sm text-green-600 dark:text-green-400">
+														<Calendar className="w-3 h-3" />
+														<span>
+															Releasing Date: {req.releaseDateFormatted}
+														</span>
+													</div>
+												)}
 											</td>
 											<td className="px-4 py-4">
 												<InlineTrackingProgress requestId={req.id} />
-											</td>
-											<td className="px-4 py-4">
-												{req.releaseDateFormatted ? (
-													<div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-														<Calendar className="w-4 h-4" />
-														<span className="font-medium">
-															{req.releaseDateFormatted}
-														</span>
-													</div>
-												) : (
-													<span className="text-slate-400 dark:text-slate-500 italic">
-														Not scheduled yet
-													</span>
-												)}
 											</td>
 										</tr>
 									))}

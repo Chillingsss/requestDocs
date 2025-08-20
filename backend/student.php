@@ -401,6 +401,40 @@ class User {
     return json_encode([]);
   }
 
+  function getDocumentRequirements($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $documentId = $json['documentId'];
+
+    try {
+      $sql = "SELECT 
+                dr.id,
+                dr.documentId,
+                dr.requirementTId,
+                rt.nameType as requirementName,
+                rt.id as requirementId
+              FROM tbldocumentrequirement dr
+              INNER JOIN tblrequirementstype rt ON dr.requirementTId = rt.id
+              WHERE dr.documentId = :documentId
+              ORDER BY rt.nameType";
+
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':documentId', $documentId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $requirements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return json_encode($requirements);
+      }
+      return json_encode([]);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
   function getRequestTracking($json)
   {
     include "connection.php";
@@ -561,6 +595,9 @@ switch ($operation) {
     break;
   case "getRequirementsType":
     echo $user->getRequirementsType();
+    break;
+  case "getDocumentRequirements":
+    echo $user->getDocumentRequirements($json);
     break;
   case "getRequestTracking":
     echo $user->getRequestTracking($json);

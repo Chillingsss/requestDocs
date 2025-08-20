@@ -5,6 +5,7 @@ import { Label } from "@radix-ui/react-label";
 import {
 	getDocuments,
 	getRequirementsType,
+	getDocumentRequirements,
 	addRequestDocument,
 	addCombinedRequestDocument,
 } from "../../../utils/student";
@@ -24,6 +25,9 @@ export default function RequestDocuments({
 	const [requestTypes, setRequestTypes] = useState([]);
 	const [loadingRequestTypes, setLoadingRequestTypes] = useState(false);
 	const [requestBothDocuments, setRequestBothDocuments] = useState(false);
+	const [documentRequirements, setDocumentRequirements] = useState([]);
+	const [loadingDocumentRequirements, setLoadingDocumentRequirements] =
+		useState(false);
 
 	// Fetch documents and request types when modal opens
 	React.useEffect(() => {
@@ -61,6 +65,15 @@ export default function RequestDocuments({
 
 	// Get filtered requirement types based on selected document
 	const getFilteredRequirementTypes = () => {
+		// If we have dynamic document requirements, use those
+		if (documentRequirements && documentRequirements.length > 0) {
+			return documentRequirements.map((req) => ({
+				id: req.requirementId,
+				nameType: req.requirementName,
+			}));
+		}
+
+		// Fallback to old logic for documents without requirements in database
 		const selectedDocName = getSelectedDocumentName().toLowerCase();
 
 		if (selectedDocName.includes("diploma")) {
@@ -68,7 +81,7 @@ export default function RequestDocuments({
 			return requestTypes.filter(
 				(type) =>
 					type.nameType &&
-					type.nameType.toLowerCase().includes("Affidavit of Loss")
+					type.nameType.toLowerCase().includes("affidavit of loss")
 			);
 		} else if (selectedDocName.includes("cav")) {
 			// For CAV, only show Diploma
@@ -84,6 +97,12 @@ export default function RequestDocuments({
 
 	// Check if selected document requires attachments
 	const requiresAttachments = () => {
+		// If we have document requirements from the database, use that
+		if (documentRequirements && documentRequirements.length > 0) {
+			return true;
+		}
+
+		// Fallback to old logic for documents without requirements in database
 		const selectedDocName = getSelectedDocumentName().toLowerCase();
 		return (
 			selectedDocName.includes("diploma") || selectedDocName.includes("cav")
@@ -147,15 +166,33 @@ export default function RequestDocuments({
 	};
 
 	// Handle document type change
-	const handleDocumentChange = (documentId) => {
+	const handleDocumentChange = async (documentId) => {
 		setSelectedDocument(documentId);
 		setPurpose("");
 		setSelectedFiles([]);
+		setDocumentRequirements([]);
+
 		// Reset file inputs
 		const fileInput = document.getElementById("file-upload");
 		const addMoreInput = document.getElementById("add-more-files");
 		if (fileInput) fileInput.value = "";
 		if (addMoreInput) addMoreInput.value = "";
+
+		// Fetch document requirements dynamically
+		if (documentId) {
+			setLoadingDocumentRequirements(true);
+			try {
+				const requirements = await getDocumentRequirements(documentId);
+				setDocumentRequirements(
+					Array.isArray(requirements) ? requirements : []
+				);
+			} catch (error) {
+				console.error("Failed to fetch document requirements:", error);
+				setDocumentRequirements([]);
+			} finally {
+				setLoadingDocumentRequirements(false);
+			}
+		}
 	};
 
 	const handleFileChange = (e) => {
@@ -189,22 +226,39 @@ export default function RequestDocuments({
 				return;
 			}
 
-			const isDiploma = getSelectedDocumentName()
-				.toLowerCase()
-				.includes("diploma");
-			const isCAV = getSelectedDocumentName().toLowerCase().includes("cav");
-			const affidavitTypeId = getAffidavitTypeId();
-			const diplomaTypeId = getRequiredTypeForCAVId();
-			console.log("=== File Upload Debug ===");
-			console.log("isDiploma:", isDiploma);
-			console.log("isCAV:", isCAV);
-			console.log("affidavitTypeId:", affidavitTypeId);
-			console.log("diplomaTypeId:", diplomaTypeId);
-			const fileObjects = files.map((file) => ({
-				file: file,
-				typeId: isDiploma ? affidavitTypeId : isCAV ? diplomaTypeId : "",
-			}));
-			console.log("Created fileObjects:", fileObjects);
+			// Use dynamic requirements if available, otherwise fallback to old logic
+			const fileObjects = files.map((file, index) => {
+				let typeId = "";
+
+				if (documentRequirements && documentRequirements.length > 0) {
+					// If we have multiple requirements, assign them in order
+					// If more files than requirements, use the first requirement as default
+					const requirementIndex = Math.min(
+						index,
+						documentRequirements.length - 1
+					);
+					typeId = documentRequirements[requirementIndex]?.requirementId || "";
+				} else {
+					// Fallback to old logic
+					const isDiploma = getSelectedDocumentName()
+						.toLowerCase()
+						.includes("diploma");
+					const isCAV = getSelectedDocumentName().toLowerCase().includes("cav");
+					const affidavitTypeId = getAffidavitTypeId();
+					const diplomaTypeId = getRequiredTypeForCAVId();
+					typeId = isDiploma ? affidavitTypeId : isCAV ? diplomaTypeId : "";
+				}
+
+				return {
+					file: file,
+					typeId: typeId,
+				};
+			});
+
+			console.log(
+				"Created fileObjects with dynamic requirements:",
+				fileObjects
+			);
 			setSelectedFiles(fileObjects);
 		}
 	};
@@ -240,16 +294,33 @@ export default function RequestDocuments({
 				return;
 			}
 
-			const isDiploma = getSelectedDocumentName()
-				.toLowerCase()
-				.includes("diploma");
-			const isCAV = getSelectedDocumentName().toLowerCase().includes("cav");
-			const affidavitTypeId = getAffidavitTypeId();
-			const diplomaTypeId = getRequiredTypeForCAVId();
-			const newFileObjects = newFiles.map((file) => ({
-				file: file,
-				typeId: isDiploma ? affidavitTypeId : isCAV ? diplomaTypeId : "",
-			}));
+			// Use dynamic requirements if available, otherwise fallback to old logic
+			const newFileObjects = newFiles.map((file, index) => {
+				let typeId = "";
+
+				if (documentRequirements && documentRequirements.length > 0) {
+					// For additional files, cycle through available requirements
+					const currentFileCount = selectedFiles.length;
+					const requirementIndex =
+						(currentFileCount + index) % documentRequirements.length;
+					typeId = documentRequirements[requirementIndex]?.requirementId || "";
+				} else {
+					// Fallback to old logic
+					const isDiploma = getSelectedDocumentName()
+						.toLowerCase()
+						.includes("diploma");
+					const isCAV = getSelectedDocumentName().toLowerCase().includes("cav");
+					const affidavitTypeId = getAffidavitTypeId();
+					const diplomaTypeId = getRequiredTypeForCAVId();
+					typeId = isDiploma ? affidavitTypeId : isCAV ? diplomaTypeId : "";
+				}
+
+				return {
+					file: file,
+					typeId: typeId,
+				};
+			});
+
 			setSelectedFiles((prev) => [...prev, ...newFileObjects]);
 			e.target.value = "";
 		}
@@ -357,6 +428,7 @@ export default function RequestDocuments({
 			setPurpose("");
 			setSelectedFiles([]);
 			setRequestBothDocuments(false);
+			setDocumentRequirements([]);
 			// Reset file inputs
 			const fileInput = document.getElementById("file-upload");
 			const addMoreInput = document.getElementById("add-more-files");
@@ -377,6 +449,7 @@ export default function RequestDocuments({
 		setPurpose("");
 		setSelectedFiles([]);
 		setRequestBothDocuments(false);
+		setDocumentRequirements([]);
 		// Reset file inputs
 		const fileInput = document.getElementById("file-upload");
 		const addMoreInput = document.getElementById("add-more-files");
@@ -535,17 +608,22 @@ export default function RequestDocuments({
 											<div className="p-2 mt-2 bg-red-50 rounded border border-red-200 dark:bg-red-900 dark:border-red-800">
 												<p className="text-xs text-red-600 dark:text-red-400">
 													⚠️ This document type requires file attachments.
-													Please upload the required document:{" "}
+													Please upload the required documents:{" "}
 													<b>
-														{getSelectedDocumentName()
-															.toLowerCase()
-															.includes("diploma")
+														{documentRequirements &&
+														documentRequirements.length > 0
+															? documentRequirements
+																	.map((req) => req.requirementName)
+																	.join(", ")
+															: getSelectedDocumentName()
+																	.toLowerCase()
+																	.includes("diploma")
 															? getRequiredTypeForDiploma()
 															: getSelectedDocumentName()
 																	.toLowerCase()
 																	.includes("cav")
 															? getRequiredTypeForCAV()
-															: "the required document"}
+															: "the required documents"}
 													</b>
 													.
 												</p>
@@ -587,12 +665,19 @@ export default function RequestDocuments({
 									</div>
 								)}
 
-								{/* SF10: Only show the request letter note, no label or other notes */}
+								{/* SF10: Show dynamic requirements note (no uploads) */}
 								{isSF10Document() && (
 									<div className="p-3 mb-3 bg-green-50 rounded-lg border border-green-200 dark:bg-green-900 dark:border-green-800">
 										<p className="text-sm text-green-800 dark:text-green-200">
-											Please bring a <strong>Request Letter</strong> to the
-											office when you collect your document.
+											Please bring{" "}
+											<strong>
+												{documentRequirements && documentRequirements.length > 0
+													? documentRequirements
+															.map((req) => req.requirementName)
+															.join(", ")
+													: "Request Letter"}
+											</strong>{" "}
+											to the office when you collect your document.
 										</p>
 									</div>
 								)}
@@ -666,9 +751,44 @@ export default function RequestDocuments({
 																		*
 																	</span>
 																</Label>
-																{getSelectedDocumentName()
-																	.toLowerCase()
-																	.includes("diploma") ? (
+																{documentRequirements &&
+																documentRequirements.length > 0 ? (
+																	// Show dynamic requirements
+																	documentRequirements.length === 1 ? (
+																		<div className="text-xs font-semibold text-slate-700 dark:text-slate-400">
+																			Requirement Type:{" "}
+																			{documentRequirements[0].requirementName}
+																		</div>
+																	) : (
+																		<select
+																			id={`requirement-type-${index}`}
+																			value={fileObj.typeId}
+																			onChange={(e) =>
+																				updateFileTypeId(index, e.target.value)
+																			}
+																			className="block px-2 py-1 w-full text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
+																			required
+																			disabled={loadingDocumentRequirements}
+																		>
+																			<option value="">
+																				{loadingDocumentRequirements
+																					? "Loading..."
+																					: "Select requirement type"}
+																			</option>
+																			{documentRequirements.map((req) => (
+																				<option
+																					key={req.requirementId}
+																					value={req.requirementId}
+																				>
+																					{req.requirementName}
+																				</option>
+																			))}
+																		</select>
+																	)
+																) : // Fallback to old logic
+																getSelectedDocumentName()
+																		.toLowerCase()
+																		.includes("diploma") ? (
 																	<div className="text-xs font-semibold text-slate-700 dark:text-slate-400">
 																		Requirement Type:{" "}
 																		{getRequiredTypeForDiploma()}
