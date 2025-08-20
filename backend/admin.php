@@ -66,12 +66,27 @@ class User {
     if ($stmt->rowCount() > 0) {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if (password_verify($json['password'], $user['password'])) {
-            // Check if password is still the default (lastname)
+            // Debug logging
+            error_log("Student login attempt - User: " . $user['id'] . ", Lastname: " . $user['lastname'] . ", Input password: " . $json['password']);
+            error_log("Student email: " . ($user['email'] ? $user['email'] : 'NULL'));
+            
+            // First check if student has email - if no email, they need to set it up
+            if (empty($user['email'])) {
+                error_log("Student has no email, needs email setup: " . $user['id']);
+                return json_encode([
+                    'id' => $user['id'],
+                    'firstname' => $user['firstname'],
+                    'lastname' => $user['lastname'],
+                    'email' => $user['email'],
+                    'userLevel' => $user['userLevel'],
+                    'needsEmailSetup' => true
+                ]);
+            }
+            
+            // Student has email, now check if password is still the default (lastname)
             $lastnameLower = strtolower($user['lastname']);
             $inputPasswordLower = strtolower($json['password']);
             
-            // Debug logging
-            error_log("Student login attempt - User: " . $user['id'] . ", Lastname: " . $user['lastname'] . ", Input password: " . $json['password']);
             error_log("Student password comparison - Lastname lower: " . $lastnameLower . ", Input lower: " . $inputPasswordLower);
             
             // Check if password matches lastname (case-insensitive)
@@ -86,6 +101,7 @@ class User {
                     'needsPasswordReset' => true
                 ]);
             }
+            
             error_log("Normal student login for user: " . $user['id']);
             return json_encode([
                 'id' => $user['id'],
@@ -216,6 +232,182 @@ class User {
     return json_encode(['status' => 'success', 'valid' => true]);
    }
    
+   function checkStudentEmail($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $userId = $json['userId'];
+    
+    // Check if student has email in database
+    $sql = "SELECT email FROM tblstudent WHERE id = :userId";
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':userId', $userId);
+    $stmt->execute();
+    
+    if ($stmt->rowCount() > 0) {
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $hasEmail = !empty($user['email']);
+        
+        return json_encode([
+            'status' => 'success',
+            'hasEmail' => $hasEmail,
+            'email' => $hasEmail ? $user['email'] : null
+        ]);
+    }
+    
+    return json_encode(['status' => 'error', 'message' => 'Student not found']);
+   }
+
+   function checkEmailAvailability($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $email = $json['email'];
+    $excludeUserId = isset($json['excludeUserId']) ? $json['excludeUserId'] : null;
+    
+    // Validate email format
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return json_encode(['status' => 'error', 'message' => 'Invalid email format']);
+    }
+    
+    // Check in tblstudent
+    $studentSql = "SELECT id FROM tblstudent WHERE email = :email";
+    if ($excludeUserId) {
+        $studentSql .= " AND id != :excludeUserId";
+    }
+    $studentStmt = $conn->prepare($studentSql);
+    $studentStmt->bindParam(':email', $email);
+    if ($excludeUserId) {
+        $studentStmt->bindParam(':excludeUserId', $excludeUserId);
+    }
+    $studentStmt->execute();
+    
+    if ($studentStmt->rowCount() > 0) {
+        return json_encode([
+            'status' => 'success',
+            'available' => false,
+            'message' => 'Email is already in use by another student'
+        ]);
+    }
+    
+    // Check in tbluser
+    $userSql = "SELECT id FROM tbluser WHERE email = :email";
+    $userStmt = $conn->prepare($userSql);
+    $userStmt->bindParam(':email', $email);
+    $userStmt->execute();
+    
+    if ($userStmt->rowCount() > 0) {
+        return json_encode([
+            'status' => 'success',
+            'available' => false,
+            'message' => 'Email is already in use by another user in the system'
+        ]);
+    }
+    
+    return json_encode([
+        'status' => 'success',
+        'available' => true,
+        'message' => 'Email is available'
+    ]);
+   }
+
+   function setupStudentEmail($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $userId = $json['userId'];
+    $email = $json['email'];
+    
+    // Validate email format
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return json_encode(['status' => 'error', 'message' => 'Invalid email format']);
+    }
+    
+    // Check if email is already used by another student
+    $checkSql = "SELECT id FROM tblstudent WHERE email = :email AND id != :userId";
+    $checkStmt = $conn->prepare($checkSql);
+    $checkStmt->bindParam(':email', $email);
+    $checkStmt->bindParam(':userId', $userId);
+    $checkStmt->execute();
+    
+    if ($checkStmt->rowCount() > 0) {
+        return json_encode(['status' => 'error', 'message' => 'Email is already in use by another student']);
+    }
+    
+    // Check if email is already used by a user (admin/teacher/registrar)
+    $checkUserSql = "SELECT id FROM tbluser WHERE email = :email";
+    $checkUserStmt = $conn->prepare($checkUserSql);
+    $checkUserStmt->bindParam(':email', $email);
+    $checkUserStmt->execute();
+    
+    if ($checkUserStmt->rowCount() > 0) {
+        return json_encode(['status' => 'error', 'message' => 'Email is already in use by another user in the system']);
+    }
+    
+    // Generate 6-digit OTP
+    $otp = sprintf("%06d", mt_rand(0, 999999));
+    
+    // Get student info for email
+    $sql = "SELECT firstname, lastname FROM tblstudent WHERE id = :userId";
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':userId', $userId);
+    $stmt->execute();
+    
+    if ($stmt->rowCount() > 0) {
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $fullName = $user['firstname'] . ' ' . $user['lastname'];
+        
+        // Send OTP email for email setup
+        $emailSent = $this->sendEmailSetupOTP($email, $fullName, $otp);
+        
+        if ($emailSent) {
+            return json_encode([
+                'status' => 'success',
+                'message' => 'OTP sent to your email for verification',
+                'otp' => $otp // Return OTP for frontend verification
+            ]);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to send OTP email']);
+        }
+    }
+    
+    return json_encode(['status' => 'error', 'message' => 'Student not found']);
+   }
+
+   function verifyEmailSetupOTP($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $userId = $json['userId'];
+    $email = $json['email'];
+    $otp = $json['otp'];
+    $inputOtp = $json['inputOtp'];
+    
+    // Verify OTP
+    if ($otp === $inputOtp) {
+        // Update student email
+        $sql = "UPDATE tblstudent SET email = :email WHERE id = :userId";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':userId', $userId);
+        
+        if ($stmt->execute()) {
+            return json_encode([
+                'status' => 'success',
+                'message' => 'Email verified and saved successfully'
+            ]);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to save email']);
+        }
+    } else {
+        return json_encode(['status' => 'error', 'message' => 'Invalid OTP']);
+    }
+   }
+
    function resetPassword($json)
    {
     include "connection.php";
@@ -251,6 +443,65 @@ class User {
    
    // Removed private function cleanupExpiredOTPs()
    
+   private function sendEmailSetupOTP($email, $fullName, $otp)
+   {
+    try {
+        require 'vendor/autoload.php';
+        
+        $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+        
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'ralp.pelino11@gmail.com';
+        $mail->Password = 'esip bjyt ymrh yhoq';
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port = 465;
+        
+        // Enable debug output
+        $mail->SMTPDebug = 0; // Set to 2 for debugging
+        
+        // Recipients
+        $mail->setFrom('noreply@mogchs.com', 'MOGCHS System');
+        $mail->addAddress($email, $fullName);
+        
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'Email Verification OTP - MOGCHS';
+        $mail->Body = "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                <div style='background-color: #f8f9fa; padding: 20px; text-align: center;'>
+                    <h2 style='color: #333;'>MOGCHS Email Verification</h2>
+                </div>
+                <div style='padding: 20px; background-color: #ffffff;'>
+                    <p>Dear <strong>$fullName</strong>,</p>
+                    <p>You are setting up your email address for the first time. Please use the following OTP to verify your email:</p>
+                    <div style='background-color: #f8f9fa; padding: 15px; text-align: center; margin: 20px 0;'>
+                        <h1 style='color: #007bff; font-size: 32px; letter-spacing: 5px; margin: 0;'>$otp</h1>
+                    </div>
+                    <p><strong>Important:</strong></p>
+                    <ul>
+                        <li>This OTP is valid for 10 minutes only</li>
+                        <li>Do not share this OTP with anyone</li>
+                        <li>After verification, you can proceed to reset your password</li>
+                    </ul>
+                    <p>Best regards,<br>MOGCHS System Administrator</p>
+                </div>
+                <div style='background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #666;'>
+                    This is an automated message. Please do not reply to this email.
+                </div>
+            </div>
+        ";
+        
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to send email setup OTP: " . $mail->ErrorInfo);
+        return false;
+    }
+   }
+
    private function sendOTPEmail($email, $fullName, $otp)
    {
     try {
@@ -976,6 +1227,18 @@ switch ($operation) {
     break;
   case "resetPassword":
     echo $user->resetPassword($json);
+    break;
+  case "checkStudentEmail":
+    echo $user->checkStudentEmail($json);
+    break;
+  case "checkEmailAvailability":
+    echo $user->checkEmailAvailability($json);
+    break;
+  case "setupStudentEmail":
+    echo $user->setupStudentEmail($json);
+    break;
+  case "verifyEmailSetupOTP":
+    echo $user->verifyEmailSetupOTP($json);
     break;
   case "addUser":
     echo $user->addUser($json);

@@ -15,7 +15,10 @@ import ForgotPassword from "../components/ForgotPassword";
 import ForgotLRN from "../components/ForgotLRN";
 import Captcha from "../components/Captcha";
 import ThemeToggle from "../components/ThemeToggle";
+import EmailSetup from "../components/EmailSetup";
 import toast, { Toaster } from "react-hot-toast";
+import axios from "axios";
+import { getDecryptedApiUrl } from "../utils/apiConfig";
 
 const COOKIE_KEY = "mogchs_user";
 const SECRET_KEY = "mogchs_secret_key";
@@ -29,6 +32,7 @@ export default function LoginPage() {
 	const [showPasswordReset, setShowPasswordReset] = useState(false);
 	const [showForgotPassword, setShowForgotPassword] = useState(false);
 	const [showForgotLRN, setShowForgotLRN] = useState(false);
+	const [showEmailSetup, setShowEmailSetup] = useState(false);
 	const [pendingUser, setPendingUser] = useState(null);
 	const [error, setError] = useState("");
 	const [showCaptcha, setShowCaptcha] = useState(false);
@@ -140,6 +144,7 @@ export default function LoginPage() {
 		setShowForgotPassword(false);
 		setShowForgotLRN(false);
 		setShowPasswordReset(false);
+		setShowEmailSetup(false);
 		setPendingUser(null);
 		setIsLoading(false);
 		// Reset form state
@@ -149,6 +154,65 @@ export default function LoginPage() {
 		setUsername("");
 		setPassword("");
 		setError("");
+	};
+
+	const checkStudentEmail = async (userId) => {
+		try {
+			const apiUrl = getDecryptedApiUrl();
+			const formData = new FormData();
+			formData.append("operation", "checkStudentEmail");
+			formData.append("json", JSON.stringify({ userId }));
+
+			const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+				headers: { "Content-Type": "multipart/form-data" },
+			});
+
+			console.log("Check email response:", response.data);
+			return response.data;
+		} catch (error) {
+			console.error("Error checking student email:", error);
+			throw error;
+		}
+	};
+
+	const handleEmailSetupComplete = async (updatedUser) => {
+		// Email setup completed, now check if password reset is needed
+		console.log("Email setup completed for user:", updatedUser);
+		setShowEmailSetup(false);
+
+		// Check if password matches lastname (needs reset)
+		const lastnameLower = updatedUser.lastname.toLowerCase();
+		const inputPasswordLower = password.toLowerCase();
+
+		if (inputPasswordLower === lastnameLower) {
+			// Password matches lastname, needs reset
+			console.log("Password matches lastname, proceeding to password reset");
+			setPendingUser(updatedUser);
+			setShowPasswordReset(true);
+			toast.success("Email verified! Now please reset your password.");
+		} else {
+			// Password doesn't match lastname, proceed to dashboard
+			console.log("Password doesn't match lastname, proceeding to dashboard");
+			const encrypted = CryptoJS.AES.encrypt(
+				JSON.stringify(updatedUser),
+				SECRET_KEY
+			).toString();
+			Cookies.set(COOKIE_KEY, encrypted, { expires: 1 }); // 1 day expiry
+			toast.success("Email verified! Welcome to Student Dashboard!");
+			navigate("/StudentDashboard");
+		}
+		setIsLoading(false);
+	};
+
+	const handleEmailSetupCancel = () => {
+		setShowEmailSetup(false);
+		setPendingUser(null);
+		setIsLoading(false);
+		// Reset form state
+		setShowCaptcha(false);
+		setCaptchaVerified(false);
+		setCaptchaError("");
+		toast.error("Email setup cancelled");
 	};
 
 	const handleSubmit = async (event) => {
@@ -187,11 +251,19 @@ export default function LoginPage() {
 			// Debug logging
 			console.log("Login response:", user);
 			console.log("needsPasswordReset:", user?.needsPasswordReset);
+			console.log("needsEmailSetup:", user?.needsEmailSetup);
 			console.log("userLevel:", user?.userLevel);
 
-			if (user && user.needsPasswordReset) {
-				// User needs password reset
-				console.log("Redirecting to password reset");
+			if (user && user.needsEmailSetup) {
+				// Student needs to set up email first
+				console.log("Student needs email setup");
+				setPendingUser(user);
+				setShowEmailSetup(true);
+				setIsLoading(false);
+				toast.success("Please set up your email address to continue.");
+			} else if (user && user.needsPasswordReset) {
+				// User needs password reset (email already exists)
+				console.log("User needs password reset");
 				setPendingUser(user);
 				setShowPasswordReset(true);
 				setIsLoading(false);
@@ -282,6 +354,20 @@ export default function LoginPage() {
 			<>
 				<Toaster position="top-right" />
 				<ForgotLRN onBackToLogin={handleBackToLogin} />
+			</>
+		);
+	}
+
+	// Show email setup screen if needed
+	if (showEmailSetup && pendingUser) {
+		return (
+			<>
+				<Toaster position="top-right" />
+				<EmailSetup
+					user={pendingUser}
+					onEmailSetupComplete={handleEmailSetupComplete}
+					onCancel={handleEmailSetupCancel}
+				/>
 			</>
 		);
 	}

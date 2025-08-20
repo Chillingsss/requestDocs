@@ -355,11 +355,14 @@ class User {
                 r.purpose,
                 DATE(r.createdAt) as dateRequested,
                 s.name as status,
-                s.id as statusId
+                s.id as statusId,
+                rs_schedule.dateSchedule as releaseDate,
+                DATE_FORMAT(rs_schedule.dateSchedule, '%M %d, %Y') as releaseDateFormatted
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
               INNER JOIN tblstatus s ON rs.statusId = s.id
+              LEFT JOIN tblreleaseschedule rs_schedule ON r.id = rs_schedule.requestId
               WHERE r.studentId = :userId
               AND rs.id = (
                 SELECT MAX(rs2.id) 

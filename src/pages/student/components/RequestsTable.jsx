@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, Calendar } from "lucide-react";
 import InlineTrackingProgress from "./InlineTrackingProgress";
 
 const RequestsTable = ({
@@ -57,6 +57,12 @@ const RequestsTable = ({
 											<h3 className="font-medium truncate text-slate-900 dark:text-white">
 												{req.document}
 											</h3>
+											{req.releaseDateFormatted && (
+												<div className="flex items-center gap-1 mt-1 text-sm text-green-600 dark:text-green-400">
+													<Calendar className="w-3 h-3" />
+													<span>Release: {req.releaseDateFormatted}</span>
+												</div>
+											)}
 										</div>
 									</div>
 									<div className="w-full">
@@ -77,6 +83,9 @@ const RequestsTable = ({
 										<th className="px-4 py-3 font-semibold text-left text-slate-900 dark:text-white">
 											Progress
 										</th>
+										<th className="px-4 py-3 font-semibold text-left text-slate-900 dark:text-white">
+											Release Date
+										</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -96,6 +105,20 @@ const RequestsTable = ({
 											</td>
 											<td className="px-4 py-4">
 												<InlineTrackingProgress requestId={req.id} />
+											</td>
+											<td className="px-4 py-4">
+												{req.releaseDateFormatted ? (
+													<div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+														<Calendar className="w-4 h-4" />
+														<span className="font-medium">
+															{req.releaseDateFormatted}
+														</span>
+													</div>
+												) : (
+													<span className="text-slate-400 dark:text-slate-500 italic">
+														Not scheduled yet
+													</span>
+												)}
 											</td>
 										</tr>
 									))}
