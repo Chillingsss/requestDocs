@@ -836,11 +836,11 @@ class User {
             $sectionGradeLevelId = $sectionResult['gradeLevelId'] ?? 1;
         }
 
-        // Insert into tblstudent
+        // Insert into tblstudent (with gradeLevelId)
         $sql = "INSERT INTO tblstudent (
-            id, firstname, middlename, lastname, lrn, email, password, userLevel, birthDate, age, religion, completeAddress, fatherName, motherName, guardianName, guardianRelationship, sectionId, schoolyearId, strandId, createdAt
+            id, firstname, middlename, lastname, lrn, email, password, userLevel, birthDate, age, religion, completeAddress, fatherName, motherName, guardianName, guardianRelationship, sectionId, schoolyearId, strandId, gradeLevelId, createdAt
         ) VALUES (
-            :id, :firstname, :middlename, :lastname, :lrn, :email, :password, :userLevel, :birthDate, :age, :religion, :completeAddress, :fatherName, :motherName, :guardianName, :guardianRelationship, :sectionId, :schoolyearId, :strandId, NOW()
+            :id, :firstname, :middlename, :lastname, :lrn, :email, :password, :userLevel, :birthDate, :age, :religion, :completeAddress, :fatherName, :motherName, :guardianName, :guardianRelationship, :sectionId, :schoolyearId, :strandId, :gradeLevelId, NOW()
         )";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':id', $studentId);
@@ -862,6 +862,7 @@ class User {
         $stmt->bindParam(':sectionId', $sectionId);
         $stmt->bindParam(':schoolyearId', $schoolYearId);
         $stmt->bindParam(':strandId', $json['strandId']);
+        $stmt->bindParam(':gradeLevelId', $json['gradeLevelId']);
 
         if ($stmt->execute()) {
             // Insert into tblsfrecord

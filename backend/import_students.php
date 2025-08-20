@@ -90,6 +90,7 @@ if ($operation === 'savePreviewedStudents') {
     $schoolYearId = $json['schoolYearId'] ?? '';
     $importUserId = $json['userId'] ?? '';
     $strandId = $json['strandId'] ?? '';
+    $gradeLevelId = $json['gradeLevelId'] ?? '';
     
     if (empty($data) || empty($headers)) {
         echo json_encode([
@@ -127,6 +128,13 @@ if ($operation === 'savePreviewedStudents') {
         echo json_encode([
             'success' => false,
             'error' => 'Strand ID is required'
+        ]);
+        exit;
+    }
+    if (empty($gradeLevelId)) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'Grade Level ID is required'
         ]);
         exit;
     }
@@ -207,29 +215,20 @@ if ($operation === 'savePreviewedStudents') {
                 continue;
             }
             
-            // Get the section's grade level ID
-            $sectionGradeLevelId = 1; // Default to Grade 11
-            $sectionSql = "SELECT gradeLevelId FROM tblsection WHERE id = :sectionId";
-            $sectionStmt = $conn->prepare($sectionSql);
-            $sectionStmt->bindParam(':sectionId', $sectionId);
-            $sectionStmt->execute();
-            
-            if ($sectionStmt->rowCount() > 0) {
-                $sectionResult = $sectionStmt->fetch(PDO::FETCH_ASSOC);
-                $sectionGradeLevelId = $sectionResult['gradeLevelId'] ?? 1;
-            }
+            // Use selected grade level ID from UI instead of deriving from section
+            $sectionGradeLevelId = $gradeLevelId;
             
             // Insert student data with schoolyearId
             $sql = "INSERT INTO tblstudent (
                 id, firstname, middlename, lastname, lrn, email, password, 
                 userLevel, birthDate, age, religion, 
                 completeAddress, fatherName, motherName, guardianName, 
-                guardianRelationship, sectionId, schoolyearId, strandId, createdAt
+                guardianRelationship, sectionId, schoolyearId, strandId, gradeLevelId, createdAt
             ) VALUES (
                 :id, :firstname, :middlename, :lastname, :lrn, :email, :password,
                 :userLevel, :birthDate, :age, :religion,
                 :completeAddress, :fatherName, :motherName, :guardianName,
-                :guardianRelationship, :sectionId, :schoolyearId, :strandId, NOW()
+                :guardianRelationship, :sectionId, :schoolyearId, :strandId, :gradeLevelId, NOW()
             )";
             
             $stmt = $conn->prepare($sql);
@@ -253,6 +252,7 @@ if ($operation === 'savePreviewedStudents') {
             $stmt->bindParam(':sectionId', $sectionId);
             $stmt->bindParam(':schoolyearId', $schoolYearId);
             $stmt->bindParam(':strandId', $strandId);
+            $stmt->bindParam(':gradeLevelId', $sectionGradeLevelId);
             
             if ($stmt->execute()) {
                 // Insert into tblsfrecord after successful student insertion

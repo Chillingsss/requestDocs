@@ -262,13 +262,11 @@ class User {
     $requestId = $json['requestId'];
 
     try {
-      // First get the student ID, document ID, and student's current grade level from the request
-      // Get grade level through student -> section -> grade level relationship
-      $studentSql = "SELECT r.studentId, r.documentId, d.name as requestedDocumentType, sec.gradeLevelId as currentGradeLevelId
+      // First get the student ID, document ID, and student's current grade level directly from tblstudent
+      $studentSql = "SELECT r.studentId, r.documentId, d.name as requestedDocumentType, s.gradeLevelId as currentGradeLevelId
                      FROM tblrequest r
                      INNER JOIN tbldocument d ON r.documentId = d.id
                      INNER JOIN tblstudent s ON r.studentId = s.id
-                     LEFT JOIN tblsection sec ON s.sectionId = sec.id
                      WHERE r.id = :requestId";
       $studentStmt = $conn->prepare($studentSql);
       $studentStmt->bindParam(':requestId', $requestId);
@@ -710,7 +708,7 @@ class User {
       $studentData = json_decode($_POST['studentData'], true);
       $documentId = $_POST['documentId'];
       $userId = $_POST['userId'];
-      // Validate required fields
+      // Validate required fields (sectionId is optional)
       $requiredFields = ['firstname', 'lastname', 'lrn', 'password', 'strandId', 'schoolYearId', 'gradeLevelId'];
       foreach ($requiredFields as $field) {
         if (empty($studentData[$field])) {
@@ -736,8 +734,8 @@ class User {
       
       $conn->beginTransaction();
       
-      // Use the gradeLevelId directly from frontend for sectionId
-      $sectionId = $studentData['gradeLevelId'];
+      // Use provided sectionId from frontend if present; otherwise set to NULL
+      $sectionId = (isset($studentData['sectionId']) && $studentData['sectionId'] !== '') ? $studentData['sectionId'] : null;
       
       // Use original filename for SF10
       $fileName = $sf10File['name'];
@@ -755,10 +753,10 @@ class User {
       // Insert student record with all required fields
       $insertStudentSql = "INSERT INTO tblstudent (
         id, firstname, middlename, lastname, email, password, userLevel, 
-        lrn, strandId, sectionId, schoolyearId, createdAt, updatedAt
+        lrn, strandId, sectionId, schoolyearId, gradeLevelId, createdAt, updatedAt
       ) VALUES (
         :lrn, :firstname, :middlename, :lastname, :email, :password, :userLevel,
-        :lrn, :strandId, :sectionId, :schoolyearId, NOW(), NOW()
+        :lrn, :strandId, :sectionId, :schoolyearId, :gradeLevelId, NOW(), NOW()
       )";
       
       $insertStudentStmt = $conn->prepare($insertStudentSql);
@@ -770,8 +768,13 @@ class User {
       $insertStudentStmt->bindParam(':password', password_hash($studentData['password'], PASSWORD_DEFAULT));
       $insertStudentStmt->bindParam(':userLevel', $studentData['userLevel']);
       $insertStudentStmt->bindParam(':strandId', $studentData['strandId']);
-      $insertStudentStmt->bindParam(':sectionId', $sectionId);
+      if ($sectionId === null) {
+        $insertStudentStmt->bindValue(':sectionId', null, PDO::PARAM_NULL);
+      } else {
+        $insertStudentStmt->bindParam(':sectionId', $sectionId);
+      }
       $insertStudentStmt->bindParam(':schoolyearId', $studentData['schoolYearId']);
+      $insertStudentStmt->bindParam(':gradeLevelId', $studentData['gradeLevelId']);
       
       if (!$insertStudentStmt->execute()) {
         $conn->rollBack();

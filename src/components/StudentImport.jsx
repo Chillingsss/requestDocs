@@ -16,6 +16,7 @@ import Cookies from "js-cookie";
 import CryptoJS from "crypto-js";
 import { getDecryptedApiUrl } from "../utils/apiConfig";
 import { getSection, getSchoolYear, getStrands } from "../utils/registrar";
+import { getGradeLevel as getAdminGradeLevel } from "../utils/admin";
 
 const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 	const [file, setFile] = useState(null);
@@ -35,6 +36,9 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 	const [strands, setStrands] = useState([]);
 	const [selectedStrand, setSelectedStrand] = useState("");
 	const [loadingStrands, setLoadingStrands] = useState(false);
+	const [gradeLevels, setGradeLevels] = useState([]);
+	const [selectedGradeLevel, setSelectedGradeLevel] = useState("");
+	const [loadingGrades, setLoadingGrades] = useState(false);
 
 	// Constants for authentication
 	const COOKIE_KEY = "mogchs_user";
@@ -55,6 +59,7 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 		loadSections();
 		loadSchoolYears();
 		loadStrands();
+		loadGradeLevels();
 	}, []);
 
 	// Auto-select teacher's section if provided
@@ -99,6 +104,18 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 			toast.error("Failed to load strands");
 		} finally {
 			setLoadingStrands(false);
+		}
+	};
+
+	const loadGradeLevels = async () => {
+		setLoadingGrades(true);
+		try {
+			const data = await getAdminGradeLevel();
+			setGradeLevels(Array.isArray(data) ? data : []);
+		} catch (error) {
+			toast.error("Failed to load grade levels");
+		} finally {
+			setLoadingGrades(false);
 		}
 	};
 
@@ -243,6 +260,10 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 			toast.error("Please select a strand for the students.");
 			return;
 		}
+		if (!selectedGradeLevel) {
+			toast.error("Please select a grade level for the students.");
+			return;
+		}
 		setIsSaving(true);
 		setSaveResult(null);
 		const apiUrl = getDecryptedApiUrl();
@@ -255,6 +276,7 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 				schoolYearId: selectedSchoolYear,
 				userId: userId,
 				strandId: selectedStrand,
+				gradeLevelId: selectedGradeLevel,
 			});
 			setSaveResult(response.data);
 			if (response.data.success) {
@@ -511,6 +533,37 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 								</p>
 							</div>
 
+							{/* Grade Level Selection */}
+							<div className="mb-4">
+								<div className="flex items-center mb-2 space-x-2">
+									<Users className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+									<label className="font-medium text-gray-900 dark:text-white">
+										Select Grade Level for All Students:
+									</label>
+								</div>
+								<select
+									value={selectedGradeLevel}
+									onChange={(e) => setSelectedGradeLevel(e.target.value)}
+									className="px-3 py-2 w-full text-gray-900 bg-white rounded-md border border-gray-300 dark:text-white dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									disabled={loadingGrades}
+								>
+									<option value="">
+										{loadingGrades
+											? "Loading grade levels..."
+											: "Select a grade level"}
+									</option>
+									{gradeLevels.map((gl) => (
+										<option key={gl.id} value={gl.id}>
+											{gl.name}
+										</option>
+									))}
+								</select>
+								<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+									All imported students will be assigned to the selected grade
+									level.
+								</p>
+							</div>
+
 							{/* Preview Table */}
 							<div className="mb-4">
 								<div className="flex justify-between items-center mb-2">
@@ -630,7 +683,8 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 										!previewData.length ||
 										!selectedSection ||
 										!selectedSchoolYear ||
-										!selectedStrand
+										!selectedStrand ||
+										!selectedGradeLevel
 									}
 									className="flex items-center px-6 py-2 space-x-2 text-white bg-green-600 rounded-md transition-colors hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
 								>
@@ -643,8 +697,10 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 										<>
 											<Save className="w-4 h-4" />
 											<span>
-												{!selectedSection || !selectedSchoolYear
-													? "Select Section and School Year to Save"
+												{!selectedSection ||
+												!selectedSchoolYear ||
+												!selectedGradeLevel
+													? "Select Section, School Year and Grade Level to Save"
 													: "Save to Database"}
 											</span>
 										</>

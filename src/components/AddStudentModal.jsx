@@ -18,10 +18,17 @@ import {
 	getSf10DocumentId,
 } from "../utils/registrar";
 import { addIndividualStudent } from "../utils/registrar";
+import { getSection } from "../utils/registrar";
 
-export default function AddStudentModal({ isOpen, onClose, onSuccess, userId }) {
+export default function AddStudentModal({
+	isOpen,
+	onClose,
+	onSuccess,
+	userId,
+}) {
 	const [strands, setStrands] = useState([]);
 	const [schoolYears, setSchoolYears] = useState([]);
+	const [sections, setSections] = useState([]);
 	const [gradeLevels, setGradeLevels] = useState([
 		{ id: 1, name: "Grade 11" },
 		{ id: 2, name: "Grade 12" },
@@ -36,6 +43,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, userId }) 
 			schoolYearId: "",
 			strandId: "",
 			gradeLevelId: "",
+			sectionId: "",
 			userLevel: "4", // Student level
 			sf10File: null,
 		},
@@ -77,6 +85,18 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, userId }) 
 			}
 			setSchoolYears(Array.isArray(schoolYearsArray) ? schoolYearsArray : []);
 
+			// Fetch sections
+			const sectionsData = await getSection();
+			let sectionsArray = sectionsData;
+			if (typeof sectionsData === "string") {
+				try {
+					sectionsArray = JSON.parse(sectionsData);
+				} catch (e) {
+					sectionsArray = [];
+				}
+			}
+			setSections(Array.isArray(sectionsArray) ? sectionsArray : []);
+
 			// Get SF10 document ID dynamically
 			const sf10Response = await getSf10DocumentId();
 			if (sf10Response.success && sf10Response.documentId) {
@@ -96,6 +116,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, userId }) 
 			...updatedStudents[index],
 			[field]: value,
 		};
+
+		// Clear section when grade level changes
+		if (field === "gradeLevelId") {
+			updatedStudents[index].sectionId = "";
+		}
 
 		// Auto-set password to lastname when lastname changes
 		if (field === "lastname" && value) {
@@ -137,6 +162,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, userId }) 
 				schoolYearId: "",
 				strandId: "",
 				gradeLevelId: "",
+				sectionId: "",
 				userLevel: "4",
 				sf10File: null,
 			},
@@ -183,6 +209,8 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, userId }) 
 		if (!student.schoolYearId || !student.strandId || !student.gradeLevelId) {
 			return "Please select school year, strand, and grade level";
 		}
+
+		// sectionId optional
 
 		return null;
 	};
@@ -284,6 +312,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, userId }) 
 				schoolYearId: "",
 				strandId: "",
 				gradeLevelId: "",
+				sectionId: "",
 				userLevel: "4",
 				sf10File: null,
 			},
@@ -301,6 +330,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, userId }) 
 			student.schoolYearId &&
 			student.strandId &&
 			student.gradeLevelId &&
+			// sectionId optional
 			student.sf10File
 		);
 	};
@@ -625,6 +655,44 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, userId }) 
 														{strand.name} ({strand.trackName})
 													</option>
 												))}
+											</select>
+										</div>
+										<div>
+											<Label htmlFor={`sectionId-${index}`}>
+												Section (optional)
+											</Label>
+											<select
+												id={`sectionId-${index}`}
+												value={student.sectionId}
+												onChange={(e) =>
+													handleInputChange(index, "sectionId", e.target.value)
+												}
+												disabled={!student.gradeLevelId}
+												className="px-3 py-2 mt-1 w-full text-sm bg-white rounded-md border border-gray-300 dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+											>
+												<option value="">
+													{!student.gradeLevelId
+														? "Select Grade Level first"
+														: sections.filter(
+																(s) =>
+																	String(s.gradeLevelId) ===
+																	String(student.gradeLevelId)
+														  ).length === 0
+														? "No sections for selected grade level"
+														: "Select Section"}
+												</option>
+												{student.gradeLevelId &&
+													sections
+														.filter(
+															(s) =>
+																String(s.gradeLevelId) ===
+																String(student.gradeLevelId)
+														)
+														.map((section) => (
+															<option key={section.id} value={section.id}>
+																{section.name}
+															</option>
+														))}
 											</select>
 										</div>
 									</div>

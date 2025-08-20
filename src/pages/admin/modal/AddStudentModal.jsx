@@ -4,6 +4,7 @@ import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { addStudent } from "../../../utils/admin";
 import { getStrands } from "../../../utils/registrar";
+import { getGradeLevel as getAdminGradeLevel } from "../../../utils/admin";
 import { X, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -17,6 +18,9 @@ export default function AddStudentModal({
 	teacherSectionId,
 }) {
 	const [strands, setStrands] = useState([]);
+	const [gradeLevels, setGradeLevels] = useState([]);
+	const [loading, setLoading] = useState(false);
+	const [loadingGrades, setLoadingGrades] = useState(false);
 	const [formData, setFormData] = useState({
 		firstname: "",
 		middlename: "",
@@ -37,10 +41,10 @@ export default function AddStudentModal({
 		guardianRelationship: "",
 		sectionId: teacherSectionId || "", // Auto-set teacher section if available
 		schoolYearId: "",
+		gradeLevelId: "",
 		userLevel: "4", // Add default userLevel for students
 		createdBy: createdBy || "",
 	});
-	const [loading, setLoading] = useState(false);
 
 	// Fetch strands when modal opens
 	useEffect(() => {
@@ -60,7 +64,27 @@ export default function AddStudentModal({
 				toast.error("Failed to load strands");
 			}
 		};
+		const fetchGradeLevels = async () => {
+			try {
+				setLoadingGrades(true);
+				const data = await getAdminGradeLevel();
+				let glArray = data;
+				if (typeof data === "string") {
+					try {
+						glArray = JSON.parse(data);
+					} catch (e) {
+						glArray = [];
+					}
+				}
+				setGradeLevels(Array.isArray(glArray) ? glArray : []);
+			} catch (error) {
+				toast.error("Failed to load grade levels");
+			} finally {
+				setLoadingGrades(false);
+			}
+		};
 		fetchStrands();
+		fetchGradeLevels();
 	}, []);
 
 	// Auto-select teacher's section if provided
@@ -102,6 +126,7 @@ export default function AddStudentModal({
 			"email",
 			"sectionId",
 			"schoolYearId",
+			"gradeLevelId",
 		];
 		for (const field of requiredFields) {
 			const value = formData[field];
@@ -158,6 +183,7 @@ export default function AddStudentModal({
 				guardianRelationship: "",
 				sectionId: teacherSectionId || "", // Keep teacher section if available
 				schoolYearId: "",
+				gradeLevelId: "",
 				userLevel: "4", // Reset userLevel
 				createdBy: createdBy || "",
 			});
@@ -192,6 +218,7 @@ export default function AddStudentModal({
 			guardianRelationship: "",
 			sectionId: teacherSectionId || "", // Keep teacher section if available
 			schoolYearId: "",
+			gradeLevelId: "",
 			userLevel: "4", // Reset userLevel
 			createdBy: createdBy || "",
 		});
@@ -542,6 +569,35 @@ export default function AddStudentModal({
 									{schoolYearOptions.map((sy) => (
 										<option key={sy.id} value={sy.id}>
 											{sy.year}
+										</option>
+									))}
+								</select>
+							</div>
+						</div>
+						<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+							<div className="space-y-2">
+								<Label
+									htmlFor="gradeLevelId"
+									className="text-gray-700 dark:text-gray-200"
+								>
+									Grade Level
+								</Label>
+								<select
+									id="gradeLevelId"
+									name="gradeLevelId"
+									value={formData.gradeLevelId}
+									onChange={handleInputChange}
+									required
+									className="px-4 py-3 w-full bg-gray-50 rounded-xl border-2 border-gray-200 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-400"
+								>
+									<option value="">
+										{loadingGrades
+											? "Loading grade levels..."
+											: "Select grade level"}
+									</option>
+									{gradeLevels.map((gl) => (
+										<option key={gl.id} value={gl.id}>
+											{gl.name}
 										</option>
 									))}
 								</select>
