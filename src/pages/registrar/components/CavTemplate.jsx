@@ -500,7 +500,7 @@ export default function CavTemplate({
 						position: relative;
 						page-break-after: always;
 					}
-					.header { text-align: center; margin-bottom: 8mm; }
+					.header { text-align: center; margin-bottom: 4mm; }
 					.logo-img { width: 70px; height: 70px; object-fit: contain; margin: 0 auto 6px; display: block; }
 					.republic { font-size: 12pt; margin-bottom: 2mm; font-style: italic; color: #222; }
 					.department { font-size: 16pt; font-weight: bold; margin-bottom: 2mm; color: #111; }
@@ -508,14 +508,14 @@ export default function CavTemplate({
 					.school-name { font-size: 12pt; font-weight: bold; margin-top: 1mm; color: #111; }
 					.office { text-align: left; font-size: 10pt; margin-top: 6mm; margin-bottom: 1.5mm; color: #222; }
 					.office-line { border-top: 1px solid #666; width: 100%; margin-bottom: 8mm; }
-					.title { text-align: center; font-size: 20pt; font-weight: bold; margin-bottom: 8mm; text-transform: uppercase; letter-spacing: 0.5px; color: #111; }
+					.title { text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 6mm; text-transform: uppercase; letter-spacing: 0.5px; color: #111; }
 					.content { font-size: 12pt; color: #222; }
 					.content p { margin-bottom: 4.5mm; text-align: justify; text-justify: inter-word; }
 					.content p.indent { text-indent: 10mm; }
 					.student-name { font-weight: bold; text-transform: uppercase; text-decoration: underline; color: #111; }
 					.lrn { font-weight: bold; text-decoration: underline; color: #111; }
 					.grade-level, .strand, .school-year { font-weight: bold; color: #222; }
-					.signature { margin-top: 14mm; }
+					.signature { margin-top: 12mm; }
 					.signature-name { font-weight: bold; text-transform: uppercase; margin-bottom: 1mm; color: #111; }
 					.signature-title { font-size: 10pt; margin-bottom: 1mm; color: #333; }
 					.not-valid { margin-top: 8mm; font-size: 9pt; text-align: left; color: #666; }
@@ -657,8 +657,7 @@ export default function CavTemplate({
 							<p style="margin-bottom: 0.8mm;"><strong>1. Name of School:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolName}</span></p>
 							<p style="margin-bottom: 0.8mm;"><strong>2. School Address:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolAddress}</span></p>
 							<p style="margin-bottom: 0.8mm;"><strong>3. Grade Level Completed:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3GradeLevel}</span> <strong>School Year Completed:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolYearCompleted}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>Track:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3Track}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>Strand:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.strand}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>Track:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3Track}</span> <strong>Strand:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.strand}</span></p>
 							<p style="margin-bottom: 0.8mm;"><strong>4. Graduated on:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3GraduationDate}</span> <strong>School Year graduated:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolYearGraduated}</span></p>
 							<p style="margin-bottom: 0.8mm;"><strong>5. Special Order Number*:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SpecialOrderNumber}</span></p>
 							<p style="margin-bottom: 0.8mm;">&nbsp;&nbsp;&nbsp;&nbsp;<strong>Date:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SpecialOrderDate}</span></p>
