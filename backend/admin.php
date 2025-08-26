@@ -1202,6 +1202,193 @@ class User {
         return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
    }
+
+   // Resources management functions
+   function getDocuments()
+   {
+    include "connection.php";
+
+    try {
+        $sql = "SELECT * FROM tbldocument ORDER BY name";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $documents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return json_encode($documents);
+        }
+        return json_encode([]);
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function getRequirementTypes()
+   {
+    include "connection.php";
+
+    try {
+        $sql = "SELECT * FROM tblrequirementstype ORDER BY nameType";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $requirementTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return json_encode($requirementTypes);
+        }
+        return json_encode([]);
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function addDocument($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "INSERT INTO tbldocument (name, userId, createdAt) VALUES (:name, :userId, NOW())";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':name', $json['name']);
+        $stmt->bindParam(':userId', $json['userId'] ?: null);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Document added successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to add document']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function addRequirementType($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "INSERT INTO tblrequirementstype (nameType, userId, createdAt) VALUES (:nameType, :userId, NOW())";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':nameType', $json['name']);
+        $stmt->bindParam(':userId', $json['userId'] ?: null);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Requirement type added successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to add requirement type']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function updateDocument($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "UPDATE tbldocument SET name = :name, userId = :userId WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':name', $json['name']);
+        $stmt->bindParam(':userId', $json['userId'] ?: null);
+        $stmt->bindParam(':id', $json['id']);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Document updated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to update document']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function updateRequirementType($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "UPDATE tblrequirementstype SET nameType = :nameType, userId = :userId WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':nameType', $json['name']);
+        $stmt->bindParam(':userId', $json['userId'] ?: null);
+        $stmt->bindParam(':id', $json['id']);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Requirement type updated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to update requirement type']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function deleteDocument($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        // Check if document is being used in requests
+        $checkSql = "SELECT COUNT(*) as count FROM tblrequest WHERE documentId = :id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':id', $json['id']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'Cannot delete document. It is being used in requests.']);
+        }
+        
+        $sql = "DELETE FROM tbldocument WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $json['id']);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Document deleted successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to delete document']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function deleteRequirementType($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        // Check if requirement type is being used in requirements
+        $checkSql = "SELECT COUNT(*) as count FROM tblrequirements WHERE typeId = :id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':id', $json['id']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'Cannot delete requirement type. It is being used in requirements.']);
+        }
+        
+        $sql = "DELETE FROM tblrequirementstype WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $json['id']);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Requirement type deleted successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to delete requirement type']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -1288,6 +1475,30 @@ switch ($operation) {
     break;
   case "updateUserProfile":
     echo $user->updateUserProfile($json);
+    break;
+  case "getDocuments":
+    echo $user->getDocuments();
+    break;
+  case "getRequirementTypes":
+    echo $user->getRequirementTypes();
+    break;
+  case "addDocument":
+    echo $user->addDocument($json);
+    break;
+  case "addRequirementType":
+    echo $user->addRequirementType($json);
+    break;
+  case "updateDocument":
+    echo $user->updateDocument($json);
+    break;
+  case "updateRequirementType":
+    echo $user->updateRequirementType($json);
+    break;
+  case "deleteDocument":
+    echo $user->deleteDocument($json);
+    break;
+  case "deleteRequirementType":
+    echo $user->deleteRequirementType($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

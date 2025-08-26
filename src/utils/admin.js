@@ -357,3 +357,144 @@ export async function updateUserProfile(userId, userType, profileData) {
 		throw error;
 	}
 }
+
+// Resources management functions
+export async function getDocuments() {
+	const formData = new FormData();
+	formData.append("operation", "getDocuments");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getRequirementTypes() {
+	const formData = new FormData();
+	formData.append("operation", "getRequirementTypes");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addDocument(documentData) {
+	const formData = new FormData();
+	formData.append("operation", "addDocument");
+	formData.append("json", JSON.stringify(documentData));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addRequirementType(requirementTypeData) {
+	const formData = new FormData();
+	formData.append("operation", "addRequirementType");
+	formData.append("json", JSON.stringify(requirementTypeData));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateDocument(documentId, documentData) {
+	const formData = new FormData();
+	formData.append("operation", "updateDocument");
+	formData.append("json", JSON.stringify({ id: documentId, ...documentData }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateRequirementType(
+	requirementTypeId,
+	requirementTypeData
+) {
+	const formData = new FormData();
+	formData.append("operation", "updateRequirementType");
+	formData.append(
+		"json",
+		JSON.stringify({ id: requirementTypeId, ...requirementTypeData })
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deleteDocument(documentId) {
+	const formData = new FormData();
+	formData.append("operation", "deleteDocument");
+	formData.append("json", JSON.stringify({ id: documentId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deleteRequirementType(requirementTypeId) {
+	const formData = new FormData();
+	formData.append("operation", "deleteRequirementType");
+	formData.append("json", JSON.stringify({ id: requirementTypeId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

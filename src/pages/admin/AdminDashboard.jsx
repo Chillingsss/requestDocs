@@ -8,6 +8,7 @@ import {
 	Users,
 	FileText,
 	Settings,
+	Folder,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
@@ -40,6 +41,7 @@ import { Label } from "../../components/ui/label";
 import DashboardContent from "./components/DashboardContent";
 import UsersContent from "./components/UsersContent";
 import StudentsContent from "./components/StudentsContent";
+import ResourcesContent from "./masterfiles/ResourcesContent";
 import Sidebar from "../../components/shared/Sidebar";
 import UserProfileModal from "./modal/UserProfileModal";
 
@@ -316,6 +318,11 @@ export default function AdminDashboard() {
 			label: "Settings",
 			key: "Settings",
 		},
+		{
+			icon: <Folder className="w-5 h-5" />,
+			label: "Resources",
+			key: "Resources",
+		},
 	];
 
 	const renderContent = () => {
@@ -368,6 +375,8 @@ export default function AdminDashboard() {
 						</CardContent>
 					</Card>
 				);
+			case "Resources":
+				return <ResourcesContent />;
 			default:
 				return (
 					<DashboardContent
