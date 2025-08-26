@@ -33,7 +33,11 @@ export default function ResourcesContent() {
 	// Get userId from cookie
 	const userId = getUserIdFromCookie();
 
+	// Debug logging
+	console.log("ResourcesContent - userId from cookie:", userId);
+
 	const handleFormSubmit = (e) => {
+		console.log("handleFormSubmit called with userId:", userId);
 		handleSubmit(e, userId);
 	};
 

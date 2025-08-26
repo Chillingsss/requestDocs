@@ -391,10 +391,10 @@ export async function getRequirementTypes() {
 	}
 }
 
-export async function addDocument(documentData) {
+export async function addDocument(submitData) {
 	const formData = new FormData();
 	formData.append("operation", "addDocument");
-	formData.append("json", JSON.stringify(documentData));
+	formData.append("json", JSON.stringify(submitData));
 
 	const apiUrl = getDecryptedApiUrl();
 
@@ -408,10 +408,10 @@ export async function addDocument(documentData) {
 	}
 }
 
-export async function addRequirementType(requirementTypeData) {
+export async function addRequirementType(submitData) {
 	const formData = new FormData();
 	formData.append("operation", "addRequirementType");
-	formData.append("json", JSON.stringify(requirementTypeData));
+	formData.append("json", JSON.stringify(submitData));
 
 	const apiUrl = getDecryptedApiUrl();
 

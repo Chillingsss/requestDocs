@@ -106,21 +106,36 @@ export default function useResources() {
 			userId: userId || null,
 		};
 
+		// Debug logging
+		console.log("handleSubmit called with:", {
+			userId,
+			submitData,
+			modalType,
+			showEditModal,
+			editingItem,
+		});
+
 		try {
 			let result;
 			if (showEditModal) {
 				if (modalType === "document") {
+					console.log("Updating document:", editingItem.id, submitData);
 					result = await updateDocument(editingItem.id, submitData);
 				} else {
+					console.log("Updating requirement type:", editingItem.id, submitData);
 					result = await updateRequirementType(editingItem.id, submitData);
 				}
 			} else {
 				if (modalType === "document") {
+					console.log("Adding document:", submitData);
 					result = await addDocument(submitData);
 				} else {
+					console.log("Adding requirement type:", submitData);
 					result = await addRequirementType(submitData);
 				}
 			}
+
+			console.log("API result:", result);
 
 			if (result && result.status === "success") {
 				toast.success(
@@ -132,6 +147,7 @@ export default function useResources() {
 				setShowEditModal(false);
 				fetchData();
 			} else {
+				console.error("API returned error:", result);
 				toast.error(result?.message || "Failed to save item");
 			}
 		} catch (error) {
