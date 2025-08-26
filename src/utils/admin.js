@@ -498,3 +498,93 @@ export async function deleteRequirementType(requirementTypeId) {
 		throw error;
 	}
 }
+
+// Document Requirements management functions
+export async function getDocumentRequirements() {
+	const formData = new FormData();
+	formData.append("operation", "getDocumentRequirements");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addDocumentRequirement(
+	documentId,
+	requirementTypeId,
+	userId
+) {
+	const formData = new FormData();
+	formData.append("operation", "addDocumentRequirement");
+	formData.append(
+		"json",
+		JSON.stringify({
+			documentId,
+			requirementTId: requirementTypeId,
+			userId,
+		})
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deleteDocumentRequirement(documentRequirementId) {
+	const formData = new FormData();
+	formData.append("operation", "deleteDocumentRequirement");
+	formData.append("json", JSON.stringify({ id: documentRequirementId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateDocumentRequirements(
+	documentId,
+	requirementTypeIds,
+	userId
+) {
+	const formData = new FormData();
+	formData.append("operation", "updateDocumentRequirements");
+	formData.append(
+		"json",
+		JSON.stringify({
+			documentId,
+			requirementTypeIds,
+			userId,
+		})
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

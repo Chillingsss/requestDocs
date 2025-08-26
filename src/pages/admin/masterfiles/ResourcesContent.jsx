@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import DocumentsTab from "./components/DocumentsTab";
 import RequirementTypesTab from "./components/RequirementTypesTab";
+import DocumentRequirementsTab from "./components/DocumentRequirementsTab";
 import ResourceModal from "./components/ResourceModal";
+import DocumentRequirementModal from "./components/DocumentRequirementModal";
 import DeleteConfirmModal from "./components/DeleteConfirmModal";
 import useResources from "./hooks/useResources";
 import { getUserIdFromCookie } from "./utils/cookieUtils";
@@ -11,23 +13,31 @@ export default function ResourcesContent() {
 	const {
 		documents,
 		requirementTypes,
+		documentRequirements,
 		loading,
 		showAddModal,
 		showEditModal,
 		showDeleteModal,
-		editingItem,
+		showDocumentRequirementModal,
 		deletingItem,
 		modalType,
 		formData,
+		documentRequirementForm,
 		handleAdd,
 		handleEdit,
 		handleDelete,
+		handleAddDocumentRequirement,
+		handleDeleteDocumentRequirement,
+		handleUpdateDocumentRequirements,
 		confirmDelete,
 		handleSubmit,
+		handleDocumentRequirementSubmit,
 		resetForm,
 		setFormData,
+		setDocumentRequirementForm,
 		setShowDeleteModal,
 		setDeletingItem,
+		setShowDocumentRequirementModal,
 	} = useResources();
 
 	// Get userId from cookie
@@ -41,6 +51,14 @@ export default function ResourcesContent() {
 		handleSubmit(e, userId);
 	};
 
+	const handleDocumentRequirementFormSubmit = (e) => {
+		console.log(
+			"handleDocumentRequirementFormSubmit called with userId:",
+			userId
+		);
+		handleDocumentRequirementSubmit(e, userId);
+	};
+
 	return (
 		<>
 			<div className="space-y-6">
@@ -48,7 +66,8 @@ export default function ResourcesContent() {
 				<div className="flex flex-col gap-4">
 					<h2 className="text-2xl font-bold">Resources Management</h2>
 					<p className="text-slate-600 dark:text-slate-400">
-						Manage documents and requirement types used in the system
+						Manage documents, requirement types, and document requirements used
+						in the system
 					</p>
 				</div>
 
@@ -75,6 +94,16 @@ export default function ResourcesContent() {
 						>
 							Requirement Types
 						</button>
+						<button
+							onClick={() => setActiveTab("document-requirements")}
+							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "document-requirements"
+									? "border-blue-500 text-blue-600"
+									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+							}`}
+						>
+							Document Requirements
+						</button>
 					</nav>
 				</div>
 
@@ -98,6 +127,18 @@ export default function ResourcesContent() {
 							onDelete={handleDelete}
 						/>
 					)}
+					{activeTab === "document-requirements" && (
+						<DocumentRequirementsTab
+							documentRequirements={documentRequirements}
+							documents={documents}
+							requirementTypes={requirementTypes}
+							loading={loading}
+							onAdd={handleAddDocumentRequirement}
+							onDelete={handleDeleteDocumentRequirement}
+							onUpdate={handleUpdateDocumentRequirements}
+							userId={userId}
+						/>
+					)}
 				</div>
 			</div>
 			{/* Modals */}
@@ -109,6 +150,22 @@ export default function ResourcesContent() {
 				onFormDataChange={setFormData}
 				onSubmit={handleFormSubmit}
 				onCancel={resetForm}
+			/>
+
+			<DocumentRequirementModal
+				showModal={showDocumentRequirementModal}
+				documents={documents}
+				requirementTypes={requirementTypes}
+				formData={documentRequirementForm}
+				onFormDataChange={setDocumentRequirementForm}
+				onSubmit={handleDocumentRequirementFormSubmit}
+				onCancel={() => {
+					setShowDocumentRequirementModal(false);
+					setDocumentRequirementForm({
+						documentId: "",
+						requirementTypeIds: [],
+					});
+				}}
 			/>
 
 			<DeleteConfirmModal

@@ -9,35 +9,49 @@ import {
 	updateRequirementType,
 	deleteDocument,
 	deleteRequirementType,
+	getDocumentRequirements,
+	addDocumentRequirement,
+	deleteDocumentRequirement,
+	updateDocumentRequirements,
 } from "../../../../utils/admin";
 
 export default function useResources() {
 	const [documents, setDocuments] = useState([]);
 	const [requirementTypes, setRequirementTypes] = useState([]);
+	const [documentRequirements, setDocumentRequirements] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
+	const [showDocumentRequirementModal, setShowDocumentRequirementModal] =
+		useState(false);
 	const [editingItem, setEditingItem] = useState(null);
 	const [deletingItem, setDeletingItem] = useState(null);
 	const [modalType, setModalType] = useState("");
 	const [formData, setFormData] = useState({ name: "" });
+	const [documentRequirementForm, setDocumentRequirementForm] = useState({
+		documentId: "",
+		requirementTypeIds: [],
+	});
 
 	const fetchData = async () => {
 		setLoading(true);
 		try {
-			const [docsData, reqTypesData] = await Promise.all([
+			const [docsData, reqTypesData, docReqsData] = await Promise.all([
 				getDocuments(),
 				getRequirementTypes(),
+				getDocumentRequirements(),
 			]);
 
 			setDocuments(Array.isArray(docsData) ? docsData : []);
 			setRequirementTypes(Array.isArray(reqTypesData) ? reqTypesData : []);
+			setDocumentRequirements(Array.isArray(docReqsData) ? docReqsData : []);
 		} catch (error) {
 			console.error("Error fetching data:", error);
 			toast.error("Failed to load resources");
 			setDocuments([]);
 			setRequirementTypes([]);
+			setDocumentRequirements([]);
 		} finally {
 			setLoading(false);
 		}
@@ -63,6 +77,19 @@ export default function useResources() {
 		setShowDeleteModal(true);
 	};
 
+	const handleAddDocumentRequirement = () => {
+		setDocumentRequirementForm({
+			documentId: "",
+			requirementTypeIds: [],
+		});
+		setShowDocumentRequirementModal(true);
+	};
+
+	const handleDeleteDocumentRequirement = (id) => {
+		setDeletingItem({ id, type: "documentRequirement" });
+		setShowDeleteModal(true);
+	};
+
 	const confirmDelete = async () => {
 		if (!deletingItem) return;
 
@@ -70,14 +97,20 @@ export default function useResources() {
 			let result;
 			if (deletingItem.type === "document") {
 				result = await deleteDocument(deletingItem.id);
-			} else {
+			} else if (deletingItem.type === "requirement") {
 				result = await deleteRequirementType(deletingItem.id);
+			} else if (deletingItem.type === "documentRequirement") {
+				result = await deleteDocumentRequirement(deletingItem.id);
 			}
 
 			if (result && result.status === "success") {
 				toast.success(
 					`${
-						deletingItem.type === "document" ? "Document" : "Requirement type"
+						deletingItem.type === "document"
+							? "Document"
+							: deletingItem.type === "requirement"
+							? "Requirement type"
+							: "Document requirement"
 					} deleted successfully`
 				);
 				fetchData();
@@ -156,6 +189,95 @@ export default function useResources() {
 		}
 	};
 
+	const handleDocumentRequirementSubmit = async (e, userId) => {
+		e.preventDefault();
+
+		if (
+			!documentRequirementForm.documentId ||
+			!documentRequirementForm.requirementTypeIds ||
+			documentRequirementForm.requirementTypeIds.length === 0
+		) {
+			toast.error(
+				"Please select both document and at least one requirement type"
+			);
+			return;
+		}
+
+		try {
+			// Add multiple requirements in parallel
+			const promises = documentRequirementForm.requirementTypeIds.map(
+				(requirementTypeId) =>
+					addDocumentRequirement(
+						documentRequirementForm.documentId,
+						requirementTypeId,
+						userId
+					)
+			);
+
+			const results = await Promise.all(promises);
+			const successCount = results.filter(
+				(result) => result && result.status === "success"
+			).length;
+			const errorCount = results.length - successCount;
+
+			if (errorCount === 0) {
+				toast.success(
+					`${successCount} document requirement(s) added successfully`
+				);
+				setShowDocumentRequirementModal(false);
+				setDocumentRequirementForm({
+					documentId: "",
+					requirementTypeIds: [],
+				});
+				fetchData();
+			} else if (successCount > 0) {
+				toast.success(
+					`${successCount} requirement(s) added, ${errorCount} failed`
+				);
+				setShowDocumentRequirementModal(false);
+				setDocumentRequirementForm({
+					documentId: "",
+					requirementTypeIds: [],
+				});
+				fetchData();
+			} else {
+				toast.error("Failed to add any document requirements");
+			}
+		} catch (error) {
+			console.error("Error adding document requirements:", error);
+			toast.error("Failed to add document requirements");
+		}
+	};
+
+	const handleUpdateDocumentRequirements = async (
+		documentId,
+		requirementTypeIds,
+		userId
+	) => {
+		try {
+			const result = await updateDocumentRequirements(
+				documentId,
+				requirementTypeIds,
+				userId
+			);
+
+			if (result && result.status === "success") {
+				fetchData();
+				toast.success("Document requirements updated successfully");
+				return true;
+			} else {
+				toast.error(
+					result?.message || "Failed to update document requirements"
+				);
+				return false;
+			}
+		} catch (error) {
+			console.error("Error updating document requirements:", error);
+			toast.error("Failed to update document requirements");
+			return false;
+		}
+	};
+
 	const resetForm = () => {
 		setFormData({ name: "" });
 		setEditingItem(null);
@@ -163,6 +285,11 @@ export default function useResources() {
 		setShowEditModal(false);
 		setShowDeleteModal(false);
 		setDeletingItem(null);
+		setShowDocumentRequirementModal(false);
+		setDocumentRequirementForm({
+			documentId: "",
+			requirementTypeIds: [],
+		});
 	};
 
 	useEffect(() => {
@@ -173,24 +300,33 @@ export default function useResources() {
 		// State
 		documents,
 		requirementTypes,
+		documentRequirements,
 		loading,
 		showAddModal,
 		showEditModal,
 		showDeleteModal,
+		showDocumentRequirementModal,
 		editingItem,
 		deletingItem,
 		modalType,
 		formData,
+		documentRequirementForm,
 		// Actions
 		handleAdd,
 		handleEdit,
 		handleDelete,
+		handleAddDocumentRequirement,
+		handleDeleteDocumentRequirement,
 		confirmDelete,
 		handleSubmit,
+		handleDocumentRequirementSubmit,
+		handleUpdateDocumentRequirements,
 		resetForm,
 		setFormData,
+		setDocumentRequirementForm,
 		// Setters for modals
 		setShowDeleteModal,
 		setDeletingItem,
+		setShowDocumentRequirementModal,
 	};
 }
