@@ -244,7 +244,14 @@ export default function RequestDetailsModal({
 											</span>
 										</div>
 										<p className="text-lg font-semibold text-slate-900 dark:text-white">
-											{new Date(request.dateRequested).toLocaleDateString()}
+											{new Date(request.dateRequested).toLocaleDateString(
+												"en-US",
+												{
+													month: "long",
+													day: "numeric",
+													year: "numeric",
+												}
+											)}
 										</p>
 									</div>
 
@@ -318,7 +325,14 @@ export default function RequestDetailsModal({
 															{status.status}
 														</span>
 														<span className="text-sm text-slate-600 dark:text-slate-400">
-															{status.dateFormatted}
+															{new Date(status.createdAt).toLocaleDateString(
+																"en-US",
+																{
+																	month: "long",
+																	day: "numeric",
+																	year: "numeric",
+																}
+															)}
 														</span>
 													</div>
 												</div>
