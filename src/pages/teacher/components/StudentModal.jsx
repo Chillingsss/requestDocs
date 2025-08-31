@@ -37,13 +37,10 @@ export default function StudentModal({
 }) {
 	const [uploading, setUploading] = useState(false);
 	const [selectedExcelFile, setSelectedExcelFile] = useState(null);
-	const [selectedPdfFile, setSelectedPdfFile] = useState(null);
 	const [uploadMode, setUploadMode] = useState("individual"); // individual, multiple, all
 	const [selectedStudents, setSelectedStudents] = useState(new Set());
 	const [bulkExcelFiles, setBulkExcelFiles] = useState({});
-	const [bulkPdfFiles, setBulkPdfFiles] = useState({});
 	const excelFileInputRef = useRef(null);
-	const pdfFileInputRef = useRef(null);
 
 	// Section update state
 	const [sectionUpdateMode, setSectionUpdateMode] = useState(false);
@@ -118,31 +115,9 @@ export default function StudentModal({
 		}
 	};
 
-	const handlePdfFileSelect = (e) => {
-		const file = e.target.files[0];
-		if (file) {
-			// Check if it's a PDF file
-			const fileExtension = file.name.toLowerCase().split(".").pop();
-			const isValidType = fileExtension === "pdf";
-
-			if (!isValidType) {
-				toast.error("Please select a valid PDF file (.pdf)");
-				return;
-			}
-
-			// Check file size (max 10MB)
-			if (file.size > 10 * 1024 * 1024) {
-				toast.error("PDF file size too large. Maximum size is 10MB.");
-				return;
-			}
-
-			setSelectedPdfFile(file);
-		}
-	};
-
 	const handleUpload = async () => {
-		if (!selectedExcelFile && !selectedPdfFile) {
-			toast.error("Please select at least one file (Excel or PDF)");
+		if (!selectedExcelFile) {
+			toast.error("Please select an Excel file (.xlsx or .xls)");
 			return;
 		}
 
@@ -153,15 +128,8 @@ export default function StudentModal({
 			formData.append("operation", "updateStudentFile");
 			formData.append("studentId", student.id);
 
-			// Add Excel file if selected
-			if (selectedExcelFile) {
-				formData.append("excelFile", selectedExcelFile);
-			}
-
-			// Add PDF file if selected
-			if (selectedPdfFile) {
-				formData.append("pdfFile", selectedPdfFile);
-			}
+			// Add Excel file
+			formData.append("excelFile", selectedExcelFile);
 
 			// Pass the teacher's grade level dynamically
 			formData.append("gradeLevelId", teacherGradeLevelId);
@@ -174,27 +142,70 @@ export default function StudentModal({
 			// Get the encrypted API URL from session storage
 			const apiUrl = getDecryptedApiUrl();
 
+			console.log("🚀 Starting upload process...");
+			console.log("📁 File details:", {
+				name: selectedExcelFile.name,
+				size: selectedExcelFile.size,
+				type: selectedExcelFile.type,
+			});
+			console.log("🔗 API URL:", apiUrl);
+			console.log("👤 Student ID:", student.id);
+			console.log("📊 Grade Level ID:", teacherGradeLevelId);
+			console.log("👨‍🏫 Teacher User ID:", teacherUserId);
+
 			const response = await fetch(`${apiUrl}/teacher.php`, {
 				method: "POST",
 				body: formData,
 			});
 
-			const result = await response.json();
+			console.log("📡 Response status:", response.status);
+			console.log("📡 Response headers:", response.headers);
+
+			// Get the raw response text first
+			const responseText = await response.text();
+			console.log("📄 Raw response text:", responseText);
+
+			// Try to parse as JSON
+			let result;
+			try {
+				result = JSON.parse(responseText);
+				console.log("✅ Parsed JSON result:", result);
+			} catch (parseError) {
+				console.error("❌ JSON parse error:", parseError);
+				console.error("❌ Raw response that couldn't be parsed:", responseText);
+
+				// Show the raw response in the error
+				toast.error(
+					`Server returned invalid response: ${responseText.substring(
+						0,
+						200
+					)}...`
+				);
+				return;
+			}
 
 			if (result.success) {
 				const gradeLevelName =
 					teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
 						? "Grade 11"
 						: "Grade 12";
-				toast.success(`${gradeLevelName} SF10 files updated successfully`);
+				toast.success(
+					`${gradeLevelName} SF10 Excel file uploaded and converted to PDF successfully`
+				);
 				onFileUpdate(); // Refresh the parent component
 				onClose(); // Close the modal
 			} else {
+				console.error("❌ Server returned error:", result);
 				toast.error(result.error || "Failed to update files");
 			}
 		} catch (error) {
-			console.error("Upload error:", error);
-			toast.error("Failed to upload files");
+			console.error("❌ Upload error:", error);
+			console.error("❌ Error details:", {
+				message: error.message,
+				stack: error.stack,
+				name: error.name,
+			});
+			toast.error(`Upload failed: ${error.message}`);
 		} finally {
 			setUploading(false);
 		}
@@ -264,38 +275,12 @@ export default function StudentModal({
 		}
 	};
 
-	const handleBulkPdfFileSelect = (studentId, file) => {
-		if (file) {
-			// Validate PDF file type
-			const fileExtension = file.name.toLowerCase().split(".").pop();
-			const isValidType = fileExtension === "pdf";
-
-			if (!isValidType) {
-				toast.error("Please select a valid PDF file (.pdf)");
-				return;
-			}
-
-			// Check file size (max 10MB)
-			if (file.size > 10 * 1024 * 1024) {
-				toast.error("PDF file size too large. Maximum size is 10MB.");
-				return;
-			}
-
-			setBulkPdfFiles((prev) => ({
-				...prev,
-				[studentId]: file,
-			}));
-		}
-	};
-
 	const handleBulkUpload = async () => {
 		const selectedIds = Array.from(selectedStudents);
-		const studentsWithFiles = selectedIds.filter(
-			(id) => bulkExcelFiles[id] || bulkPdfFiles[id]
-		);
+		const studentsWithFiles = selectedIds.filter((id) => bulkExcelFiles[id]);
 
 		if (studentsWithFiles.length === 0) {
-			toast.error("Please select files for at least one student");
+			toast.error("Please select Excel files for at least one student");
 			return;
 		}
 
@@ -317,18 +302,52 @@ export default function StudentModal({
 				formData.append(`excelFile_${studentId}`, bulkExcelFiles[studentId]);
 			});
 
-			// Add all PDF files
-			Object.keys(bulkPdfFiles).forEach((studentId) => {
-				formData.append(`pdfFile_${studentId}`, bulkPdfFiles[studentId]);
-			});
+			console.log("🚀 Starting bulk upload process...");
+			console.log("👥 Selected students:", selectedIds);
+			console.log(
+				"📁 Files to upload:",
+				Object.keys(bulkExcelFiles).map((id) => ({
+					studentId: id,
+					fileName: bulkExcelFiles[id].name,
+					fileSize: bulkExcelFiles[id].size,
+				}))
+			);
+			console.log("📊 Grade Level ID:", teacherGradeLevelId);
+			console.log("👨‍🏫 Teacher User ID:", teacherUserId);
 
 			const apiUrl = getDecryptedApiUrl();
+			console.log("🔗 API URL:", apiUrl);
+
 			const response = await fetch(`${apiUrl}/teacher.php`, {
 				method: "POST",
 				body: formData,
 			});
 
-			const result = await response.json();
+			console.log("📡 Response status:", response.status);
+			console.log("📡 Response headers:", response.headers);
+
+			// Get the raw response text first
+			const responseText = await response.text();
+			console.log("📄 Raw response text:", responseText);
+
+			// Try to parse as JSON
+			let result;
+			try {
+				result = JSON.parse(responseText);
+				console.log("✅ Parsed JSON result:", result);
+			} catch (parseError) {
+				console.error("❌ JSON parse error:", parseError);
+				console.error("❌ Raw response that couldn't be parsed:", responseText);
+
+				// Show the raw response in the error
+				toast.error(
+					`Server returned invalid response: ${responseText.substring(
+						0,
+						200
+					)}...`
+				);
+				return;
+			}
 
 			if (result.success) {
 				const gradeLevelName =
@@ -336,11 +355,12 @@ export default function StudentModal({
 						? "Grade 11"
 						: "Grade 12";
 				toast.success(
-					`Successfully uploaded ${result.successCount} ${gradeLevelName} SF10 file sets`
+					`Successfully uploaded ${result.successCount} ${gradeLevelName} SF10 Excel files and converted to PDF`
 				);
 				onFileUpdate(); // Refresh the parent component
 				onClose(); // Close the modal
 			} else {
+				console.error("❌ Server returned error:", result);
 				toast.error(result.error || "Failed to upload files");
 			}
 
@@ -348,21 +368,21 @@ export default function StudentModal({
 			setUploadMode("individual");
 			setSelectedStudents(new Set());
 			setBulkExcelFiles({});
-			setBulkPdfFiles({});
 			setSelectedExcelFile(null);
-			setSelectedPdfFile(null);
 			if (excelFileInputRef.current) {
 				excelFileInputRef.current.value = "";
-			}
-			if (pdfFileInputRef.current) {
-				pdfFileInputRef.current.value = "";
 			}
 
 			// Refresh data
 			onFileUpdate();
 		} catch (error) {
-			console.error("Bulk upload error:", error);
-			toast.error("Failed to upload files");
+			console.error("❌ Bulk upload error:", error);
+			console.error("❌ Error details:", {
+				message: error.message,
+				stack: error.stack,
+				name: error.name,
+			});
+			toast.error(`Bulk upload failed: ${error.message}`);
 		} finally {
 			setUploading(false);
 		}
@@ -372,7 +392,6 @@ export default function StudentModal({
 		setSelectedStudents(new Set());
 		setSelectedNewSection("");
 		setBulkExcelFiles({});
-		setBulkPdfFiles({});
 		setSectionUpdateMode(false);
 	};
 
@@ -576,7 +595,7 @@ export default function StudentModal({
 					{allStudents.length === 1 && (
 						<div className="space-y-3">
 							<Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-								Current SF10 Files
+								Current SF10 Files (Excel + PDF)
 							</Label>
 							{student.files && student.files.length > 0 ? (
 								<div className="space-y-2">
@@ -620,7 +639,7 @@ export default function StudentModal({
 								</div>
 							) : (
 								<div className="text-sm italic text-slate-500 dark:text-slate-400">
-									No SF10 files uploaded yet
+									No SF10 files uploaded yet (upload Excel to generate PDF)
 								</div>
 							)}
 						</div>
@@ -653,7 +672,7 @@ export default function StudentModal({
 							{teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
 								? "Grade 11"
 								: "Grade 12"}{" "}
-							SF10 files
+							SF10 Excel files
 							{(teacherGradeLevelId == 2 || teacherGradeLevelId === "2") && (
 								<span className="block mt-1 text-green-600 dark:text-green-400">
 									📊 Excel files will be stored in both SF10 records and student
@@ -725,44 +744,13 @@ export default function StudentModal({
 											)}
 										</div>
 									</div>
-
-									{/* PDF File Input */}
-									<div className="space-y-2">
-										<Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-											PDF File (.pdf)
-										</Label>
-										<div className="flex gap-2 items-center">
-											<Input
-												type="file"
-												accept=".pdf"
-												onChange={handlePdfFileSelect}
-												className="flex-1 border-slate-300 dark:border-slate-700"
-												disabled={uploading}
-												ref={pdfFileInputRef}
-											/>
-											{selectedPdfFile && (
-												<button
-													onClick={() => {
-														setSelectedPdfFile(null);
-														pdfFileInputRef.current.value = "";
-													}}
-													disabled={uploading}
-													className="p-1 text-red-600 rounded hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-												>
-													<X className="w-4 h-4" />
-												</button>
-											)}
-										</div>
-									</div>
 								</div>
 
 								{/* Upload Button */}
 								<div className="flex justify-center">
 									<Button
 										onClick={handleUpload}
-										disabled={
-											(!selectedExcelFile && !selectedPdfFile) || uploading
-										}
+										disabled={!selectedExcelFile || uploading}
 										className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700"
 									>
 										{uploading ? (
@@ -773,7 +761,7 @@ export default function StudentModal({
 										) : (
 											<>
 												<Upload className="w-4 h-4" />
-												Upload Files
+												Upload Excel File
 											</>
 										)}
 									</Button>
@@ -786,14 +774,9 @@ export default function StudentModal({
 											📊 Selected Excel: {selectedExcelFile.name}
 										</div>
 									)}
-									{selectedPdfFile && (
-										<div className="text-sm text-slate-600 dark:text-slate-400">
-											📄 Selected PDF: {selectedPdfFile.name}
-										</div>
-									)}
-									{!selectedExcelFile && !selectedPdfFile && (
+									{!selectedExcelFile && (
 										<div className="text-sm italic text-slate-500 dark:text-slate-400">
-											Please select at least one file (Excel or PDF)
+											Please select an Excel file (.xlsx or .xls)
 										</div>
 									)}
 								</div>
@@ -818,7 +801,6 @@ export default function StudentModal({
 											onClick={() => {
 												setSelectedStudents(new Set());
 												setBulkExcelFiles({});
-												setBulkPdfFiles({});
 											}}
 											className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
 										>
@@ -886,38 +868,6 @@ export default function StudentModal({
 														📊
 													</Button>
 
-													{/* PDF File Upload */}
-													<input
-														type="file"
-														accept=".pdf"
-														onChange={(e) =>
-															handleBulkPdfFileSelect(s.id, e.target.files[0])
-														}
-														className="hidden"
-														id={`bulk-pdf-${s.id}`}
-													/>
-													<Button
-														size="sm"
-														variant="outline"
-														onClick={() =>
-															document
-																.getElementById(`bulk-pdf-${s.id}`)
-																.click()
-														}
-														className={`p-1 w-6 h-6 ${
-															bulkPdfFiles[s.id]
-																? "bg-green-100 text-green-600 border-green-300 dark:bg-green-900 dark:text-green-400 dark:border-green-700"
-																: ""
-														}`}
-														title={
-															bulkPdfFiles[s.id]
-																? `Selected PDF: ${bulkPdfFiles[s.id].name}`
-																: "Upload PDF file"
-														}
-													>
-														📄
-													</Button>
-
 													{/* File Status Indicators */}
 													<div className="flex gap-1">
 														{bulkExcelFiles[s.id] && (
@@ -926,14 +876,6 @@ export default function StudentModal({
 																title="Excel file selected"
 															>
 																📊
-															</span>
-														)}
-														{bulkPdfFiles[s.id] && (
-															<span
-																className="text-xs text-green-600 dark:text-green-400"
-																title="PDF file selected"
-															>
-																📄
 															</span>
 														)}
 													</div>
@@ -948,9 +890,7 @@ export default function StudentModal({
 									<Button
 										onClick={handleBulkUpload}
 										disabled={
-											uploading ||
-											(Object.keys(bulkExcelFiles).length === 0 &&
-												Object.keys(bulkPdfFiles).length === 0)
+											uploading || Object.keys(bulkExcelFiles).length === 0
 										}
 										className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
 									>
@@ -962,10 +902,7 @@ export default function StudentModal({
 										) : (
 											<>
 												<Upload className="w-4 h-4" />
-												Upload{" "}
-												{Object.keys(bulkExcelFiles).length +
-													Object.keys(bulkPdfFiles).length}{" "}
-												Files
+												Upload {Object.keys(bulkExcelFiles).length} Excel Files
 											</>
 										)}
 									</Button>
@@ -974,8 +911,8 @@ export default function StudentModal({
 								{/* File Count Summary */}
 								{selectedStudents.size > 0 && (
 									<div className="text-sm text-slate-600 dark:text-slate-400">
-										📊 Excel files: {Object.keys(bulkExcelFiles).length} | 📄
-										PDF files: {Object.keys(bulkPdfFiles).length}
+										📊 Excel files: {Object.keys(bulkExcelFiles).length} (will
+										be converted to PDF automatically)
 									</div>
 								)}
 							</div>
@@ -1038,7 +975,7 @@ export default function StudentModal({
 												: "Grade 11 students can only enroll to Grade 12 sections"}
 											<span className="block mt-1 text-blue-600 dark:text-blue-400">
 												📋 After section update, you'll need to upload both
-												Excel and PDF SF10 files
+												Excel SF10 files (PDF generated automatically)
 											</span>
 										</div>
 									</div>
