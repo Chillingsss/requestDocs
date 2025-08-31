@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../../../components/ui/button";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, MessageSquare } from "lucide-react";
 import RequestDetailsModal from "../modal/RequestDetailsModal";
+import { getRequirementComments } from "../../../utils/student";
 
 export default function RequestsTable({
 	userRequests,
@@ -11,6 +12,7 @@ export default function RequestsTable({
 	const [selectedRequest, setSelectedRequest] = useState(null);
 	const [showDetailsModal, setShowDetailsModal] = useState(false);
 	const [expandedTimeline, setExpandedTimeline] = useState(null);
+	const [requirementComments, setRequirementComments] = useState({});
 
 	const handleRowClick = (request) => {
 		setSelectedRequest(request);
@@ -104,6 +106,18 @@ export default function RequestsTable({
 		return null; // Future status
 	};
 
+	useEffect(() => {
+		const fetchComments = async () => {
+			const comments = {};
+			for (const request of userRequests) {
+				comments[request.id] = await getRequirementComments(request.id);
+			}
+			setRequirementComments(comments);
+		};
+
+		fetchComments();
+	}, [userRequests]);
+
 	if (loadingRequests) {
 		return (
 			<div className="flex justify-center items-center py-8">
@@ -122,13 +136,6 @@ export default function RequestsTable({
 				<p className="text-gray-500 dark:text-gray-400 mb-6">
 					Start by requesting your first document
 				</p>
-				<Button
-					onClick={onRequestFormOpen}
-					className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700"
-				>
-					<Plus className="w-4 h-4" />
-					Request Document
-				</Button>
 			</div>
 		);
 	}
@@ -140,6 +147,14 @@ export default function RequestsTable({
 					<h2 className="text-lg font-semibold text-slate-900 dark:text-white">
 						My Document Requests
 					</h2>
+
+					{/* Tip for users - moved here for immediate visibility */}
+					<div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-700">
+						<p className="text-xs text-blue-600 dark:text-blue-400">
+							💡 <strong>Tip:</strong> Click on any request row to view full
+							details, progress timeline, and registrar comments.
+						</p>
+					</div>
 				</div>
 
 				<div className="overflow-x-auto">
@@ -162,7 +177,12 @@ export default function RequestsTable({
 								<tr
 									key={request.id}
 									onClick={() => handleRowClick(request)}
-									className="hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+									className={`cursor-pointer transition-colors ${
+										requirementComments[request.id] &&
+										requirementComments[request.id].length > 0
+											? "bg-amber-50 dark:bg-amber-900/10 border-l-4 border-l-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/20"
+											: "hover:bg-slate-100 dark:hover:bg-slate-700"
+									}`}
 								>
 									<td className="px-6 py-4 whitespace-nowrap">
 										<div className="text-sm font-medium text-slate-900 dark:text-white">
@@ -173,6 +193,27 @@ export default function RequestsTable({
 												📅 Releasing Date: {request.releaseDateFormatted}
 											</div>
 										)}
+										{requirementComments[request.id] &&
+											requirementComments[request.id].length > 0 && (
+												<div className="flex items-center gap-2 mt-2">
+													<div className="relative">
+														<MessageSquare className="w-4 h-4 text-amber-600" />
+														<div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+															<span className="text-xs text-white font-bold">
+																{requirementComments[request.id].length}
+															</span>
+														</div>
+													</div>
+													<div className="flex flex-col">
+														<span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+															Registrar Comment
+														</span>
+														<span className="text-xs text-amber-600 dark:text-amber-400">
+															Click to view details
+														</span>
+													</div>
+												</div>
+											)}
 									</td>
 									<td className="px-6 py-4 whitespace-nowrap">
 										<div className="flex gap-1">
