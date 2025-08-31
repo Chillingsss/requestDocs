@@ -648,6 +648,11 @@ export default function RegistrarDashboard() {
 																		Rejected
 																	</span>
 																)}
+																{req.status === "Cancelled" && (
+																	<span className="inline-flex px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full dark:text-red-400 dark:bg-red-900/20">
+																		Cancelled
+																	</span>
+																)}
 															</td>
 														</tr>
 													))}
@@ -664,7 +669,7 @@ export default function RegistrarDashboard() {
 					) : activeTab === "documents" ? (
 						/* Documents Tab - New component for student documents */
 						<DocumentsTab />
-					) : activeTab === "lrn_requests" ? (
+					) : activeTab === "lrn_requests" ? ( 
 						/* LRN Requests Tab */
 						<LrnRequestsTab userId={userId} students={students} />
 					) : null}

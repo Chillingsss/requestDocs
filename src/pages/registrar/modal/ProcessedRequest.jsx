@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "../../../components/ui/button";
 import {
 	X,
@@ -26,6 +26,8 @@ import DiplomaTemplateModal from "../components/DiplomaTemplateModal";
 import CertificateTemplateModal from "../components/CertificateTemplateModal";
 import CavTemplateModal from "../components/CavTemplateModal";
 import ReleaseScheduleModal from "./ReleaseScheduleModal";
+import RequirementCommentModal from "./RequirementCommentModal";
+import RequirementCommentsSection from "../components/RequirementCommentsSection";
 
 export default function ProcessedRequest({
 	request,
@@ -48,6 +50,10 @@ export default function ProcessedRequest({
 	const [currentRequest, setCurrentRequest] = useState(request);
 	const [releaseSchedule, setReleaseSchedule] = useState(null);
 	const [doubleRequestNote, setDoubleRequestNote] = useState(null);
+
+	// Requirement comment modal state
+	const [showCommentModal, setShowCommentModal] = useState(false);
+	const [selectedRequirement, setSelectedRequirement] = useState(null);
 
 	// Update currentRequest when request prop changes
 	useEffect(() => {
@@ -432,6 +438,42 @@ export default function ProcessedRequest({
 		}
 	};
 
+	// Requirement comment handlers
+	const handleAddComment = (requirement) => {
+		setSelectedRequirement(requirement);
+		setShowCommentModal(true);
+	};
+
+	const handleCommentSuccess = () => {
+		// Close the comment modal first
+		setShowCommentModal(false);
+		setSelectedRequirement(null);
+
+		// Force refresh of comments section by updating a key
+		setCommentsRefreshKey((prev) => prev + 1);
+
+		// Also try to refresh via ref if available
+		if (
+			commentsRefreshRef.current &&
+			commentsRefreshRef.current.fetchComments
+		) {
+			commentsRefreshRef.current.fetchComments();
+		}
+
+		onSuccess();
+	};
+
+	const handleCommentClose = () => {
+		setShowCommentModal(false);
+		setSelectedRequirement(null);
+	};
+
+	// Ref for refreshing comments
+	const commentsRefreshRef = useRef();
+
+	// Key to force refresh of comments section
+	const [commentsRefreshKey, setCommentsRefreshKey] = useState(0);
+
 	// Function to get button text and color based on status
 	const getButtonConfig = () => {
 		if (!currentRequest || !currentRequest.status) {
@@ -454,6 +496,12 @@ export default function ProcessedRequest({
 			isCavRequest();
 
 		switch (statusName) {
+			case "cancelled":
+				return {
+					text: "Request Cancelled",
+					bgColor: "bg-gray-400",
+					disabled: true,
+				};
 			case "pending":
 				// Always show 'Mark as Processed' for diploma, certificate, and CAV requests
 				const buttonText = isDiplomaRequest()
@@ -715,19 +763,30 @@ export default function ProcessedRequest({
 							)}
 
 							{/* Purpose */}
-							{currentRequest?.purpose && (
-								<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
-									<div className="flex gap-3 items-center mb-3">
-										<MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-										<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-											Purpose
-										</span>
+							{currentRequest?.displayPurpose &&
+								currentRequest.displayPurpose !== "No purpose specified" && (
+									<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
+										<div className="flex gap-3 items-center mb-3">
+											<MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+											<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+												Purpose
+											</span>
+										</div>
+										<p className="text-base leading-relaxed break-words text-slate-900 dark:text-white">
+											{currentRequest.displayPurpose}
+										</p>
+										{/* Show source of purpose information */}
+										{currentRequest.purpose ? (
+											<p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+												📝 Custom purpose entered by student
+											</p>
+										) : (
+											<p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+												✅ Predefined purposes from document requirements
+											</p>
+										)}
 									</div>
-									<p className="text-base leading-relaxed break-words text-slate-900 dark:text-white">
-										{currentRequest.purpose}
-									</p>
-								</div>
-							)}
+								)}
 
 							{/* Student Documents */}
 							{!isDiplomaRequest() &&
@@ -896,13 +955,27 @@ export default function ProcessedRequest({
 								setGroupByType={setGroupByType}
 								openImageZoom={openImageZoom}
 								isImageFile={isImageFile}
+								requestId={currentRequest.id}
+								registrarId={userId}
+								onAddComment={handleAddComment}
 								note={
 									isCavRequest() &&
 									attachments.length === 0 &&
 									doubleRequestNote
-										? `Note: This looks like a combined request (Diploma + CAV) submitted on ${formatShortDateTime(currentRequest.dateRequested)}. Please process the Diploma first; once completed, proceed with the CAV.`
+										? `Note: This looks like a combined request (Diploma + CAV) submitted on ${formatShortDateTime(
+												currentRequest.dateRequested
+										  )}. Please process the Diploma first; once completed, proceed with the CAV.`
 										: undefined
 								}
+							/>
+
+							{/* Requirement Comments Section */}
+							<RequirementCommentsSection
+								requestId={currentRequest.id}
+								onRefresh={onSuccess}
+								refreshRef={commentsRefreshRef}
+								refreshKey={commentsRefreshKey} // Pass the refresh key
+								key={commentsRefreshKey} // Add key to force re-render
 							/>
 						</div>
 					</div>
@@ -997,6 +1070,18 @@ export default function ProcessedRequest({
 					onClose={handleReleaseScheduleClose}
 					request={currentRequest}
 					onSuccess={handleReleaseScheduleSuccess}
+					userId={userId}
+				/>
+			)}
+
+			{/* Requirement Comment Modal */}
+			{showCommentModal && selectedRequirement && (
+				<RequirementCommentModal
+					isOpen={showCommentModal}
+					onClose={handleCommentClose}
+					requestId={currentRequest.id}
+					requirement={selectedRequirement}
+					onSuccess={handleCommentSuccess}
 					userId={userId}
 				/>
 			)}

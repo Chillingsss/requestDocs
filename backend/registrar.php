@@ -31,7 +31,16 @@ class User {
                 r.purpose,
                 DATE(r.createdAt) as dateRequested,
                 s.name as status,
-                s.id as statusId
+                s.id as statusId,
+                CASE 
+                  WHEN r.purpose IS NOT NULL THEN r.purpose
+                  WHEN EXISTS (SELECT 1 FROM tblrequestpurpose rp WHERE rp.requestId = r.id) THEN 
+                    (SELECT GROUP_CONCAT(p.name SEPARATOR ', ') 
+                     FROM tblrequestpurpose rp 
+                     INNER JOIN tblpurpose p ON rp.purposeId = p.id 
+                     WHERE rp.requestId = r.id)
+                  ELSE 'No purpose specified'
+                END as displayPurpose
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
@@ -71,7 +80,16 @@ class User {
                 r.purpose,
                 DATE(r.createdAt) as dateRequested,
                 s.name as status,
-                s.id as statusId
+                s.id as statusId,
+                CASE 
+                  WHEN r.purpose IS NOT NULL THEN r.purpose
+                  WHEN EXISTS (SELECT 1 FROM tblrequestpurpose rp WHERE rp.requestId = r.id) THEN 
+                    (SELECT GROUP_CONCAT(p.name SEPARATOR ', ') 
+                     FROM tblrequestpurpose rp 
+                     INNER JOIN tblpurpose p ON rp.purposeId = p.id 
+                     WHERE rp.requestId = r.id)
+                  ELSE 'No purpose specified'
+                END as displayPurpose
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
@@ -222,7 +240,9 @@ class User {
 
     try {
       $sql = "SELECT 
+                req.id,
                 req.filepath,
+                req.typeId,
                 rt.nameType as requirementType,
                 req.createdAt
               FROM tblrequirements req
@@ -970,7 +990,16 @@ class User {
                       s.firstname,
                       s.lastname,
                       s.email,
-                      s.middlename
+                      s.middlename,
+                      CASE 
+                        WHEN r.purpose IS NOT NULL THEN r.purpose
+                        WHEN EXISTS (SELECT 1 FROM tblrequestpurpose rp WHERE rp.requestId = r.id) THEN 
+                          (SELECT GROUP_CONCAT(p.name SEPARATOR ', ') 
+                           FROM tblrequestpurpose rp 
+                           INNER JOIN tblpurpose p ON rp.purposeId = p.id 
+                           WHERE rp.requestId = r.id)
+                        ELSE 'No purpose specified'
+                      END as displayPurpose
                     FROM tblrequest r
                     INNER JOIN tbldocument d ON r.documentId = d.id
                     INNER JOIN tblstudent s ON r.studentId = s.id
@@ -1096,7 +1125,7 @@ class User {
             <div style='background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #5409DA; margin: 20px 0;'>
               <h3 style='color: #5409DA; margin-top: 0;'>Request Details:</h3>
               <p><strong>Document:</strong> {$requestData['documentName']}</p>
-              <p><strong>Purpose:</strong> {$requestData['purpose']}</p>
+              <p><strong>Purpose:</strong> {$requestData['displayPurpose']}</p>
               <p><strong>Release Date:</strong> {$formattedDate}</p>
               <p><strong>Office Hours:</strong> {$formattedTime}</p>
             </div>
@@ -1134,7 +1163,7 @@ class User {
         
         Request Details:
         - Document: {$requestData['documentName']}
-        - Purpose: {$requestData['purpose']}
+        - Purpose: {$requestData['displayPurpose']}
         - Release Date: {$formattedDate}
         - Office Hours: {$formattedTime}
         
@@ -1392,6 +1421,270 @@ function sendLrnEmail($requestData)
   }
 }
 
+  // Add requirement comment
+  function addRequirementComment($json)
+  {
+    include "connection.php";
+    
+    $json = json_decode($json, true);
+    $requirementId = $json['requirementId'];
+    $requestId = $json['requestId'];
+    $registrarId = $json['registrarId'];
+    $comment = $json['comment'];
+    
+    try {
+      $conn->beginTransaction();
+      
+      // Insert the comment
+      $insertSql = "INSERT INTO tblrequirementcomments (requirementId, requestId, registrarId, comment, status, createdAt) 
+                    VALUES (:requirementId, :requestId, :registrarId, :comment, 'pending', NOW())";
+      
+      $insertStmt = $conn->prepare($insertSql);
+      $insertStmt->bindParam(':requirementId', $requirementId);
+      $insertStmt->bindParam(':requestId', $requestId);
+      $insertStmt->bindParam(':registrarId', $registrarId);
+      $insertStmt->bindParam(':comment', $comment);
+      
+      if (!$insertStmt->execute()) {
+        $conn->rollBack();
+        return json_encode(['error' => 'Failed to add comment']);
+      }
+      
+      $commentId = $conn->lastInsertId();
+      
+      // Get student information for email
+      $studentSql = "SELECT 
+                      s.firstname, s.lastname, s.email, s.middlename,
+                      d.name as documentName,
+                      r.purpose,
+                      CASE 
+                        WHEN r.purpose IS NOT NULL THEN r.purpose
+                        WHEN EXISTS (SELECT 1 FROM tblrequestpurpose rp WHERE rp.requestId = r.id) THEN 
+                          (SELECT GROUP_CONCAT(p.name SEPARATOR ', ') 
+                           FROM tblrequestpurpose rp 
+                           INNER JOIN tblpurpose p ON rp.purposeId = p.id 
+                           WHERE rp.requestId = r.id)
+                        ELSE 'No purpose specified'
+                      END as displayPurpose
+                    FROM tblrequest r
+                    INNER JOIN tbldocument d ON r.documentId = d.id
+                    INNER JOIN tblstudent s ON r.studentId = s.id
+                    WHERE r.id = :requestId";
+      
+      $studentStmt = $conn->prepare($studentSql);
+      $studentStmt->bindParam(':requestId', $requestId);
+      $studentStmt->execute();
+      
+      if ($studentStmt->rowCount() > 0) {
+        $studentData = $studentStmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Get requirement details
+        $reqSql = "SELECT req.filepath, rt.nameType as requirementType
+                   FROM tblrequirements req
+                   LEFT JOIN tblrequirementstype rt ON req.typeId = rt.id
+                   WHERE req.id = :requirementId";
+        
+        $reqStmt = $conn->prepare($reqSql);
+        $reqStmt->bindParam(':requirementId', $requirementId);
+        $reqStmt->execute();
+        
+        $requirementData = $reqStmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Send email notification
+        $emailSent = $this->sendRequirementCommentEmail($studentData, $requirementData, $comment);
+        
+        if ($emailSent) {
+          // Update notification status
+          $updateSql = "UPDATE tblrequirementcomments SET isNotified = 1 WHERE id = :commentId";
+          $updateStmt = $conn->prepare($updateSql);
+          $updateStmt->bindParam(':commentId', $commentId);
+          $updateStmt->execute();
+        }
+      }
+      
+      $conn->commit();
+      return json_encode([
+        'success' => true, 
+        'message' => 'Comment added successfully',
+        'commentId' => $commentId,
+        'emailSent' => $emailSent ?? false
+      ]);
+      
+    } catch (PDOException $e) {
+      $conn->rollBack();
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  // Get requirement comments for a request
+  function getRequirementComments($json)
+  {
+    include "connection.php";
+    
+    $json = json_decode($json, true);
+    $requestId = $json['requestId'];
+    
+    try {
+      $sql = "SELECT 
+                rc.id,
+                rc.comment,
+                rc.status,
+                rc.createdAt,
+                rc.isNotified,
+                u.firstname as registrarFirstName,
+                u.lastname as registrarLastName,
+                req.filepath,
+                rt.nameType as requirementType
+              FROM tblrequirementcomments rc
+              INNER JOIN tbluser u ON rc.registrarId = u.id
+              INNER JOIN tblrequirements req ON rc.requirementId = req.id
+              LEFT JOIN tblrequirementstype rt ON req.typeId = rt.id
+              WHERE rc.requestId = :requestId
+              ORDER BY rc.createdAt DESC";
+      
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':requestId', $requestId);
+      $stmt->execute();
+      
+      if ($stmt->rowCount() > 0) {
+        $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return json_encode($comments);
+      }
+      return json_encode([]);
+      
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  // Update comment status
+  function updateCommentStatus($json)
+  {
+    include "connection.php";
+    
+    $json = json_decode($json, true);
+    $commentId = $json['commentId'];
+    $status = $json['status'];
+    
+    try {
+      $sql = "UPDATE tblrequirementcomments 
+              SET status = :status, updatedAt = NOW() 
+              WHERE id = :commentId";
+      
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':status', $status);
+      $stmt->bindParam(':commentId', $commentId);
+      
+      if ($stmt->execute()) {
+        return json_encode(['success' => true, 'message' => 'Comment status updated successfully']);
+      } else {
+        return json_encode(['error' => 'Failed to update comment status']);
+      }
+      
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  // Send email notification for requirement comments
+  function sendRequirementCommentEmail($studentData, $requirementData, $comment)
+  {
+    try {
+      include_once "vendor/autoload.php";
+      include_once "email_config.php";
+      
+      $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+      
+      // Server settings
+      $mail->isSMTP();
+      $mail->Host = SMTP_HOST;
+      $mail->SMTPAuth = true;
+      $mail->Username = SMTP_USERNAME;
+      $mail->Password = SMTP_PASSWORD;
+      $mail->SMTPSecure = SMTP_SECURE === 'tls' ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+      $mail->Port = SMTP_PORT;
+      
+      // Recipients
+      $mail->setFrom(FROM_EMAIL, FROM_NAME);
+      $mail->addAddress($studentData['email'], $studentData['firstname'] . ' ' . $studentData['lastname']);
+      
+      // Content
+      $mail->isHTML(true);
+      $mail->Subject = EMAIL_SUBJECT_PREFIX . 'Document Requirement Issue';
+      
+      $mail->Body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+          <div style='background-color: #dc3545; color: white; padding: 20px; text-align: center;'>
+            <h1 style='margin: 0;'>MOGCHS Registrar Office</h1>
+          </div>
+          
+          <div style='padding: 30px; background-color: #f9f9f9;'>
+            <h2 style='color: #333; margin-bottom: 20px;'>Document Requirement Issue</h2>
+            
+            <p>Dear <strong>{$studentData['firstname']} {$studentData['lastname']}</strong>,</p>
+            
+            <p>We have identified an issue with one of your submitted requirements for your document request.</p>
+            
+            <div style='background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #dc3545; margin: 20px 0;'>
+              <h3 style='color: #dc3545; margin-top: 0;'>Issue Details:</h3>
+              <p><strong>Document:</strong> {$studentData['documentName']}</p>
+              <p><strong>Purpose:</strong> {$studentData['displayPurpose']}</p>
+              <p><strong>Requirement Type:</strong> {$requirementData['requirementType']}</p>
+              <p><strong>File:</strong> {$requirementData['filepath']}</p>
+              <p><strong>Issue:</strong> {$comment}</p>
+            </div>
+            
+            <div style='background-color: #fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeaa7;'>
+              <h4 style='color: #856404; margin-top: 0;'>Action Required:</h4>
+              <p style='color: #856404; margin: 10px 0;'>Please review the issue above and resubmit the corrected requirement file. You can access your request through the student portal.</p>
+            </div>
+            
+            <p>If you have any questions, please contact the registrar office.</p>
+            
+            <p>Best regards,<br>
+            <strong>MOGCHS Registrar Office</strong></p>
+          </div>
+          
+          <div style='background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;'>
+            <p style='margin: 0;'>This is an automated message. Please do not reply to this email.</p>
+          </div>
+        </div>
+      ";
+      
+      $mail->AltBody = "
+        MOGCHS Registrar Office
+        
+        Document Requirement Issue
+        
+        Dear {$studentData['firstname']} {$studentData['lastname']},
+        
+        We have identified an issue with one of your submitted requirements for your document request.
+        
+        Issue Details:
+        - Document: {$studentData['documentName']}
+        - Purpose: {$studentData['displayPurpose']}
+        - Requirement Type: {$requirementData['requirementType']}
+        - File: {$requirementData['filepath']}
+        - Issue: {$comment}
+        
+        Action Required:
+        Please review the issue above and resubmit the corrected requirement file. You can access your request through the student portal.
+        
+        If you have any questions, please contact the registrar office.
+        
+        Best regards,
+        MOGCHS Registrar Office
+      ";
+      
+      $mail->send();
+      return true;
+      
+    } catch (Exception $e) {
+      error_log("Email sending failed: " . $e->getMessage());
+      return false;
+    }
+  }
+
 }
 
 $operation = isset($_POST["operation"]) ? $_POST["operation"] : "0";
@@ -1472,6 +1765,15 @@ switch ($operation) {
   case "processLrnRequest":
     echo $user->processLrnRequest($json);
   break;
+  case "addRequirementComment":
+    echo $user->addRequirementComment($json);
+    break;
+  case "getRequirementComments":
+    echo $user->getRequirementComments($json);
+    break;
+  case "updateCommentStatus":
+    echo $user->updateCommentStatus($json);
+    break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");
     http_response_code(400); // Bad Request
