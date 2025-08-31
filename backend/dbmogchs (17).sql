@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 31, 2025 at 04:37 AM
+-- Generation Time: Aug 31, 2025 at 04:05 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -105,14 +105,6 @@ CREATE TABLE `tblforgotlrn` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `tblforgotlrn`
---
-
-INSERT INTO `tblforgotlrn` (`id`, `firstname`, `lastname`, `email`, `is_processed`, `processed_by`, `processed_at`, `created_at`) VALUES
-(1, 'Patty', 'Aspiras', 'rape.gallegos.coc@phinmaed.com', 1, '02-1819-01500', '2025-08-19 21:53:22', '2025-08-19 21:36:33'),
-(2, 'Patricia', 'Aspiras', 'rape.gallegos.coc@phinmaed.com', 1, '02-1819-01500', '2025-08-19 21:58:45', '2025-08-19 21:55:04');
-
 -- --------------------------------------------------------
 
 --
@@ -177,14 +169,6 @@ CREATE TABLE `tblreleaseschedule` (
   `createdAt` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `tblreleaseschedule`
---
-
-INSERT INTO `tblreleaseschedule` (`id`, `requestId`, `userId`, `dateSchedule`, `createdAt`) VALUES
-(5, 1, '02-1819-01500', '2025-08-25', '2025-08-18 12:46:41'),
-(8, 4, '02-1819-01500', '2025-09-01', '2025-08-26 21:29:31');
-
 -- --------------------------------------------------------
 
 --
@@ -204,12 +188,10 @@ CREATE TABLE `tblrequest` (
 --
 
 INSERT INTO `tblrequest` (`id`, `studentId`, `documentId`, `purpose`, `createdAt`) VALUES
-(1, '22-2222-2222', 6, 'College Application', '2025-08-06 06:03:42'),
-(2, '22-2222-2222', 5, 'College Application', '2025-08-06 06:46:44'),
-(4, '33333333', 5, 'shesh', '2025-08-10 10:02:50'),
-(5, '33333333', 8, 'hehe', '2025-08-10 10:45:26'),
-(11, '33333333', 6, 'Employment', '2025-08-20 08:13:43'),
-(16, '12345678', 5, 'enrollments', '2025-08-20 10:03:58');
+(2, '33333333', 5, 'Applying work', '2025-08-31 07:05:25'),
+(3, '33333333', 5, 'enrollment', '2025-08-31 09:21:45'),
+(4, '33333333', 6, NULL, '2025-08-31 09:35:40'),
+(5, '33333333', 7, NULL, '2025-08-31 09:35:40');
 
 -- --------------------------------------------------------
 
@@ -222,6 +204,14 @@ CREATE TABLE `tblrequestpurpose` (
   `requestId` int(11) NOT NULL,
   `purposeId` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblrequestpurpose`
+--
+
+INSERT INTO `tblrequestpurpose` (`id`, `requestId`, `purposeId`) VALUES
+(1, 5, 1),
+(2, 5, 7);
 
 -- --------------------------------------------------------
 
@@ -242,18 +232,29 @@ CREATE TABLE `tblrequeststatus` (
 --
 
 INSERT INTO `tblrequeststatus` (`id`, `requestId`, `statusId`, `userId`, `createdAt`) VALUES
-(1, 1, 1, NULL, '2025-08-06 06:03:42'),
-(2, 2, 1, NULL, '2025-08-06 06:46:44'),
-(4, 4, 1, NULL, '2025-08-10 10:02:50'),
-(5, 5, 1, NULL, '2025-08-10 10:45:26'),
-(7, 1, 2, NULL, '2025-08-18 12:21:40'),
-(8, 1, 3, NULL, '2025-08-18 12:21:41'),
-(10, 1, 4, NULL, '2025-08-18 12:46:45'),
-(11, 4, 2, NULL, '2025-08-20 04:09:10'),
-(12, 4, 3, NULL, '2025-08-20 04:09:11'),
-(18, 11, 1, NULL, '2025-08-20 08:13:43'),
-(23, 16, 1, NULL, '2025-08-20 10:03:58'),
-(25, 4, 4, NULL, '2025-08-26 09:29:36');
+(2, 2, 1, NULL, '2025-08-31 07:05:25'),
+(7, 2, 7, NULL, '2025-08-31 09:07:00'),
+(8, 3, 1, NULL, '2025-08-31 09:21:45'),
+(9, 4, 1, NULL, '2025-08-31 09:35:40'),
+(10, 5, 1, NULL, '2025-08-31 09:35:40');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblrequirementcomments`
+--
+
+CREATE TABLE `tblrequirementcomments` (
+  `id` int(11) NOT NULL,
+  `requirementId` int(11) NOT NULL,
+  `requestId` int(11) NOT NULL,
+  `registrarId` varchar(50) NOT NULL,
+  `comment` text NOT NULL,
+  `status` enum('pending','resolved') NOT NULL DEFAULT 'pending',
+  `isNotified` tinyint(1) NOT NULL DEFAULT 0,
+  `createdAt` datetime NOT NULL DEFAULT current_timestamp(),
+  `updatedAt` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -274,8 +275,7 @@ CREATE TABLE `tblrequirements` (
 --
 
 INSERT INTO `tblrequirements` (`id`, `requestId`, `filepath`, `typeId`, `createdAt`) VALUES
-(1, 1, '521827746_1955938708539586_392632500952961470_n.jpg', 2, '2025-08-06 06:03:42'),
-(4, 11, 'chill logo.jpg', 2, '2025-08-20 08:13:43');
+(1, 4, '521827746_1955938708539586_392632500952961470_n.jpg', 2, '2025-08-31 09:35:40');
 
 -- --------------------------------------------------------
 
@@ -370,8 +370,7 @@ CREATE TABLE `tblsfrecord` (
 --
 
 INSERT INTO `tblsfrecord` (`id`, `fileName`, `studentId`, `gradeLevelId`, `userId`, `createdAt`) VALUES
-(73, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record-CANONCEsample.xlsx', '22-2222-2222', 1, '4771830', '2025-08-17 21:57:54'),
-(119, 'SF10 - Patty - grade 12 (1).xlsx', '33333333', 1, '4771830', '2025-08-20 16:06:01'),
+(119, 'SF10 - Patty (2).xlsx', '33333333', 1, '47718333', '2025-08-20 16:06:01'),
 (120, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '128164140135', 1, '4771830', '2025-08-20 22:21:31'),
 (121, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127964120138', 1, '4771830', '2025-08-20 22:21:31'),
 (122, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127940140437', 1, '4771830', '2025-08-20 22:21:31'),
@@ -455,7 +454,9 @@ INSERT INTO `tblsfrecord` (`id`, `fileName`, `studentId`, `gradeLevelId`, `userI
 (201, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127995141402', 1, '02-1819-01500', '2025-08-20 22:34:52'),
 (202, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127958140020', 1, '02-1819-01500', '2025-08-20 22:34:52'),
 (203, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '126905140061', 1, '02-1819-01500', '2025-08-20 22:34:52'),
-(204, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127954140318', 1, '02-1819-01500', '2025-08-20 22:34:52');
+(204, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127954140318', 1, '02-1819-01500', '2025-08-20 22:34:52'),
+(205, 'SF10 - Patty - grade 12 (1).xlsx', '33333333', 2, '4771833', '2025-08-31 17:03:56'),
+(207, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '99999', 1, '47718333', '2025-08-31 16:00:42');
 
 -- --------------------------------------------------------
 
@@ -479,7 +480,8 @@ INSERT INTO `tblstatus` (`id`, `name`, `userId`, `createdAt`) VALUES
 (2, 'Processed', NULL, '2025-07-24 13:52:56'),
 (3, 'Signatory', NULL, '2025-07-24 13:52:56'),
 (4, 'Release', NULL, '2025-07-24 13:52:56'),
-(5, 'Completed', NULL, '2025-07-24 13:52:56');
+(5, 'Completed', NULL, '2025-07-24 13:52:56'),
+(7, 'Cancelled', NULL, '2025-08-31 14:09:48');
 
 -- --------------------------------------------------------
 
@@ -543,7 +545,6 @@ INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, 
 ('0000000', 'Mel', '', 'Macario', 'mel@gmail.com', '$2y$10$IHxI5jXXSg8JjqXBZGk0n.IqU4sM9QIv9bLZuV3MaCBHQKjbXKXh2', 4, '0000000', 2, '0000-00-00', 0, '', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:33:27', '2025-08-20 14:33:27'),
 ('117851130016', 'STEPHEN', 'CABALLERO', 'JOHNSON', NULL, '$2y$10$XxnfSYDm7EYTCrIi5qgH7eB.fu4BcBX16yjn0r3nxB4WMmvx0f7WW', 4, '117851130016', 2, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('119453140027', 'MARTIN', 'NICOLE TAYO', 'HABONITA', NULL, '$2y$10$TQ.LhjaTOTie8kXpd/1NguGaEIoobnnqlcNUAruZ/f77LbLDi9NCq', 4, '119453140027', 3, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
-('12345678', 'Ralph', '', 'Gwapo', 'ralphjanpelino@gmail.com', '$2y$10$fV/vGaltTde.4hIf1PM51eAs0tCV1rKIW/qKgqDZTM1Fs/OKeGsTy', 4, '12345678', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, '2025-08-20 13:47:26', '2025-08-20 14:04:31'),
 ('126277140066', 'CHELLIE', 'ASHLY AMANTE', 'BADBAD', NULL, '$2y$10$aDnaqsKTFz3LF7MZ10iui.kRIlTL2Jl1jh29mnLHZ5ujvqrcdwm5.', 4, '126277140066', 3, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
 ('126340130018', 'KIRBY', 'KATE NEPOMUCINO', 'REPUELA', NULL, '$2y$10$mhJdQmUIFFiFd6KRjf8Zjuy0zP/jpE9Oju8lmQP41R/2n9KvOQHnS', 4, '126340130018', 3, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 4, 4, 1, '2025-08-20 14:34:52', '2025-08-20 14:34:52'),
 ('126462140017', 'DONNA', 'FATE PAÑA', 'BAGUHIN', NULL, '$2y$10$nw3XUsHb3K0PXF8ODj2geu7SEgroRe9HtsFDv.rp1V0.VA.yNDjJS', 4, '126462140017', 3, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
@@ -622,14 +623,12 @@ INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, 
 ('136913130093', 'HERMINE', 'GUMBAY', 'DIMASINSIL', NULL, '$2y$10$DXSODBC8XsmnHXLqvl77aeV2vIxNaEnl58ZD7Im7zWTe0MByn5pdK', 4, '136913130093', 2, '0000-00-00', 17, 'Islam', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
 ('18', '<===', 'TOTAL', 'MALE', NULL, '$2y$10$Bc6Z.jRG26hUOgycmeQBfeB70rNnIO.XdFUTtAFbPExUFgZKOjL8S', 4, '18', 3, '0000-00-00', 0, '', '', '', '', '', '', 4, 4, 1, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
 ('201511140006', 'CARL', 'KESTER LIGUTOM', 'PELIGRO', NULL, '$2y$10$5jvHmOKXl1kiIiQjhzOq0.nMX6E3meAjEBynFwbj/ri5asp9MTBrS', 4, '201511140006', 2, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('22-2222-2222', 'Mary', '', 'Canonce', 'rape.gallegos.coc@phinmaed.com', '$2y$10$ilQ21S3VWhBRYoDmzF0Vde/yDH46dTr4K4qYDuNM7FA5N5FTfurjG', 4, '22-2222-2222', 1, '2002-02-22', 22, 'Roman Catholic', 'Iponan', '', '', '', '', 3, 4, 1, '2025-08-06 09:48:41', '2025-08-20 14:22:24'),
-('33333333', 'Patricia', '', 'Aspirass', 'pattyaspiras@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '2003-02-21', 20, 'Roman Catholic', 'Iponan', 'ralph jan gallegos', '', '', '', 3, 4, 1, '2025-08-06 12:42:47', '2025-08-26 13:29:18'),
+('33333333', 'Patricia', '', 'Aspirass', 'jabagat.jacklindenise@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '2003-02-21', 20, 'Roman Catholic', 'Iponan', '', '', '', '', 10, 4, 1, '2025-08-06 12:42:47', '2025-08-31 13:55:04'),
 ('405155150193', 'MARICEL', 'SIBOLON', 'MANOS', NULL, '$2y$10$9eET.qQUrtDwOqlf2YnX4Os1lOS8XZUMGUJGUnOouoO8.eu7OArby', 4, '405155150193', 2, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
 ('405176150009', 'BRAD', 'LUNA', 'PADERANGA', NULL, '$2y$10$IKa07rDnOnyyDRgU9Pld8.ax4NvtqJlrJOAZf2fu455/SfagePJei', 4, '405176150009', 3, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
 ('405241150066', 'ARJAY', 'PALMARES', 'REYES', NULL, '$2y$10$BTcS0XTgogiC8zaYkwIi7uquX/Vjq/LKBlZa5.NHzS/tWjh5ZWvOe', 4, '405241150066', 2, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('510062400004', 'JOHAYVER', 'CALIPAPA', 'MAKI', NULL, '$2y$10$GsuBHsmmAM5M8uZkjrzrCuxhzuK5FE4ppVUDu1t5D/BGMmh2qsfnu', 4, '510062400004', 2, '0000-00-00', 18, 'Islam', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('55555', 'Marry', '', 'Canonce', NULL, '$2y$10$Kh.lheyanVdPQ93IhSKWXOXdb6H078NQISywtuunTTmjnMlD2iEc2', 4, '55555', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 1, 1, '2025-08-12 06:35:56', '2025-08-20 14:22:10'),
-('66666', 'Patricia', '', 'Patty', 'paja.aspiras.coc@phinmaed.com', '$2y$10$XIjLXAAawuiHM9jaXs5HEuDhZ86Tt.4XjhkAztA26d5IbjNq5pz4.', 4, '66666', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 2, 1, '2025-08-12 06:35:56', '2025-08-26 13:45:20');
+('99999', 'Edmarlen', '', 'Catid', 'pattyaspiras@gmail.com', '$2y$10$Uaa8DoxJGgwn5nXusRp1LuS0MpAfqNWVj2kOc978/bl093Vf85tz2', 4, '99999', 1, '0000-00-00', 0, '', '', '', '', '', '', 2, 4, 1, '2025-08-31 14:00:03', '2025-08-31 14:00:03');
 
 -- --------------------------------------------------------
 
@@ -652,10 +651,7 @@ CREATE TABLE `tblstudentdocument` (
 --
 
 INSERT INTO `tblstudentdocument` (`id`, `studentId`, `fileName`, `documentId`, `gradeLevelId`, `userId`, `createdAt`) VALUES
-(7, '66666', 'SF10 - Patty.pdf', 5, 2, NULL, '2025-08-12 14:35:56'),
-(13, '22-2222-2222', 'SF-10-SHS-Senior-High-School-Student-Permanent-Record-CANONCEsample.pdf', 5, 1, '4771830', '2025-08-17 22:01:21'),
-(14, '33333333', 'SF10 - Patty22.pdf', 5, 1, '4771830', '2025-08-20 16:06:01'),
-(16, '12345678', 'SF10 - Gallegos.pdf', 5, 1, '02-1819-01500', '2025-08-20 21:47:26');
+(24, '33333333', 'SF10 - Patty - grade 12 (1).pdf', 5, 2, '4771833', '2025-08-31 21:21:16');
 
 -- --------------------------------------------------------
 
@@ -703,11 +699,9 @@ CREATE TABLE `tbluser` (
 INSERT INTO `tbluser` (`id`, `firstname`, `lastname`, `middlename`, `email`, `password`, `userLevel`, `pinCode`, `gradeLevelId`, `sectionId`) VALUES
 ('02-1819-01500', 'Patty', 'Aspiras', '', 'patty@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 1, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL),
 ('02-1819-01509', 'Patty', 'Aspiras', '', 'patty@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL),
-('02-22240755', 'krystyll', 'Plaza', '', 'krystyllp@gmail.com', '$2y$10$kdoseuywdW9Qa5zy6Wk9.OGLfDnyee.xJAaro9nA2w1ZeFV/tC2Xe', 2, '$2y$10$tGS6ocEEixbxH4APISaJHe6PUWfGlWhk1l7EdAtSYoJqIrt2rYd.2', NULL, NULL),
-('0222240755', 'krystyll', 'plaza', '', 'krystyllp@gmail.com', '$2y$10$FeQhThcTYXdfl/a0dLmPIuYzFRxwLQR4SrQGRsMqX/mtxf1apUWRK', 2, '$2y$10$JIuhsatF8O/fPkmACqwaauC7qOZcyQ5HqtATz.QlbBnE08Aqeyrba', NULL, NULL),
-('4771830', 'Maribelle', 'Acas', '', 'ralp.pelino11@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 3),
+('4771830', 'Maribelle', 'Acas', '', 'aspiraspat13@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 3),
 ('4771833', 'Alexis', 'Gonzaga', '', 'alex@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 2, 10),
-('47718333', 'Mary', 'Aspiras', '', 'ralphjangallegos@gmail.com', '$2y$10$JooVcuK3ntZQdiPGcAhvle9y1Q9z0vKeeDJWui0ybvjLgXYcZboNq', 3, '$2y$10$YOD62VSS2kaYsIhX9LQqzOhs2AZ6Er0qdkakw4Gd67WxoeSgRk8wq', 1, 2);
+('47718333', 'Mary', 'Aspiras', '', 'paja.aspiras.coc@phinmaed.com\n', '$2y$10$JooVcuK3ntZQdiPGcAhvle9y1Q9z0vKeeDJWui0ybvjLgXYcZboNq', 3, '$2y$10$YOD62VSS2kaYsIhX9LQqzOhs2AZ6Er0qdkakw4Gd67WxoeSgRk8wq', 1, 2);
 
 -- --------------------------------------------------------
 
@@ -811,6 +805,16 @@ ALTER TABLE `tblrequeststatus`
   ADD KEY `requestId` (`requestId`),
   ADD KEY `statusId` (`statusId`),
   ADD KEY `userId` (`userId`);
+
+--
+-- Indexes for table `tblrequirementcomments`
+--
+ALTER TABLE `tblrequirementcomments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `requirementId` (`requirementId`),
+  ADD KEY `requestId` (`requestId`),
+  ADD KEY `registrarId` (`registrarId`),
+  ADD KEY `status` (`status`);
 
 --
 -- Indexes for table `tblrequirements`
@@ -934,7 +938,7 @@ ALTER TABLE `tbldocumentrequirement`
 -- AUTO_INCREMENT for table `tblforgotlrn`
 --
 ALTER TABLE `tblforgotlrn`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblgradelevel`
@@ -952,31 +956,37 @@ ALTER TABLE `tblpurpose`
 -- AUTO_INCREMENT for table `tblreleaseschedule`
 --
 ALTER TABLE `tblreleaseschedule`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblrequest`
 --
 ALTER TABLE `tblrequest`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `tblrequestpurpose`
 --
 ALTER TABLE `tblrequestpurpose`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tblrequeststatus`
 --
 ALTER TABLE `tblrequeststatus`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `tblrequirementcomments`
+--
+ALTER TABLE `tblrequirementcomments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblrequirements`
 --
 ALTER TABLE `tblrequirements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `tblrequirementstype`
@@ -1000,13 +1010,13 @@ ALTER TABLE `tblsection`
 -- AUTO_INCREMENT for table `tblsfrecord`
 --
 ALTER TABLE `tblsfrecord`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=205;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=208;
 
 --
 -- AUTO_INCREMENT for table `tblstatus`
 --
 ALTER TABLE `tblstatus`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `tblstrand`
@@ -1018,7 +1028,7 @@ ALTER TABLE `tblstrand`
 -- AUTO_INCREMENT for table `tblstudentdocument`
 --
 ALTER TABLE `tblstudentdocument`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `tbltrack`
@@ -1097,6 +1107,14 @@ ALTER TABLE `tblrequeststatus`
   ADD CONSTRAINT `tblrequeststatus_ibfk_1` FOREIGN KEY (`requestId`) REFERENCES `tblrequest` (`id`),
   ADD CONSTRAINT `tblrequeststatus_ibfk_2` FOREIGN KEY (`statusId`) REFERENCES `tblstatus` (`id`),
   ADD CONSTRAINT `tblrequeststatus_ibfk_3` FOREIGN KEY (`userId`) REFERENCES `tbluser` (`id`);
+
+--
+-- Constraints for table `tblrequirementcomments`
+--
+ALTER TABLE `tblrequirementcomments`
+  ADD CONSTRAINT `tblrequirementcomments_ibfk_1` FOREIGN KEY (`requirementId`) REFERENCES `tblrequirements` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `tblrequirementcomments_ibfk_2` FOREIGN KEY (`requestId`) REFERENCES `tblrequest` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `tblrequirementcomments_ibfk_3` FOREIGN KEY (`registrarId`) REFERENCES `tbluser` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `tblrequirements`
