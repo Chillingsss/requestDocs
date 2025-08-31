@@ -31,7 +31,16 @@ class User {
                 r.purpose,
                 DATE(r.createdAt) as dateRequested,
                 s.name as status,
-                s.id as statusId
+                s.id as statusId,
+                CASE 
+                  WHEN r.purpose IS NOT NULL THEN r.purpose
+                  WHEN EXISTS (SELECT 1 FROM tblrequestpurpose rp WHERE rp.requestId = r.id) THEN 
+                    (SELECT GROUP_CONCAT(p.name SEPARATOR ', ') 
+                     FROM tblrequestpurpose rp 
+                     INNER JOIN tblpurpose p ON rp.purposeId = p.id 
+                     WHERE rp.requestId = r.id)
+                  ELSE 'No purpose specified'
+                END as displayPurpose
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
@@ -71,7 +80,16 @@ class User {
                 r.purpose,
                 DATE(r.createdAt) as dateRequested,
                 s.name as status,
-                s.id as statusId
+                s.id as statusId,
+                CASE 
+                  WHEN r.purpose IS NOT NULL THEN r.purpose
+                  WHEN EXISTS (SELECT 1 FROM tblrequestpurpose rp WHERE rp.requestId = r.id) THEN 
+                    (SELECT GROUP_CONCAT(p.name SEPARATOR ', ') 
+                     FROM tblrequestpurpose rp 
+                     INNER JOIN tblpurpose p ON rp.purposeId = p.id 
+                     WHERE rp.requestId = r.id)
+                  ELSE 'No purpose specified'
+                END as displayPurpose
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
@@ -970,7 +988,16 @@ class User {
                       s.firstname,
                       s.lastname,
                       s.email,
-                      s.middlename
+                      s.middlename,
+                      CASE 
+                        WHEN r.purpose IS NOT NULL THEN r.purpose
+                        WHEN EXISTS (SELECT 1 FROM tblrequestpurpose rp WHERE rp.requestId = r.id) THEN 
+                          (SELECT GROUP_CONCAT(p.name SEPARATOR ', ') 
+                           FROM tblrequestpurpose rp 
+                           INNER JOIN tblpurpose p ON rp.purposeId = p.id 
+                           WHERE rp.requestId = r.id)
+                        ELSE 'No purpose specified'
+                      END as displayPurpose
                     FROM tblrequest r
                     INNER JOIN tbldocument d ON r.documentId = d.id
                     INNER JOIN tblstudent s ON r.studentId = s.id
@@ -1096,7 +1123,7 @@ class User {
             <div style='background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #5409DA; margin: 20px 0;'>
               <h3 style='color: #5409DA; margin-top: 0;'>Request Details:</h3>
               <p><strong>Document:</strong> {$requestData['documentName']}</p>
-              <p><strong>Purpose:</strong> {$requestData['purpose']}</p>
+              <p><strong>Purpose:</strong> {$requestData['displayPurpose']}</p>
               <p><strong>Release Date:</strong> {$formattedDate}</p>
               <p><strong>Office Hours:</strong> {$formattedTime}</p>
             </div>
@@ -1134,7 +1161,7 @@ class User {
         
         Request Details:
         - Document: {$requestData['documentName']}
-        - Purpose: {$requestData['purpose']}
+        - Purpose: {$requestData['displayPurpose']}
         - Release Date: {$formattedDate}
         - Office Hours: {$formattedTime}
         

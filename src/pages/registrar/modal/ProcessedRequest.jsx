@@ -715,19 +715,30 @@ export default function ProcessedRequest({
 							)}
 
 							{/* Purpose */}
-							{currentRequest?.purpose && (
-								<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
-									<div className="flex gap-3 items-center mb-3">
-										<MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-										<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-											Purpose
-										</span>
+							{currentRequest?.displayPurpose &&
+								currentRequest.displayPurpose !== "No purpose specified" && (
+									<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
+										<div className="flex gap-3 items-center mb-3">
+											<MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+											<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+												Purpose
+											</span>
+										</div>
+										<p className="text-base leading-relaxed break-words text-slate-900 dark:text-white">
+											{currentRequest.displayPurpose}
+										</p>
+										{/* Show source of purpose information */}
+										{currentRequest.purpose ? (
+											<p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+												📝 Custom purpose entered by student
+											</p>
+										) : (
+											<p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+												✅ Predefined purposes from document requirements
+											</p>
+										)}
 									</div>
-									<p className="text-base leading-relaxed break-words text-slate-900 dark:text-white">
-										{currentRequest.purpose}
-									</p>
-								</div>
-							)}
+								)}
 
 							{/* Student Documents */}
 							{!isDiplomaRequest() &&
@@ -900,7 +911,9 @@ export default function ProcessedRequest({
 									isCavRequest() &&
 									attachments.length === 0 &&
 									doubleRequestNote
-										? `Note: This looks like a combined request (Diploma + CAV) submitted on ${formatShortDateTime(currentRequest.dateRequested)}. Please process the Diploma first; once completed, proceed with the CAV.`
+										? `Note: This looks like a combined request (Diploma + CAV) submitted on ${formatShortDateTime(
+												currentRequest.dateRequested
+										  )}. Please process the Diploma first; once completed, proceed with the CAV.`
 										: undefined
 								}
 							/>
