@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Menu, FileText, LogOut, Plus, User, RefreshCw } from "lucide-react";
-import { getUserRequests } from "../../utils/student";
+import { getUserRequests, getStudentProfile } from "../../utils/student";
 import Cookies from "js-cookie";
 import CryptoJS from "crypto-js";
 import toast, { Toaster } from "react-hot-toast";
@@ -23,6 +23,7 @@ export default function StudentDashboard() {
 	const [userRequests, setUserRequests] = useState([]);
 	const [loadingRequests, setLoadingRequests] = useState(false);
 	const [refreshTrigger, setRefreshTrigger] = useState(0);
+	const [studentProfile, setStudentProfile] = useState(null);
 	const navigate = useNavigate();
 
 	// Get userId from cookie
@@ -38,10 +39,11 @@ export default function StudentDashboard() {
 		} catch {}
 	}
 
-	// Fetch user requests on component mount
+	// Fetch user requests and profile on component mount
 	React.useEffect(() => {
 		if (userId) {
 			fetchUserRequests();
+			fetchStudentProfile();
 		}
 	}, [userId]);
 
@@ -56,6 +58,17 @@ export default function StudentDashboard() {
 				toast.error("Failed to load your requests.");
 			})
 			.finally(() => setLoadingRequests(false));
+	};
+
+	const fetchStudentProfile = async () => {
+		try {
+			const data = await getStudentProfile(userId);
+			if (!data.error) {
+				setStudentProfile(data);
+			}
+		} catch (err) {
+			console.error("Failed to fetch student profile:", err);
+		}
 	};
 
 	const navItems = [
@@ -206,6 +219,7 @@ export default function StudentDashboard() {
 						onClose={() => setShowRequestForm(false)}
 						userId={userId}
 						onSuccess={handleRequestSuccess}
+						studentGradeLevel={studentProfile?.gradeLevel}
 					/>
 				)}
 

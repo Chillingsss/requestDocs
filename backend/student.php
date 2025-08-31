@@ -676,15 +676,18 @@ class User {
                 s.sectionId,
                 s.schoolyearId,
                 s.strandId,
+                s.gradeLevelId,
                 sec.name as sectionName,
                 sy.year as schoolYear,
                 t.name as track,
-                st.name as strand
+                st.name as strand,
+                gl.name as gradeLevel
               FROM tblstudent s
               LEFT JOIN tblsection sec ON s.sectionId = sec.id
               LEFT JOIN tblschoolyear sy ON s.schoolyearId = sy.id
               LEFT JOIN tblstrand st ON s.strandId = st.id
               LEFT JOIN tbltrack t ON st.trackId = t.id
+              LEFT JOIN tblgradelevel gl ON s.gradeLevelId = gl.id
               WHERE s.id = :userId";
 
       $stmt = $conn->prepare($sql);

@@ -348,6 +348,14 @@ export default function ProfileModal({ isOpen, onClose, userId }) {
 											{profile.schoolYear || "N/A"}
 										</div>
 									</div>
+									<div className="space-y-2">
+										<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+											Grade Level
+										</Label>
+										<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
+											{profile.gradeLevel || "N/A"}
+										</div>
+									</div>
 								</div>
 							</div>
 

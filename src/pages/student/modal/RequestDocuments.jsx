@@ -17,6 +17,7 @@ export default function RequestDocuments({
 	onClose,
 	userId,
 	onSuccess,
+	studentGradeLevel,
 }) {
 	const [selectedDocument, setSelectedDocument] = useState("");
 	const [purpose, setPurpose] = useState("");
@@ -94,6 +95,29 @@ export default function RequestDocuments({
 		(doc) => String(doc.id) === String(selectedDocument)
 	);
 	console.log("selectedDoc", selectedDoc);
+
+	// Filter documents based on student's grade level
+	const getFilteredDocuments = () => {
+		if (!studentGradeLevel) return documents;
+
+		// Grade 11 students can only request Certificate of Enrollment and SF10
+		if (studentGradeLevel.toLowerCase().includes("grade 11")) {
+			return documents.filter(
+				(doc) =>
+					doc.name.toLowerCase().includes("certificate of enrollment") ||
+					doc.name.toLowerCase().includes("sf10") ||
+					doc.name.toLowerCase().includes("sf-10")
+			);
+		}
+
+		// Grade 12 students can request all documents
+		if (studentGradeLevel.toLowerCase().includes("grade 12")) {
+			return documents;
+		}
+
+		// Default: return all documents if grade level is not recognized
+		return documents;
+	};
 
 	// Get filtered requirement types based on selected document
 	const getFilteredRequirementTypes = () => {
@@ -226,6 +250,26 @@ export default function RequestDocuments({
 
 	// Handle document type change
 	const handleDocumentChange = async (documentId) => {
+		// Validate document selection based on grade level
+		if (studentGradeLevel && documentId) {
+			const selectedDoc = documents.find(
+				(doc) => String(doc.id) === String(documentId)
+			);
+			if (selectedDoc && studentGradeLevel.toLowerCase().includes("grade 11")) {
+				const allowedDocs = ["certificate of enrollment", "sf10", "sf-10"];
+				const isAllowed = allowedDocs.some((allowed) =>
+					selectedDoc.name.toLowerCase().includes(allowed)
+				);
+
+				if (!isAllowed) {
+					toast.error(
+						"Grade 11 students can only request Certificate of Enrollment and SF10 documents."
+					);
+					return;
+				}
+			}
+		}
+
 		setSelectedDocument(documentId);
 		setPurpose("");
 		setSelectedPurposeIds([]);
@@ -436,6 +480,26 @@ export default function RequestDocuments({
 
 	const handleRequestSubmit = async (e) => {
 		e.preventDefault();
+
+		// Additional grade-based validation
+		if (studentGradeLevel && selectedDocument) {
+			const selectedDoc = documents.find(
+				(doc) => String(doc.id) === String(selectedDocument)
+			);
+			if (selectedDoc && studentGradeLevel.toLowerCase().includes("grade 11")) {
+				const allowedDocs = ["certificate of enrollment", "sf10", "sf-10"];
+				const isAllowed = allowedDocs.some((allowed) =>
+					selectedDoc.name.toLowerCase().includes(allowed)
+				);
+
+				if (!isAllowed) {
+					toast.error(
+						"Grade 11 students can only request Certificate of Enrollment and SF10 documents."
+					);
+					return;
+				}
+			}
+		}
 
 		// Use the centralized validation
 		if (isSubmitDisabled()) {
@@ -653,6 +717,50 @@ export default function RequestDocuments({
 						>
 							Document Type
 						</Label>
+
+						{/* Grade-based document restrictions notice */}
+						{studentGradeLevel && (
+							<div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900 dark:border-blue-800">
+								<div className="flex items-start space-x-2">
+									<div className="flex-shrink-0 mt-0.5">
+										<svg
+											className="w-4 h-4 text-blue-600 dark:text-blue-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+											/>
+										</svg>
+									</div>
+									<div>
+										<p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+											Document Availability by Grade Level
+										</p>
+										{studentGradeLevel.toLowerCase().includes("grade 11") ? (
+											<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+												As a <strong>Grade 11</strong> student, you can only
+												request <strong>Certificate of Enrollment</strong> and{" "}
+												<strong>SF10</strong> documents.
+											</p>
+										) : studentGradeLevel.toLowerCase().includes("grade 12") ? (
+											<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+												As a <strong>Grade 12</strong> student, you can request{" "}
+												<strong>all available documents</strong>.
+											</p>
+										) : (
+											<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+												Document availability depends on your grade level.
+											</p>
+										)}
+									</div>
+								</div>
+							</div>
+						)}
 						<select
 							id="document-type"
 							value={selectedDocument}
@@ -664,7 +772,7 @@ export default function RequestDocuments({
 							<option value="">
 								{loadingDocs ? "Loading..." : "Select a document"}
 							</option>
-							{documents.map((doc) => (
+							{getFilteredDocuments().map((doc) => (
 								<option key={doc.id} value={doc.id}>
 									{doc.name}
 								</option>
