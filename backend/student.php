@@ -42,17 +42,65 @@ class User {
 
       $pendingStatusId = $statusResult['id'];
 
+      // Check if this document has predefined purposes
+      $purposeCheckSql = "SELECT COUNT(*) as purposeCount FROM tblpurpose WHERE documentId = :documentId";
+      $purposeCheckStmt = $conn->prepare($purposeCheckSql);
+      $purposeCheckStmt->bindParam(':documentId', $json['documentId']);
+      $purposeCheckStmt->execute();
+      $purposeCheckResult = $purposeCheckStmt->fetch(PDO::FETCH_ASSOC);
+      
+      $hasPredefinedPurposes = $purposeCheckResult['purposeCount'] > 0;
+
+      // If document has predefined purposes, validate that at least one is selected
+      if ($hasPredefinedPurposes) {
+        if (!isset($json['purposeIds']) || empty($json['purposeIds'])) {
+          throw new PDOException("Please select at least one purpose for this document type.");
+        }
+      } else {
+        // If no predefined purposes, validate that custom purpose is provided
+        if (!isset($json['purpose']) || empty(trim($json['purpose']))) {
+          throw new PDOException("Please provide a purpose for this request.");
+        }
+      }
+
       $sql = "INSERT INTO tblrequest (studentId, documentId, purpose, createdAt) 
               VALUES (:userId, :documentId, :purpose, :datetime)";
 
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':userId', $json['userId']);
       $stmt->bindParam(':documentId', $json['documentId']);
-      $stmt->bindParam(':purpose', $json['purpose']);
+      
+      // Set purpose field - if predefined purposes exist, use first one as main purpose, otherwise use custom purpose
+      if ($hasPredefinedPurposes) {
+        $mainPurposeSql = "SELECT name FROM tblpurpose WHERE id = :purposeId LIMIT 1";
+        $mainPurposeStmt = $conn->prepare($mainPurposeSql);
+        $mainPurposeStmt->bindParam(':purposeId', $json['purposeIds'][0]);
+        $mainPurposeStmt->execute();
+        $mainPurposeResult = $mainPurposeStmt->fetch(PDO::FETCH_ASSOC);
+        $purpose = $mainPurposeResult['name'];
+      } else {
+        $purpose = $json['purpose'];
+      }
+      
+      $stmt->bindParam(':purpose', $purpose);
       $stmt->bindParam(':datetime', $philippineDateTime);
 
       if ($stmt->execute()) {
         $requestId = $conn->lastInsertId();
+        
+        // Insert purposes into tblrequestpurpose if predefined purposes exist
+        if ($hasPredefinedPurposes && isset($json['purposeIds'])) {
+          foreach ($json['purposeIds'] as $purposeId) {
+            $purposeSql = "INSERT INTO tblrequestpurpose (requestId, purposeId) VALUES (:requestId, :purposeId)";
+            $purposeStmt = $conn->prepare($purposeSql);
+            $purposeStmt->bindParam(':requestId', $requestId);
+            $purposeStmt->bindParam(':purposeId', $purposeId);
+            
+            if (!$purposeStmt->execute()) {
+              throw new PDOException("Failed to save purpose information to database");
+            }
+          }
+        }
         
         // Handle file upload if attachment exists
         if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
@@ -217,6 +265,27 @@ class User {
 
       $pendingStatusId = $statusResult['id'];
 
+      // Check if this document has predefined purposes
+      $purposeCheckSql = "SELECT COUNT(*) as purposeCount FROM tblpurpose WHERE documentId = :documentId";
+      $purposeCheckStmt = $conn->prepare($purposeCheckSql);
+      $purposeCheckStmt->bindParam(':documentId', $json['primaryDocumentId']);
+      $purposeCheckStmt->execute();
+      $purposeCheckResult = $purposeCheckStmt->fetch(PDO::FETCH_ASSOC);
+      
+      $hasPredefinedPurposes = $purposeCheckResult['purposeCount'] > 0;
+
+      // If document has predefined purposes, validate that at least one is selected
+      if ($hasPredefinedPurposes) {
+        if (!isset($json['purposeIds']) || empty($json['purposeIds'])) {
+          throw new PDOException("Please select at least one purpose for this document type.");
+        }
+      } else {
+        // If no predefined purposes, validate that custom purpose is provided
+        if (!isset($json['purpose']) || empty(trim($json['purpose']))) {
+          throw new PDOException("Please provide a purpose for this request.");
+        }
+      }
+
       // First, create request for the secondary document (e.g., Diploma)
       $sql = "INSERT INTO tblrequest (studentId, documentId, purpose, createdAt) 
               VALUES (:userId, :documentId, :purpose, :datetime)";
@@ -224,11 +293,38 @@ class User {
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':userId', $json['userId']);
       $stmt->bindParam(':documentId', $json['secondaryDocumentId']);
-      $stmt->bindParam(':purpose', $json['purpose']);
+      
+      // Set purpose field - if predefined purposes exist, use first one as main purpose, otherwise use custom purpose
+      if ($hasPredefinedPurposes) {
+        $mainPurposeSql = "SELECT name FROM tblpurpose WHERE id = :purposeId LIMIT 1";
+        $mainPurposeStmt = $conn->prepare($mainPurposeSql);
+        $mainPurposeStmt->bindParam(':purposeId', $json['purposeIds'][0]);
+        $mainPurposeStmt->execute();
+        $mainPurposeResult = $mainPurposeStmt->fetch(PDO::FETCH_ASSOC);
+        $purpose = $mainPurposeResult['name'];
+      } else {
+        $purpose = $json['purpose'];
+      }
+      
+      $stmt->bindParam(':purpose', $purpose);
       $stmt->bindParam(':datetime', $philippineDateTime);
 
       if ($stmt->execute()) {
         $secondaryRequestId = $conn->lastInsertId();
+        
+        // Insert purposes into tblrequestpurpose if predefined purposes exist
+        if ($hasPredefinedPurposes && isset($json['purposeIds'])) {
+          foreach ($json['purposeIds'] as $purposeId) {
+            $purposeSql = "INSERT INTO tblrequestpurpose (requestId, purposeId) VALUES (:requestId, :purposeId)";
+            $purposeStmt = $conn->prepare($purposeSql);
+            $purposeStmt->bindParam(':requestId', $secondaryRequestId);
+            $purposeStmt->bindParam(':purposeId', $purposeId);
+            
+            if (!$purposeStmt->execute()) {
+              throw new PDOException("Failed to save purpose information to database");
+            }
+          }
+        }
         
         // Handle file upload if attachments exist - attach to Diploma request since these are Diploma requirements
         if (isset($_FILES['attachments'])) {
@@ -309,11 +405,25 @@ class User {
         $stmt2 = $conn->prepare($sql);
         $stmt2->bindParam(':userId', $json['userId']);
         $stmt2->bindParam(':documentId', $json['primaryDocumentId']);
-        $stmt2->bindParam(':purpose', $json['purpose']);
+        $stmt2->bindParam(':purpose', $purpose);
         $stmt2->bindParam(':datetime', $philippineDateTime);
 
         if ($stmt2->execute()) {
           $primaryRequestId = $conn->lastInsertId();
+          
+          // Insert purposes into tblrequestpurpose for primary request if predefined purposes exist
+          if ($hasPredefinedPurposes && isset($json['purposeIds'])) {
+            foreach ($json['purposeIds'] as $purposeId) {
+              $purposeSql = "INSERT INTO tblrequestpurpose (requestId, purposeId) VALUES (:requestId, :purposeId)";
+              $purposeStmt = $conn->prepare($purposeSql);
+              $purposeStmt->bindParam(':requestId', $primaryRequestId);
+              $purposeStmt->bindParam(':purposeId', $purposeId);
+              
+              if (!$purposeStmt->execute()) {
+                throw new PDOException("Failed to save purpose information to database");
+              }
+            }
+          }
           
           // Insert status for primary request
           $statusStmt2 = $conn->prepare($statusSql);
@@ -427,6 +537,37 @@ class User {
       if ($stmt->rowCount() > 0) {
         $requirements = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return json_encode($requirements);
+      }
+      return json_encode([]);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function getDocumentPurposes($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $documentId = $json['documentId'];
+
+    try {
+      $sql = "SELECT 
+                id,
+                name,
+                documentId
+              FROM tblpurpose
+              WHERE documentId = :documentId
+              ORDER BY name";
+
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':documentId', $documentId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $purposes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return json_encode($purposes);
       }
       return json_encode([]);
 
@@ -598,6 +739,9 @@ switch ($operation) {
     break;
   case "getDocumentRequirements":
     echo $user->getDocumentRequirements($json);
+    break;
+  case "getDocumentPurposes":
+    echo $user->getDocumentPurposes($json);
     break;
   case "getRequestTracking":
     echo $user->getRequestTracking($json);

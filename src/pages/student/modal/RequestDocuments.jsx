@@ -6,6 +6,7 @@ import {
 	getDocuments,
 	getRequirementsType,
 	getDocumentRequirements,
+	getDocumentPurposes,
 	addRequestDocument,
 	addCombinedRequestDocument,
 } from "../../../utils/student";
@@ -19,6 +20,7 @@ export default function RequestDocuments({
 }) {
 	const [selectedDocument, setSelectedDocument] = useState("");
 	const [purpose, setPurpose] = useState("");
+	const [selectedPurposeIds, setSelectedPurposeIds] = useState([]);
 	const [documents, setDocuments] = useState([]);
 	const [loadingDocs, setLoadingDocs] = useState(false);
 	const [selectedFiles, setSelectedFiles] = useState([]);
@@ -31,6 +33,10 @@ export default function RequestDocuments({
 	const [secondaryRequirements, setSecondaryRequirements] = useState([]);
 	const [loadingSecondaryRequirements, setLoadingSecondaryRequirements] =
 		useState(false);
+	const [documentPurposes, setDocumentPurposes] = useState([]);
+	const [loadingDocumentPurposes, setLoadingDocumentPurposes] = useState(false);
+	const [isPurposeDropdownOpen, setIsPurposeDropdownOpen] = useState(false);
+	const [purposeSearchTerm, setPurposeSearchTerm] = useState("");
 
 	// Fetch documents and request types when modal opens
 	React.useEffect(() => {
@@ -51,6 +57,29 @@ export default function RequestDocuments({
 			});
 		}
 	}, [isOpen]);
+
+	// Handle clicking outside dropdown to close it
+	React.useEffect(() => {
+		const handleClickOutside = (event) => {
+			if (isPurposeDropdownOpen && !event.target.closest(".purpose-dropdown")) {
+				setIsPurposeDropdownOpen(false);
+			}
+		};
+
+		const handleEscape = (event) => {
+			if (event.key === "Escape" && isPurposeDropdownOpen) {
+				setIsPurposeDropdownOpen(false);
+			}
+		};
+
+		document.addEventListener("mousedown", handleClickOutside);
+		document.addEventListener("keydown", handleEscape);
+
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+			document.removeEventListener("keydown", handleEscape);
+		};
+	}, [isPurposeDropdownOpen]);
 
 	// Get the selected document name
 	const getSelectedDocumentName = () => {
@@ -136,11 +165,27 @@ export default function RequestDocuments({
 		console.log("=== isSubmitDisabled Debug ===");
 		console.log("selectedDocument:", selectedDocument);
 		console.log("purpose:", purpose);
+		console.log("selectedPurposeIds:", selectedPurposeIds);
 		console.log("selectedFiles:", selectedFiles);
 
-		if (!selectedDocument || !purpose) {
-			console.log("Missing document or purpose");
+		if (!selectedDocument) {
+			console.log("Missing document");
 			return true;
+		}
+
+		// Check purpose validation
+		if (hasPredefinedPurposes()) {
+			// If document has predefined purposes, at least one must be selected
+			if (selectedPurposeIds.length === 0) {
+				console.log("No predefined purposes selected");
+				return true;
+			}
+		} else {
+			// If no predefined purposes, custom purpose is required
+			if (!purpose || purpose.trim() === "") {
+				console.log("Missing custom purpose");
+				return true;
+			}
 		}
 
 		if (isSF10Document()) {
@@ -183,9 +228,11 @@ export default function RequestDocuments({
 	const handleDocumentChange = async (documentId) => {
 		setSelectedDocument(documentId);
 		setPurpose("");
+		setSelectedPurposeIds([]);
 		setSelectedFiles([]);
 		setDocumentRequirements([]);
 		setSecondaryRequirements([]);
+		setDocumentPurposes([]);
 		setRequestBothDocuments(false);
 
 		// Reset file inputs
@@ -194,19 +241,30 @@ export default function RequestDocuments({
 		if (fileInput) fileInput.value = "";
 		if (addMoreInput) addMoreInput.value = "";
 
-		// Fetch document requirements dynamically
+		// Fetch document requirements and purposes dynamically
 		if (documentId) {
 			setLoadingDocumentRequirements(true);
+			setLoadingDocumentPurposes(true);
 			try {
-				const requirements = await getDocumentRequirements(documentId);
+				const [requirements, purposes] = await Promise.all([
+					getDocumentRequirements(documentId),
+					getDocumentPurposes(documentId),
+				]);
+
 				setDocumentRequirements(
 					Array.isArray(requirements) ? requirements : []
 				);
+				setDocumentPurposes(Array.isArray(purposes) ? purposes : []);
 			} catch (error) {
-				console.error("Failed to fetch document requirements:", error);
+				console.error(
+					"Failed to fetch document requirements or purposes:",
+					error
+				);
 				setDocumentRequirements([]);
+				setDocumentPurposes([]);
 			} finally {
 				setLoadingDocumentRequirements(false);
+				setLoadingDocumentPurposes(false);
 			}
 		}
 	};
@@ -356,14 +414,47 @@ export default function RequestDocuments({
 		});
 	};
 
+	const handlePurposeCheckboxChange = (purposeId, checked) => {
+		if (checked) {
+			setSelectedPurposeIds((prev) => [...prev, purposeId]);
+		} else {
+			setSelectedPurposeIds((prev) => prev.filter((id) => id !== purposeId));
+		}
+	};
+
+	const hasPredefinedPurposes = () => {
+		return documentPurposes && documentPurposes.length > 0;
+	};
+
+	const selectAllPurposes = () => {
+		setSelectedPurposeIds(documentPurposes.map((p) => p.id));
+	};
+
+	const clearAllPurposes = () => {
+		setSelectedPurposeIds([]);
+	};
+
 	const handleRequestSubmit = async (e) => {
 		e.preventDefault();
 
 		// Use the centralized validation
 		if (isSubmitDisabled()) {
-			if (!selectedDocument || !purpose) {
-				toast.error("Please fill in all required fields");
+			if (!selectedDocument) {
+				toast.error("Please select a document type");
 				return;
+			}
+
+			// Check purpose validation
+			if (hasPredefinedPurposes()) {
+				if (selectedPurposeIds.length === 0) {
+					toast.error("Please select at least one purpose");
+					return;
+				}
+			} else {
+				if (!purpose || purpose.trim() === "") {
+					toast.error("Please enter a purpose");
+					return;
+				}
 			}
 
 			// Special handling for CAV combined requests
@@ -420,7 +511,8 @@ export default function RequestDocuments({
 					userId,
 					primaryDocumentId: selectedDocument, // CAV
 					secondaryDocumentId: diplomaDocument.id, // Diploma
-					purpose,
+					purpose: hasPredefinedPurposes() ? "" : purpose,
+					purposeIds: hasPredefinedPurposes() ? selectedPurposeIds : [],
 					attachments: attachments,
 					typeIds: typeIds,
 				});
@@ -431,7 +523,8 @@ export default function RequestDocuments({
 				await addRequestDocument({
 					userId,
 					documentId: selectedDocument,
-					purpose,
+					purpose: hasPredefinedPurposes() ? "" : purpose,
+					purposeIds: hasPredefinedPurposes() ? selectedPurposeIds : [],
 					attachments: attachments,
 					typeIds: typeIds, // Send array of typeIds
 				});
@@ -441,10 +534,12 @@ export default function RequestDocuments({
 			// Reset form
 			setSelectedDocument("");
 			setPurpose("");
+			setSelectedPurposeIds([]);
 			setSelectedFiles([]);
 			setRequestBothDocuments(false);
 			setDocumentRequirements([]);
 			setSecondaryRequirements([]);
+			setDocumentPurposes([]);
 			// Reset file inputs
 			const fileInput = document.getElementById("file-upload");
 			const addMoreInput = document.getElementById("add-more-files");
@@ -467,6 +562,9 @@ export default function RequestDocuments({
 		setRequestBothDocuments(false);
 		setDocumentRequirements([]);
 		setSecondaryRequirements([]);
+		setDocumentPurposes([]);
+		setIsPurposeDropdownOpen(false);
+		setPurposeSearchTerm("");
 		// Reset file inputs
 		const fileInput = document.getElementById("file-upload");
 		const addMoreInput = document.getElementById("add-more-files");
@@ -514,9 +612,13 @@ export default function RequestDocuments({
 		return selectedDocName.includes("certificate of enrollment");
 	};
 
+	const filteredPurposes = documentPurposes.filter((purpose) =>
+		purpose.name.toLowerCase().includes(purposeSearchTerm.toLowerCase())
+	);
+
 	return (
 		<div className="flex fixed inset-0 z-50 justify-center items-center backdrop-blur-sm bg-black/40">
-			<div className="relative mx-2 w-full max-w-xs bg-white rounded-2xl border shadow-2xl dark:bg-slate-800 dark:border-slate-700 md:max-w-md border-slate-200">
+			<div className="relative mx-2 w-full max-w-2xl bg-white rounded-2xl border shadow-2xl dark:bg-slate-800 dark:border-slate-700 border-slate-200">
 				{/* Title Bar */}
 				<div className="flex justify-between items-center px-6 py-4 rounded-t-2xl border-b bg-slate-50 border-slate-100 dark:bg-slate-700 dark:border-slate-600">
 					<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
@@ -579,15 +681,234 @@ export default function RequestDocuments({
 									className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-500"
 								>
 									Purpose
+									<span className="text-red-500 dark:text-red-500">*</span>
 								</Label>
-								<Input
-									id="purpose"
-									placeholder=""
-									className="px-3 py-2 w-full rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
-									value={purpose}
-									onChange={(e) => setPurpose(e.target.value)}
-									required
-								/>
+
+								{/* Show predefined purposes as checkboxes if they exist */}
+								{hasPredefinedPurposes() ? (
+									<div className="space-y-2">
+										{/* Multi-select dropdown */}
+										<div className="relative purpose-dropdown">
+											<button
+												type="button"
+												onClick={() =>
+													setIsPurposeDropdownOpen(!isPurposeDropdownOpen)
+												}
+												className="w-full px-3 py-1.5 text-left bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
+											>
+												{selectedPurposeIds.length === 0 ? (
+													<span className="text-slate-500 dark:text-slate-400">
+														Select purposes for your request
+													</span>
+												) : (
+													<div className="flex flex-wrap gap-1 max-w-full">
+														{selectedPurposeIds.slice(0, 3).map((purposeId) => {
+															const purpose = documentPurposes.find(
+																(p) => p.id === purposeId
+															);
+															return (
+																<span
+																	key={purposeId}
+																	className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200 max-w-full"
+																>
+																	<span className="truncate">
+																		{purpose?.name}
+																	</span>
+																	<button
+																		type="button"
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			handlePurposeCheckboxChange(
+																				purposeId,
+																				false
+																			);
+																		}}
+																		className="ml-1 inline-flex items-center justify-center w-4 h-4 text-blue-400 hover:text-blue-600 dark:text-blue-300 dark:hover:text-blue-100 flex-shrink-0"
+																	>
+																		×
+																	</button>
+																</span>
+															);
+														})}
+														{selectedPurposeIds.length > 3 && (
+															<span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-full dark:bg-slate-700 dark:text-slate-300">
+																+{selectedPurposeIds.length - 3} more
+															</span>
+														)}
+													</div>
+												)}
+												<span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+													{selectedPurposeIds.length > 0 && (
+														<span className="mr-2 inline-flex items-center justify-center w-4 h-4 text-xs font-medium bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">
+															{selectedPurposeIds.length}
+														</span>
+													)}
+													<svg
+														className={`w-5 h-5 text-slate-400 transition-transform ${
+															isPurposeDropdownOpen ? "rotate-180" : ""
+														}`}
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															strokeWidth={2}
+															d="M19 9l-7 7-7-7"
+														/>
+													</svg>
+												</span>
+											</button>
+
+											{/* Dropdown menu */}
+											{isPurposeDropdownOpen && (
+												<div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-y-auto dark:bg-slate-700 dark:border-slate-600">
+													<div className="p-2">
+														{/* Search input */}
+														<div className="relative mb-2">
+															<input
+																type="text"
+																placeholder="Search purposes..."
+																value={purposeSearchTerm}
+																onChange={(e) =>
+																	setPurposeSearchTerm(e.target.value)
+																}
+																className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-slate-600 dark:border-slate-500 dark:text-slate-50"
+															/>
+															<svg
+																className="absolute right-2 top-2.5 w-4 h-4 text-slate-400"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+															>
+																<path
+																	strokeLinecap="round"
+																	strokeLinejoin="round"
+																	strokeWidth={2}
+																	d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+																/>
+															</svg>
+														</div>
+
+														{/* Select All / Clear All buttons */}
+														<div className="flex gap-2 mb-2">
+															<button
+																type="button"
+																onClick={selectAllPurposes}
+																className="px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900"
+															>
+																Select All
+															</button>
+															<button
+																type="button"
+																onClick={clearAllPurposes}
+																className="px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-50 rounded dark:text-slate-400 dark:hover:text-slate-300 dark:hover:bg-slate-700"
+															>
+																Clear All
+															</button>
+														</div>
+
+														{/* Purpose options */}
+														<div className="space-y-1">
+															{filteredPurposes.map((purposeItem) => (
+																<label
+																	key={purposeItem.id}
+																	className="flex items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer rounded-md dark:text-slate-300 dark:hover:bg-slate-600"
+																>
+																	<input
+																		type="checkbox"
+																		checked={selectedPurposeIds.includes(
+																			purposeItem.id
+																		)}
+																		onChange={(e) =>
+																			handlePurposeCheckboxChange(
+																				purposeItem.id,
+																				e.target.checked
+																			)
+																		}
+																		className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-400"
+																	/>
+																	<span className="ml-3">
+																		{purposeItem.name}
+																	</span>
+																</label>
+															))}
+														</div>
+
+														{/* No results message */}
+														{filteredPurposes.length === 0 && (
+															<div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+																No purposes found matching "{purposeSearchTerm}"
+															</div>
+														)}
+													</div>
+												</div>
+											)}
+										</div>
+
+										{/* Selected purposes summary */}
+										{selectedPurposeIds.length > 0 && (
+											<div className="p-2 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900 dark:border-blue-800">
+												<div className="flex items-center justify-between mb-2">
+													<p className="text-xs font-medium text-blue-800 dark:text-blue-200">
+														Selected purposes ({selectedPurposeIds.length}):
+													</p>
+													<button
+														type="button"
+														onClick={clearAllPurposes}
+														className="text-xs text-blue-600 hover:text-blue-800 underline dark:text-blue-400 dark:hover:text-blue-300"
+													>
+														Clear all
+													</button>
+												</div>
+												<div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+													{selectedPurposeIds.map((purposeId) => {
+														const purpose = documentPurposes.find(
+															(p) => p.id === purposeId
+														);
+														return (
+															<div
+																key={purposeId}
+																className="flex items-center justify-between px-2 py-1 bg-white rounded border border-blue-200 dark:bg-slate-700 dark:border-slate-600"
+															>
+																<span className="text-xs text-blue-800 dark:text-blue-200 truncate">
+																	{purpose?.name}
+																</span>
+																<button
+																	type="button"
+																	onClick={() =>
+																		handlePurposeCheckboxChange(
+																			purposeId,
+																			false
+																		)
+																	}
+																	className="ml-2 flex-shrink-0 w-4 h-4 text-blue-400 hover:text-blue-600 dark:text-blue-300 dark:hover:text-blue-100 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-full flex items-center justify-center text-xs"
+																>
+																	×
+																</button>
+															</div>
+														);
+													})}
+												</div>
+											</div>
+										)}
+
+										<p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+											Select one or more purposes for your request
+										</p>
+									</div>
+								) : (
+									/* Show custom purpose input field */
+									<Input
+										id="purpose"
+										placeholder="Enter the purpose of your request"
+										className="px-3 py-2 w-full rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
+										value={purpose}
+										onChange={(e) => setPurpose(e.target.value)}
+										required
+									/>
+								)}
 							</div>
 							<div>
 								{/* Only show Document Attachments section if not SF10 or Certificate of Enrollment */}

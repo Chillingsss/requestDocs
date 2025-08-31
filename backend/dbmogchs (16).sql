@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 26, 2025 at 04:39 PM
+-- Generation Time: Aug 31, 2025 at 04:37 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -137,6 +137,35 @@ INSERT INTO `tblgradelevel` (`id`, `name`, `userId`, `createdAt`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tblpurpose`
+--
+
+CREATE TABLE `tblpurpose` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `documentId` int(11) NOT NULL,
+  `userId` varchar(50) NOT NULL,
+  `createdAt` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblpurpose`
+--
+
+INSERT INTO `tblpurpose` (`id`, `name`, `documentId`, `userId`, `createdAt`) VALUES
+(1, 'EMPLOYMENT ABROAD', 7, '02-1819-01500', '2025-08-31 04:24:58'),
+(2, 'FIANCE VISA', 7, '02-1819-01500', '2025-08-31 04:24:58'),
+(3, 'STUDENT VISA', 7, '02-1819-01500', '2025-08-31 04:24:58'),
+(4, 'SEAMAN’S BOOK/SRC  ', 7, '02-1819-01500', '2025-08-31 04:24:58'),
+(5, 'TOURIST VISA', 7, '02-1819-01500', '2025-08-31 04:24:58'),
+(6, 'DESCENDANT’S VISA', 7, '02-1819-01500', '2025-08-31 04:24:58'),
+(7, 'MIGRATION ABROAD', 7, '02-1819-01500', '2025-08-31 04:24:58'),
+(8, 'REIMBURSEMENT OF EDUCATIONAL ALLOWANCE / TUITION FEES OF CHILDREN OF OFWs			        \r\n', 7, '02-1819-01500', '2025-08-31 04:24:58'),
+(9, 'SUCH OTHER PURPOSE AS MAYBE REQUIRED BY THE DFA', 7, '02-1819-01500', '2025-08-31 04:24:58');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tblreleaseschedule`
 --
 
@@ -166,7 +195,7 @@ CREATE TABLE `tblrequest` (
   `id` int(11) NOT NULL,
   `studentId` varchar(50) NOT NULL,
   `documentId` int(11) NOT NULL,
-  `purpose` varchar(100) NOT NULL,
+  `purpose` varchar(100) DEFAULT NULL,
   `createdAt` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -180,9 +209,19 @@ INSERT INTO `tblrequest` (`id`, `studentId`, `documentId`, `purpose`, `createdAt
 (4, '33333333', 5, 'shesh', '2025-08-10 10:02:50'),
 (5, '33333333', 8, 'hehe', '2025-08-10 10:45:26'),
 (11, '33333333', 6, 'Employment', '2025-08-20 08:13:43'),
-(12, '33333333', 7, 'Employment', '2025-08-20 08:13:43'),
-(14, '22-2222-2222', 7, 'Make up', '2025-08-20 08:41:38'),
 (16, '12345678', 5, 'enrollments', '2025-08-20 10:03:58');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblrequestpurpose`
+--
+
+CREATE TABLE `tblrequestpurpose` (
+  `id` int(11) NOT NULL,
+  `requestId` int(11) NOT NULL,
+  `purposeId` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -213,8 +252,6 @@ INSERT INTO `tblrequeststatus` (`id`, `requestId`, `statusId`, `userId`, `create
 (11, 4, 2, NULL, '2025-08-20 04:09:10'),
 (12, 4, 3, NULL, '2025-08-20 04:09:11'),
 (18, 11, 1, NULL, '2025-08-20 08:13:43'),
-(19, 12, 1, NULL, '2025-08-20 08:13:43'),
-(21, 14, 1, NULL, '2025-08-20 08:41:38'),
 (23, 16, 1, NULL, '2025-08-20 10:03:58'),
 (25, 4, 4, NULL, '2025-08-26 09:29:36');
 
@@ -238,8 +275,7 @@ CREATE TABLE `tblrequirements` (
 
 INSERT INTO `tblrequirements` (`id`, `requestId`, `filepath`, `typeId`, `createdAt`) VALUES
 (1, 1, '521827746_1955938708539586_392632500952961470_n.jpg', 2, '2025-08-06 06:03:42'),
-(4, 11, 'chill logo.jpg', 2, '2025-08-20 08:13:43'),
-(6, 14, '494687654_692122813767152_4225768431343115829_n.jpg', 1, '2025-08-20 08:41:38');
+(4, 11, 'chill logo.jpg', 2, '2025-08-20 08:13:43');
 
 -- --------------------------------------------------------
 
@@ -736,6 +772,14 @@ ALTER TABLE `tblgradelevel`
   ADD KEY `userId` (`userId`);
 
 --
+-- Indexes for table `tblpurpose`
+--
+ALTER TABLE `tblpurpose`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `documentId` (`documentId`),
+  ADD KEY `userId` (`userId`);
+
+--
 -- Indexes for table `tblreleaseschedule`
 --
 ALTER TABLE `tblreleaseschedule`
@@ -750,6 +794,14 @@ ALTER TABLE `tblrequest`
   ADD PRIMARY KEY (`id`),
   ADD KEY `documentId` (`documentId`),
   ADD KEY `studentId` (`studentId`);
+
+--
+-- Indexes for table `tblrequestpurpose`
+--
+ALTER TABLE `tblrequestpurpose`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `purposeId` (`purposeId`),
+  ADD KEY `requestId` (`requestId`);
 
 --
 -- Indexes for table `tblrequeststatus`
@@ -891,6 +943,12 @@ ALTER TABLE `tblgradelevel`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `tblpurpose`
+--
+ALTER TABLE `tblpurpose`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
 -- AUTO_INCREMENT for table `tblreleaseschedule`
 --
 ALTER TABLE `tblreleaseschedule`
@@ -901,6 +959,12 @@ ALTER TABLE `tblreleaseschedule`
 --
 ALTER TABLE `tblrequest`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
+-- AUTO_INCREMENT for table `tblrequestpurpose`
+--
+ALTER TABLE `tblrequestpurpose`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblrequeststatus`
@@ -999,6 +1063,13 @@ ALTER TABLE `tblgradelevel`
   ADD CONSTRAINT `tblgradelevel_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `tbluser` (`id`);
 
 --
+-- Constraints for table `tblpurpose`
+--
+ALTER TABLE `tblpurpose`
+  ADD CONSTRAINT `tblpurpose_ibfk_1` FOREIGN KEY (`documentId`) REFERENCES `tbldocument` (`id`),
+  ADD CONSTRAINT `tblpurpose_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `tbluser` (`id`);
+
+--
 -- Constraints for table `tblreleaseschedule`
 --
 ALTER TABLE `tblreleaseschedule`
@@ -1011,6 +1082,13 @@ ALTER TABLE `tblreleaseschedule`
 ALTER TABLE `tblrequest`
   ADD CONSTRAINT `tblrequest_ibfk_1` FOREIGN KEY (`documentId`) REFERENCES `tbldocument` (`id`),
   ADD CONSTRAINT `tblrequest_ibfk_2` FOREIGN KEY (`studentId`) REFERENCES `tblstudent` (`id`);
+
+--
+-- Constraints for table `tblrequestpurpose`
+--
+ALTER TABLE `tblrequestpurpose`
+  ADD CONSTRAINT `tblrequestpurpose_ibfk_1` FOREIGN KEY (`purposeId`) REFERENCES `tblpurpose` (`id`),
+  ADD CONSTRAINT `tblrequestpurpose_ibfk_2` FOREIGN KEY (`requestId`) REFERENCES `tblrequest` (`id`);
 
 --
 -- Constraints for table `tblrequeststatus`

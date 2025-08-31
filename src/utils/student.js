@@ -53,10 +53,29 @@ export async function getDocumentRequirements(documentId) {
 	}
 }
 
+export async function getDocumentPurposes(documentId) {
+	const formData = new FormData();
+	formData.append("operation", "getDocumentPurposes");
+	formData.append("json", JSON.stringify({ documentId }));
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/student.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 export async function addRequestDocument({
 	userId,
 	documentId,
 	purpose,
+	purposeIds,
 	attachments = [],
 	typeIds = [],
 }) {
@@ -64,7 +83,7 @@ export async function addRequestDocument({
 	formData.append("operation", "addRequestDocument");
 	formData.append(
 		"json",
-		JSON.stringify({ userId, documentId, purpose, typeIds })
+		JSON.stringify({ userId, documentId, purpose, purposeIds, typeIds })
 	);
 
 	// Add multiple file attachments if provided
@@ -111,6 +130,7 @@ export async function addCombinedRequestDocument({
 	primaryDocumentId,
 	secondaryDocumentId,
 	purpose,
+	purposeIds,
 	attachments = [],
 	typeIds = [],
 }) {
@@ -123,6 +143,7 @@ export async function addCombinedRequestDocument({
 			primaryDocumentId,
 			secondaryDocumentId,
 			purpose,
+			purposeIds,
 			typeIds,
 		})
 	);
