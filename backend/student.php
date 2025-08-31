@@ -70,14 +70,9 @@ class User {
       $stmt->bindParam(':userId', $json['userId']);
       $stmt->bindParam(':documentId', $json['documentId']);
       
-      // Set purpose field - if predefined purposes exist, use first one as main purpose, otherwise use custom purpose
+      // Set purpose field - if predefined purposes exist, set to NULL since purposes are stored in tblrequestpurpose
       if ($hasPredefinedPurposes) {
-        $mainPurposeSql = "SELECT name FROM tblpurpose WHERE id = :purposeId LIMIT 1";
-        $mainPurposeStmt = $conn->prepare($mainPurposeSql);
-        $mainPurposeStmt->bindParam(':purposeId', $json['purposeIds'][0]);
-        $mainPurposeStmt->execute();
-        $mainPurposeResult = $mainPurposeStmt->fetch(PDO::FETCH_ASSOC);
-        $purpose = $mainPurposeResult['name'];
+        $purpose = null; // Set to NULL when predefined purposes exist
       } else {
         $purpose = $json['purpose'];
       }
@@ -265,22 +260,40 @@ class User {
 
       $pendingStatusId = $statusResult['id'];
 
-      // Check if this document has predefined purposes
-      $purposeCheckSql = "SELECT COUNT(*) as purposeCount FROM tblpurpose WHERE documentId = :documentId";
-      $purposeCheckStmt = $conn->prepare($purposeCheckSql);
-      $purposeCheckStmt->bindParam(':documentId', $json['primaryDocumentId']);
-      $purposeCheckStmt->execute();
-      $purposeCheckResult = $purposeCheckStmt->fetch(PDO::FETCH_ASSOC);
+      // Check which document actually has predefined purposes
+      $primaryPurposeCheckSql = "SELECT COUNT(*) as purposeCount FROM tblpurpose WHERE documentId = :documentId";
+      $primaryPurposeCheckStmt = $conn->prepare($primaryPurposeCheckSql);
+      $primaryPurposeCheckStmt->bindParam(':documentId', $json['primaryDocumentId']);
+      $primaryPurposeCheckStmt->execute();
+      $primaryPurposeCheckResult = $primaryPurposeCheckStmt->fetch(PDO::FETCH_ASSOC);
       
-      $hasPredefinedPurposes = $purposeCheckResult['purposeCount'] > 0;
-
-      // If document has predefined purposes, validate that at least one is selected
-      if ($hasPredefinedPurposes) {
+      $secondaryPurposeCheckSql = "SELECT COUNT(*) as purposeCount FROM tblpurpose WHERE documentId = :documentId";
+      $secondaryPurposeCheckStmt = $conn->prepare($secondaryPurposeCheckSql);
+      $secondaryPurposeCheckStmt->bindParam(':documentId', $json['secondaryDocumentId']);
+      $secondaryPurposeCheckStmt->execute();
+      $secondaryPurposeCheckResult = $secondaryPurposeCheckStmt->fetch(PDO::FETCH_ASSOC);
+      
+      $primaryHasPurposes = $primaryPurposeCheckResult['purposeCount'] > 0;
+      $secondaryHasPurposes = $secondaryPurposeCheckResult['purposeCount'] > 0;
+      
+      // Determine which document should have purposes inserted
+      $documentWithPurposes = null;
+      $purposeIds = [];
+      
+      if ($primaryHasPurposes) {
+        $documentWithPurposes = 'primary';
         if (!isset($json['purposeIds']) || empty($json['purposeIds'])) {
-          throw new PDOException("Please select at least one purpose for this document type.");
+          throw new PDOException("Please select at least one purpose for the primary document type.");
         }
+        $purposeIds = $json['purposeIds'];
+      } elseif ($secondaryHasPurposes) {
+        $documentWithPurposes = 'secondary';
+        if (!isset($json['purposeIds']) || empty($json['purposeIds'])) {
+          throw new PDOException("Please select at least one purpose for the secondary document type.");
+        }
+        $purposeIds = $json['purposeIds'];
       } else {
-        // If no predefined purposes, validate that custom purpose is provided
+        // Neither document has predefined purposes, so custom purpose is required
         if (!isset($json['purpose']) || empty(trim($json['purpose']))) {
           throw new PDOException("Please provide a purpose for this request.");
         }
@@ -294,14 +307,9 @@ class User {
       $stmt->bindParam(':userId', $json['userId']);
       $stmt->bindParam(':documentId', $json['secondaryDocumentId']);
       
-      // Set purpose field - if predefined purposes exist, use first one as main purpose, otherwise use custom purpose
-      if ($hasPredefinedPurposes) {
-        $mainPurposeSql = "SELECT name FROM tblpurpose WHERE id = :purposeId LIMIT 1";
-        $mainPurposeStmt = $conn->prepare($mainPurposeSql);
-        $mainPurposeStmt->bindParam(':purposeId', $json['purposeIds'][0]);
-        $mainPurposeStmt->execute();
-        $mainPurposeResult = $mainPurposeStmt->fetch(PDO::FETCH_ASSOC);
-        $purpose = $mainPurposeResult['name'];
+      // Set purpose field - if any document has predefined purposes, set to NULL since purposes are stored in tblrequestpurpose
+      if ($documentWithPurposes) {
+        $purpose = null; // Set to NULL when predefined purposes exist
       } else {
         $purpose = $json['purpose'];
       }
@@ -312,9 +320,9 @@ class User {
       if ($stmt->execute()) {
         $secondaryRequestId = $conn->lastInsertId();
         
-        // Insert purposes into tblrequestpurpose if predefined purposes exist
-        if ($hasPredefinedPurposes && isset($json['purposeIds'])) {
-          foreach ($json['purposeIds'] as $purposeId) {
+        // Insert purposes into tblrequestpurpose ONLY if the secondary document has predefined purposes
+        if ($documentWithPurposes === 'secondary' && !empty($purposeIds)) {
+          foreach ($purposeIds as $purposeId) {
             $purposeSql = "INSERT INTO tblrequestpurpose (requestId, purposeId) VALUES (:requestId, :purposeId)";
             $purposeStmt = $conn->prepare($purposeSql);
             $purposeStmt->bindParam(':requestId', $secondaryRequestId);
@@ -411,9 +419,9 @@ class User {
         if ($stmt2->execute()) {
           $primaryRequestId = $conn->lastInsertId();
           
-          // Insert purposes into tblrequestpurpose for primary request if predefined purposes exist
-          if ($hasPredefinedPurposes && isset($json['purposeIds'])) {
-            foreach ($json['purposeIds'] as $purposeId) {
+          // Insert purposes into tblrequestpurpose ONLY if the primary document has predefined purposes
+          if ($documentWithPurposes === 'primary' && !empty($purposeIds)) {
+            foreach ($purposeIds as $purposeId) {
               $purposeSql = "INSERT INTO tblrequestpurpose (requestId, purposeId) VALUES (:requestId, :purposeId)";
               $purposeStmt = $conn->prepare($purposeSql);
               $purposeStmt->bindParam(':requestId', $primaryRequestId);
