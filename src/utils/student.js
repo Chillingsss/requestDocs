@@ -255,3 +255,20 @@ export async function updateStudentProfile(userId, profileData) {
 		throw error;
 	}
 }
+
+export async function cancelRequest(requestId) {
+	const formData = new FormData();
+	formData.append("operation", "cancelRequest");
+	formData.append("json", JSON.stringify({ requestId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/student.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

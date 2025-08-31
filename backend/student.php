@@ -864,6 +864,94 @@ class User {
       return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
   }
+
+  function cancelRequest($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+
+    try {
+      $conn->beginTransaction();
+
+      // Set Philippine timezone and get current datetime
+      date_default_timezone_set('Asia/Manila');
+      $philippineDateTime = date('Y-m-d h:i:s A');
+
+      // Validate required fields
+      if (!isset($json['requestId'])) {
+        throw new PDOException("Missing request ID");
+      }
+
+      $requestId = $json['requestId'];
+
+      // Check if request exists and is in Pending status
+      $checkSql = "SELECT r.id, s.name as statusName 
+                   FROM tblrequest r
+                   INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
+                   INNER JOIN tblstatus s ON rs.statusId = s.id
+                   WHERE r.id = :requestId
+                   AND rs.id = (
+                     SELECT MAX(rs2.id) 
+                     FROM tblrequeststatus rs2 
+                     WHERE rs2.requestId = r.id
+                   )";
+      
+      $checkStmt = $conn->prepare($checkSql);
+      $checkStmt->bindParam(':requestId', $requestId);
+      $checkStmt->execute();
+
+      if ($checkStmt->rowCount() == 0) {
+        throw new PDOException("Request not found");
+      }
+
+      $requestStatus = $checkStmt->fetch(PDO::FETCH_ASSOC);
+      
+      // Only allow cancellation if status is Pending
+      if (strtolower($requestStatus['statusName']) !== 'pending') {
+        throw new PDOException("Only pending requests can be cancelled");
+      }
+
+      // Check if Cancelled status exists, if not create it
+      $statusCheckSql = "SELECT id FROM tblstatus WHERE name = 'Cancelled' LIMIT 1";
+      $statusCheckStmt = $conn->prepare($statusCheckSql);
+      $statusCheckStmt->execute();
+      
+      if ($statusCheckStmt->rowCount() > 0) {
+        $cancelledStatus = $statusCheckStmt->fetch(PDO::FETCH_ASSOC);
+        $statusId = $cancelledStatus['id'];
+      } else {
+        // Create Cancelled status if it doesn't exist
+        $createStatusSql = "INSERT INTO tblstatus (name, createdAt) VALUES ('Cancelled', :datetime)";
+        $createStatusStmt = $conn->prepare($createStatusSql);
+        $createStatusStmt->bindParam(':datetime', $philippineDateTime);
+        
+        if ($createStatusStmt->execute()) {
+          $statusId = $conn->lastInsertId();
+        } else {
+          throw new PDOException("Failed to create Cancelled status");
+        }
+      }
+
+      // Insert new status record with Cancelled status
+      $statusSql = "INSERT INTO tblrequeststatus (requestId, statusId, createdAt) VALUES (:requestId, :statusId, :datetime)";
+      $statusStmt = $conn->prepare($statusSql);
+      $statusStmt->bindParam(':requestId', $requestId);
+      $statusStmt->bindParam(':statusId', $statusId);
+      $statusStmt->bindParam(':datetime', $philippineDateTime);
+
+      if ($statusStmt->execute()) {
+        $conn->commit();
+        return json_encode(['success' => true, 'message' => 'Request cancelled successfully']);
+      } else {
+        throw new PDOException("Failed to cancel request");
+      }
+
+    } catch (PDOException $e) {
+      $conn->rollBack();
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -914,6 +1002,9 @@ switch ($operation) {
     break;
   case "getRequirementComments":
     echo $user->getRequirementComments($json);
+    break;
+  case "cancelRequest":
+    echo $user->cancelRequest($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

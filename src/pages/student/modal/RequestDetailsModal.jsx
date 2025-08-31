@@ -16,6 +16,7 @@ import {
 	getRequestAttachments,
 	getRequirementComments,
 	getDocumentRequirements,
+	cancelRequest,
 } from "../../../utils/student";
 import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 import toast from "react-hot-toast";
@@ -35,6 +36,8 @@ export default function RequestDetailsModal({
 	const [showUploadForm, setShowUploadForm] = useState(false);
 	const [selectedFile, setSelectedFile] = useState(null);
 	const [uploading, setUploading] = useState(false);
+	const [cancelling, setCancelling] = useState(false);
+	const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
 
 	useEffect(() => {
 		if (isOpen && request) {
@@ -148,6 +151,7 @@ export default function RequestDetailsModal({
 				setShowUploadForm(false);
 				setSelectedFile(null);
 				fetchRequestDetails(); // Refresh the data
+				// Also trigger parent refresh to update the table
 				if (onSuccess) onSuccess();
 			} else {
 				toast.error(result.error || "Failed to upload requirement");
@@ -157,6 +161,32 @@ export default function RequestDetailsModal({
 			toast.error("Failed to upload requirement");
 		} finally {
 			setUploading(false);
+		}
+	};
+
+	const handleCancelRequest = async () => {
+		setShowCancelConfirmation(true);
+	};
+
+	const confirmCancelRequest = async () => {
+		setShowCancelConfirmation(false);
+		setCancelling(true);
+		try {
+			const result = await cancelRequest(request.id);
+			if (result.success) {
+				toast.success("Request cancelled successfully!");
+				// Close the modal first
+				onClose();
+				// Then trigger the success callback to refresh the parent data
+				if (onSuccess) onSuccess();
+			} else {
+				toast.error(result.error || "Failed to cancel request");
+			}
+		} catch (error) {
+			console.error("Failed to cancel request:", error);
+			toast.error("Failed to cancel request");
+		} finally {
+			setCancelling(false);
 		}
 	};
 
@@ -172,6 +202,8 @@ export default function RequestDetailsModal({
 				return <CheckCircle className="w-4 h-4 text-green-500" />;
 			case "completed":
 				return <CheckCircle className="w-4 h-4 text-green-600" />;
+			case "cancelled":
+				return <X className="w-4 h-4 text-red-500" />;
 			default:
 				return <Clock className="w-4 h-4 text-gray-500" />;
 		}
@@ -189,6 +221,8 @@ export default function RequestDetailsModal({
 				return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
 			case "completed":
 				return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
+			case "cancelled":
+				return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300";
 			default:
 				return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300";
 		}
@@ -199,9 +233,9 @@ export default function RequestDetailsModal({
 	return (
 		<>
 			<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-				<div className="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-h-[90vh] overflow-hidden">
+				<div className="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-h-[90vh] flex flex-col">
 					{/* Header */}
-					<div className="flex justify-between items-center px-6 py-4 text-white bg-blue-600">
+					<div className="flex justify-between items-center px-6 py-4 text-white bg-blue-600 rounded-t-lg">
 						<div className="flex gap-3 items-center">
 							<FileText className="w-6 h-6" />
 							<h2 className="text-xl font-semibold">Request Details</h2>
@@ -215,7 +249,7 @@ export default function RequestDetailsModal({
 					</div>
 
 					{/* Content */}
-					<div className="overflow-y-auto max-h-[calc(90vh-120px)] p-6">
+					<div className="flex-1 overflow-y-auto p-6">
 						{loading ? (
 							<div className="flex justify-center items-center py-8">
 								<div className="text-gray-500">Loading...</div>
@@ -551,7 +585,46 @@ export default function RequestDetailsModal({
 					</div>
 
 					{/* Footer */}
-					<div className="flex justify-end gap-3 px-6 py-4 border-t bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+					<div className="flex justify-end gap-3 px-6 py-4 border-t bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 rounded-b-lg">
+						{request.status.toLowerCase() === "pending" && (
+							<Button
+								onClick={handleCancelRequest}
+								variant="outline"
+								className="border-red-300 text-red-700 hover:bg-red-200 hover:text-red-700"
+								disabled={cancelling}
+							>
+								{cancelling ? (
+									<>
+										<svg
+											className="animate-spin h-4 w-4 text-red-700 mr-2"
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+										>
+											<circle
+												className="opacity-25"
+												cx="12"
+												cy="12"
+												r="10"
+												stroke="currentColor"
+												strokeWidth="4"
+											/>
+											<path
+												className="opacity-75"
+												fill="currentColor"
+												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+											/>
+										</svg>
+										Cancelling...
+									</>
+								) : (
+									<>
+										<AlertTriangle className="w-4 h-4 mr-2" />
+										Cancel Request
+									</>
+								)}
+							</Button>
+						)}
 						<Button
 							onClick={onClose}
 							variant="outline"
@@ -562,6 +635,120 @@ export default function RequestDetailsModal({
 					</div>
 				</div>
 			</div>
+
+			{/* Cancel Confirmation Modal */}
+			{showCancelConfirmation && (
+				<div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+					<div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-lg shadow-2xl">
+						{/* Header */}
+						<div className="flex justify-between items-center px-6 py-4 text-white bg-red-600 rounded-t-lg">
+							<div className="flex gap-3 items-center">
+								<AlertTriangle className="w-6 h-6" />
+								<h3 className="text-lg font-semibold">Cancel Request</h3>
+							</div>
+							<button
+								onClick={() => setShowCancelConfirmation(false)}
+								className="p-2 text-white bg-transparent hover:text-red-200 rounded-full transition-colors"
+							>
+								<X className="w-5 h-5" />
+							</button>
+						</div>
+
+						{/* Content */}
+						<div className="p-6">
+							<div className="mb-6">
+								<p className="text-slate-700 dark:text-slate-300 mb-3">
+									Are you sure you want to cancel this request?
+								</p>
+								<div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+									<div className="flex gap-2 items-start">
+										<AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+										<div className="text-sm text-red-700 dark:text-red-300">
+											<p className="font-medium mb-1">
+												This action cannot be undone.
+											</p>
+											<p>
+												Your request will be permanently marked as cancelled and
+												you'll need to submit a new request if needed.
+											</p>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							{/* Request Details */}
+							<div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+								<h4 className="font-medium text-slate-900 dark:text-white mb-2">
+									Request Details:
+								</h4>
+								<div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+									<p>
+										<span className="font-medium">Document:</span>{" "}
+										{request.document}
+									</p>
+									<p>
+										<span className="font-medium">Date Requested:</span>{" "}
+										{new Date(request.dateRequested).toLocaleDateString(
+											"en-US",
+											{ month: "long", day: "numeric", year: "numeric" }
+										)}
+									</p>
+									{request.purpose && (
+										<p>
+											<span className="font-medium">Purpose:</span>{" "}
+											{request.purpose}
+										</p>
+									)}
+								</div>
+							</div>
+						</div>
+
+						{/* Footer */}
+						<div className="flex justify-end gap-3 px-6 py-4 border-t bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 rounded-b-lg">
+							<Button
+								onClick={() => setShowCancelConfirmation(false)}
+								variant="outline"
+								className="border-slate-300 text-slate-700 hover:bg-slate-100"
+							>
+								Keep Request
+							</Button>
+							<Button
+								onClick={confirmCancelRequest}
+								className="bg-red-600 hover:bg-red-700 text-white"
+								disabled={cancelling}
+							>
+								{cancelling ? (
+									<>
+										<svg
+											className="animate-spin h-4 w-4 text-white mr-2"
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+										>
+											<circle
+												className="opacity-25"
+												cx="12"
+												cy="12"
+												r="10"
+												stroke="currentColor"
+												strokeWidth="4"
+											/>
+											<path
+												className="opacity-75"
+												fill="currentColor"
+												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+											/>
+										</svg>
+										Cancelling...
+									</>
+								) : (
+									"Cancel Request"
+								)}
+							</Button>
+						</div>
+					</div>
+				</div>
+			)}
 		</>
 	);
 }

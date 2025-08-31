@@ -22,6 +22,7 @@ export default function StudentDashboard() {
 	const [showProfileModal, setShowProfileModal] = useState(false);
 	const [userRequests, setUserRequests] = useState([]);
 	const [loadingRequests, setLoadingRequests] = useState(false);
+	const [refreshTrigger, setRefreshTrigger] = useState(0);
 	const navigate = useNavigate();
 
 	// Get userId from cookie
@@ -98,6 +99,8 @@ export default function StudentDashboard() {
 
 	const handleRequestSuccess = () => {
 		fetchUserRequests();
+		// Increment refresh trigger to notify child components
+		setRefreshTrigger((prev) => prev + 1);
 	};
 
 	return (
@@ -212,6 +215,8 @@ export default function StudentDashboard() {
 						userRequests={userRequests}
 						loadingRequests={loadingRequests}
 						onRequestFormOpen={() => setShowRequestForm(true)}
+						refreshTrigger={refreshTrigger}
+						onRequestSuccess={handleRequestSuccess}
 					/>
 				) : activeTab === "profile" ? (
 					<div className="py-8 text-center">

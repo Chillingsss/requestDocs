@@ -496,6 +496,12 @@ export default function ProcessedRequest({
 			isCavRequest();
 
 		switch (statusName) {
+			case "cancelled":
+				return {
+					text: "Request Cancelled",
+					bgColor: "bg-gray-400",
+					disabled: true,
+				};
 			case "pending":
 				// Always show 'Mark as Processed' for diploma, certificate, and CAV requests
 				const buttonText = isDiplomaRequest()

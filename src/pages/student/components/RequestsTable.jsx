@@ -8,6 +8,8 @@ export default function RequestsTable({
 	userRequests,
 	loadingRequests,
 	onRequestFormOpen,
+	refreshTrigger,
+	onRequestSuccess,
 }) {
 	const [selectedRequest, setSelectedRequest] = useState(null);
 	const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -22,11 +24,6 @@ export default function RequestsTable({
 	const handleCloseModal = () => {
 		setShowDetailsModal(false);
 		setSelectedRequest(null);
-	};
-
-	const handleRequestSuccess = () => {
-		// This will be called when requirements are uploaded
-		// You can add any refresh logic here
 	};
 
 	const toggleTimeline = (requestId) => {
@@ -106,6 +103,7 @@ export default function RequestsTable({
 		return null; // Future status
 	};
 
+	// Refresh requirement comments when userRequests changes
 	useEffect(() => {
 		const fetchComments = async () => {
 			const comments = {};
@@ -115,7 +113,9 @@ export default function RequestsTable({
 			setRequirementComments(comments);
 		};
 
-		fetchComments();
+		if (userRequests.length > 0) {
+			fetchComments();
+		}
 	}, [userRequests]);
 
 	if (loadingRequests) {
@@ -355,7 +355,7 @@ export default function RequestsTable({
 					onClose={handleCloseModal}
 					request={selectedRequest}
 					userId={selectedRequest.studentId || localStorage.getItem("userId")}
-					onSuccess={handleRequestSuccess}
+					onSuccess={onRequestSuccess}
 				/>
 			)}
 		</>
@@ -387,6 +387,8 @@ function getStatusColor(status) {
 			return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
 		case "completed":
 			return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
+		case "cancelled":
+			return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300";
 		default:
 			return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300";
 	}
