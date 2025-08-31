@@ -431,3 +431,76 @@ export async function processLrnRequest(requestId, userId, studentId, lrn) {
 		throw error;
 	}
 }
+
+// Add requirement comment
+export async function addRequirementComment(
+	requirementId,
+	requestId,
+	registrarId,
+	comment
+) {
+	const formData = new FormData();
+	formData.append("operation", "addRequirementComment");
+	formData.append(
+		"json",
+		JSON.stringify({
+			requirementId,
+			requestId,
+			registrarId,
+			comment,
+		})
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+// Get requirement comments for a request
+export async function getRequirementComments(requestId) {
+	const formData = new FormData();
+	formData.append("operation", "getRequirementComments");
+	formData.append("json", JSON.stringify({ requestId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+// Update comment status
+export async function updateCommentStatus(commentId, status) {
+	const formData = new FormData();
+	formData.append("operation", "updateCommentStatus");
+	formData.append(
+		"json",
+		JSON.stringify({
+			commentId,
+			status,
+		})
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

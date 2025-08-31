@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "../../../components/ui/button";
 import {
 	X,
@@ -26,6 +26,8 @@ import DiplomaTemplateModal from "../components/DiplomaTemplateModal";
 import CertificateTemplateModal from "../components/CertificateTemplateModal";
 import CavTemplateModal from "../components/CavTemplateModal";
 import ReleaseScheduleModal from "./ReleaseScheduleModal";
+import RequirementCommentModal from "./RequirementCommentModal";
+import RequirementCommentsSection from "../components/RequirementCommentsSection";
 
 export default function ProcessedRequest({
 	request,
@@ -48,6 +50,10 @@ export default function ProcessedRequest({
 	const [currentRequest, setCurrentRequest] = useState(request);
 	const [releaseSchedule, setReleaseSchedule] = useState(null);
 	const [doubleRequestNote, setDoubleRequestNote] = useState(null);
+
+	// Requirement comment modal state
+	const [showCommentModal, setShowCommentModal] = useState(false);
+	const [selectedRequirement, setSelectedRequirement] = useState(null);
 
 	// Update currentRequest when request prop changes
 	useEffect(() => {
@@ -431,6 +437,42 @@ export default function ProcessedRequest({
 			toast.error("Failed to release document");
 		}
 	};
+
+	// Requirement comment handlers
+	const handleAddComment = (requirement) => {
+		setSelectedRequirement(requirement);
+		setShowCommentModal(true);
+	};
+
+	const handleCommentSuccess = () => {
+		// Close the comment modal first
+		setShowCommentModal(false);
+		setSelectedRequirement(null);
+
+		// Force refresh of comments section by updating a key
+		setCommentsRefreshKey((prev) => prev + 1);
+
+		// Also try to refresh via ref if available
+		if (
+			commentsRefreshRef.current &&
+			commentsRefreshRef.current.fetchComments
+		) {
+			commentsRefreshRef.current.fetchComments();
+		}
+
+		onSuccess();
+	};
+
+	const handleCommentClose = () => {
+		setShowCommentModal(false);
+		setSelectedRequirement(null);
+	};
+
+	// Ref for refreshing comments
+	const commentsRefreshRef = useRef();
+
+	// Key to force refresh of comments section
+	const [commentsRefreshKey, setCommentsRefreshKey] = useState(0);
 
 	// Function to get button text and color based on status
 	const getButtonConfig = () => {
@@ -907,6 +949,9 @@ export default function ProcessedRequest({
 								setGroupByType={setGroupByType}
 								openImageZoom={openImageZoom}
 								isImageFile={isImageFile}
+								requestId={currentRequest.id}
+								registrarId={userId}
+								onAddComment={handleAddComment}
 								note={
 									isCavRequest() &&
 									attachments.length === 0 &&
@@ -916,6 +961,15 @@ export default function ProcessedRequest({
 										  )}. Please process the Diploma first; once completed, proceed with the CAV.`
 										: undefined
 								}
+							/>
+
+							{/* Requirement Comments Section */}
+							<RequirementCommentsSection
+								requestId={currentRequest.id}
+								onRefresh={onSuccess}
+								refreshRef={commentsRefreshRef}
+								refreshKey={commentsRefreshKey} // Pass the refresh key
+								key={commentsRefreshKey} // Add key to force re-render
 							/>
 						</div>
 					</div>
@@ -1010,6 +1064,18 @@ export default function ProcessedRequest({
 					onClose={handleReleaseScheduleClose}
 					request={currentRequest}
 					onSuccess={handleReleaseScheduleSuccess}
+					userId={userId}
+				/>
+			)}
+
+			{/* Requirement Comment Modal */}
+			{showCommentModal && selectedRequirement && (
+				<RequirementCommentModal
+					isOpen={showCommentModal}
+					onClose={handleCommentClose}
+					requestId={currentRequest.id}
+					requirement={selectedRequirement}
+					onSuccess={handleCommentSuccess}
 					userId={userId}
 				/>
 			)}

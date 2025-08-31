@@ -14,6 +14,7 @@ import Sidebar from "../../components/shared/Sidebar";
 import StatsCards from "./components/StatsCards";
 import RequestsTable from "./components/RequestsTable";
 import ProfileModal from "./modal/ProfileModal";
+import RequestDetailsModal from "./modal/RequestDetailsModal";
 
 export default function StudentDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);

@@ -35,6 +35,23 @@ export async function getRequirementsType() {
 	}
 }
 
+export async function getRequirementComments(requestId) {
+	const formData = new FormData();
+	formData.append("operation", "getRequirementComments");
+	formData.append("json", JSON.stringify({ requestId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/student.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 export async function getDocumentRequirements(documentId) {
 	const formData = new FormData();
 	formData.append("operation", "getDocumentRequirements");
@@ -174,7 +191,23 @@ export async function getRequestTracking(requestId) {
 	formData.append("operation", "getRequestTracking");
 	formData.append("json", JSON.stringify({ requestId }));
 
-	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/student.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getRequestAttachments(requestId) {
+	const formData = new FormData();
+	formData.append("operation", "getRequestAttachments");
+	formData.append("json", JSON.stringify({ requestId }));
+
 	const apiUrl = getDecryptedApiUrl();
 
 	try {

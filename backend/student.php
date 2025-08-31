@@ -519,6 +519,39 @@ class User {
     return json_encode([]);
   }
 
+  function getRequestAttachments($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $requestId = $json['requestId'];
+
+    try {
+      $sql = "SELECT 
+                req.id,
+                req.filepath,
+                req.typeId,
+                rt.nameType as requirementType,
+                req.createdAt
+              FROM tblrequirements req
+              LEFT JOIN tblrequirementstype rt ON req.typeId = rt.id
+              WHERE req.requestId = :requestId 
+              ORDER BY req.createdAt ASC";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':requestId', $requestId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $attachments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return json_encode($attachments);
+      }
+      return json_encode([]);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
   function getDocumentRequirements($json)
   {
     include "connection.php";
@@ -718,6 +751,119 @@ class User {
       return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
   }
+
+  function uploadAdditionalRequirement($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+
+    try {
+      $conn->beginTransaction();
+
+      // Set Philippine timezone and get current datetime
+      date_default_timezone_set('Asia/Manila');
+      $philippineDateTime = date('Y-m-d h:i:s A');
+
+      // Validate required fields
+      if (!isset($json['requestId']) || !isset($json['typeId']) || !isset($_FILES['attachment'])) {
+        throw new PDOException("Missing required fields");
+      }
+
+      $requestId = $json['requestId'];
+      $typeId = $json['typeId'];
+
+      // Handle file upload
+      if ($_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = 'requirements/';
+        
+        // Create directory if it doesn't exist
+        if (!file_exists($uploadDir)) {
+          mkdir($uploadDir, 0777, true);
+        }
+
+        $originalFileName = $_FILES['attachment']['name'];
+        $fileExtension = pathinfo($originalFileName, PATHINFO_EXTENSION);
+        $filePath = $uploadDir . $originalFileName;
+
+        // Validate file type (only images and PDFs)
+        $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+        if (!in_array(strtolower($fileExtension), $allowedTypes)) {
+          throw new PDOException("Invalid file type. Only JPG, PNG, GIF, and PDF files are allowed.");
+        }
+
+        // Check file size (max 5MB)
+        if ($_FILES['attachment']['size'] > 5 * 1024 * 1024) {
+          throw new PDOException("File size too large. Maximum size is 5MB.");
+        }
+
+        if (move_uploaded_file($_FILES['attachment']['tmp_name'], $filePath)) {
+          // Insert into tblrequirements
+          $reqSql = "INSERT INTO tblrequirements (requestId, filepath, typeId, createdAt) VALUES (:requestId, :filepath, :typeId, :datetime)";
+          $reqStmt = $conn->prepare($reqSql);
+          $reqStmt->bindParam(':requestId', $requestId);
+          $reqStmt->bindParam(':filepath', $originalFileName);
+          $reqStmt->bindParam(':typeId', $typeId);
+          $reqStmt->bindParam(':datetime', $philippineDateTime);
+          
+          if ($reqStmt->execute()) {
+            $conn->commit();
+            return json_encode(['success' => true, 'message' => 'Requirement uploaded successfully']);
+          } else {
+            throw new PDOException("Failed to save requirement to database");
+          }
+        } else {
+          throw new PDOException("Failed to upload file");
+        }
+      } else {
+        throw new PDOException("File upload error: " . $_FILES['attachment']['error']);
+      }
+
+    } catch (PDOException $e) {
+      $conn->rollBack();
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function getRequirementComments($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $requestId = $json['requestId'];
+
+    try {
+      $sql = "SELECT 
+                rc.id,
+                rc.comment,
+                rc.status,
+                rc.createdAt,
+                rc.isNotified,
+                u.firstname as registrarFirstName,
+                u.lastname as registrarLastName,
+                req.filepath,
+                rt.nameType as requirementType
+              FROM tblrequirementcomments rc
+              INNER JOIN tbluser u ON rc.registrarId = u.id
+              INNER JOIN tblrequirements req ON rc.requirementId = req.id
+              INNER JOIN tblrequirementstype rt ON req.typeId = rt.id
+              WHERE rc.requestId = :requestId
+              ORDER BY rc.createdAt DESC";
+
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':requestId', $requestId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return json_encode($comments);
+      }
+      return json_encode([]);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -745,6 +891,9 @@ switch ($operation) {
   case "getRequirementsType":
     echo $user->getRequirementsType();
     break;
+  case "getRequestAttachments":
+    echo $user->getRequestAttachments($json);
+    break;
   case "getDocumentRequirements":
     echo $user->getDocumentRequirements($json);
     break;
@@ -759,6 +908,12 @@ switch ($operation) {
     break;
   case "updateProfile":
     echo $user->updateProfile($json);
+    break;
+  case "uploadAdditionalRequirement":
+    echo $user->uploadAdditionalRequirement($json);
+    break;
+  case "getRequirementComments":
+    echo $user->getRequirementComments($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");
