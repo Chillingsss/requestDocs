@@ -681,10 +681,10 @@ export default function RequestDocuments({
 	);
 
 	return (
-		<div className="flex fixed inset-0 z-50 justify-center items-center backdrop-blur-sm bg-black/40">
-			<div className="relative mx-2 w-full max-w-2xl bg-white rounded-2xl border shadow-2xl dark:bg-slate-800 dark:border-slate-700 border-slate-200">
+		<div className="flex fixed inset-0 z-50 justify-center items-center backdrop-blur-sm bg-black/40 p-4">
+			<div className="relative w-full max-w-2xl bg-white rounded-2xl border shadow-2xl dark:bg-slate-800 dark:border-slate-700 border-slate-200 flex flex-col max-h-[90vh]">
 				{/* Title Bar */}
-				<div className="flex justify-between items-center px-6 py-4 rounded-t-2xl border-b bg-slate-50 border-slate-100 dark:bg-slate-700 dark:border-slate-600">
+				<div className="flex justify-between items-center px-6 py-4 rounded-t-2xl border-b bg-slate-50 border-slate-100 dark:bg-slate-700 dark:border-slate-600 flex-shrink-0">
 					<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
 						Request Document
 					</h3>
@@ -709,7 +709,10 @@ export default function RequestDocuments({
 						</svg>
 					</button>
 				</div>
-				<form onSubmit={handleRequestSubmit} className="px-6 py-6 space-y-5">
+				<form
+					onSubmit={handleRequestSubmit}
+					className="px-6 py-6 space-y-5 flex-1 overflow-y-auto"
+				>
 					<div>
 						<Label
 							htmlFor="document-type"

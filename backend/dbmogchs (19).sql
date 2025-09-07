@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 31, 2025 at 04:05 PM
+-- Generation Time: Sep 07, 2025 at 04:26 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -91,6 +91,24 @@ INSERT INTO `tbldocumentrequirement` (`id`, `documentId`, `requirementTId`, `use
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tblexpecteddays`
+--
+
+CREATE TABLE `tblexpecteddays` (
+  `id` int(11) NOT NULL,
+  `days` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblexpecteddays`
+--
+
+INSERT INTO `tblexpecteddays` (`id`, `days`) VALUES
+(1, 7);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tblforgotlrn`
 --
 
@@ -104,6 +122,13 @@ CREATE TABLE `tblforgotlrn` (
   `processed_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblforgotlrn`
+--
+
+INSERT INTO `tblforgotlrn` (`id`, `firstname`, `lastname`, `email`, `is_processed`, `processed_by`, `processed_at`, `created_at`) VALUES
+(1, 'Ralph', 'Gallegos', 'ralp.pelino11@gmail.com', 0, NULL, NULL, '2025-09-01 11:02:31');
 
 -- --------------------------------------------------------
 
@@ -191,7 +216,8 @@ INSERT INTO `tblrequest` (`id`, `studentId`, `documentId`, `purpose`, `createdAt
 (2, '33333333', 5, 'Applying work', '2025-08-31 07:05:25'),
 (3, '33333333', 5, 'enrollment', '2025-08-31 09:21:45'),
 (4, '33333333', 6, NULL, '2025-08-31 09:35:40'),
-(5, '33333333', 7, NULL, '2025-08-31 09:35:40');
+(5, '33333333', 7, NULL, '2025-08-31 09:35:40'),
+(7, '33333333', 7, NULL, '2025-09-01 11:28:11');
 
 -- --------------------------------------------------------
 
@@ -211,7 +237,10 @@ CREATE TABLE `tblrequestpurpose` (
 
 INSERT INTO `tblrequestpurpose` (`id`, `requestId`, `purposeId`) VALUES
 (1, 5, 1),
-(2, 5, 7);
+(2, 5, 7),
+(3, 7, 1),
+(4, 7, 2),
+(5, 7, 7);
 
 -- --------------------------------------------------------
 
@@ -236,7 +265,8 @@ INSERT INTO `tblrequeststatus` (`id`, `requestId`, `statusId`, `userId`, `create
 (7, 2, 7, NULL, '2025-08-31 09:07:00'),
 (8, 3, 1, NULL, '2025-08-31 09:21:45'),
 (9, 4, 1, NULL, '2025-08-31 09:35:40'),
-(10, 5, 1, NULL, '2025-08-31 09:35:40');
+(10, 5, 1, NULL, '2025-08-31 09:35:40'),
+(12, 7, 1, NULL, '2025-09-01 11:28:11');
 
 -- --------------------------------------------------------
 
@@ -275,7 +305,8 @@ CREATE TABLE `tblrequirements` (
 --
 
 INSERT INTO `tblrequirements` (`id`, `requestId`, `filepath`, `typeId`, `createdAt`) VALUES
-(1, 4, '521827746_1955938708539586_392632500952961470_n.jpg', 2, '2025-08-31 09:35:40');
+(1, 4, '521827746_1955938708539586_392632500952961470_n.jpg', 2, '2025-08-31 09:35:40'),
+(2, 7, '2fff9c3f-173e-4057-811c-afbf66b46d65.jpg', 1, '2025-09-01 11:28:11');
 
 -- --------------------------------------------------------
 
@@ -623,7 +654,7 @@ INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, 
 ('136913130093', 'HERMINE', 'GUMBAY', 'DIMASINSIL', NULL, '$2y$10$DXSODBC8XsmnHXLqvl77aeV2vIxNaEnl58ZD7Im7zWTe0MByn5pdK', 4, '136913130093', 2, '0000-00-00', 17, 'Islam', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
 ('18', '<===', 'TOTAL', 'MALE', NULL, '$2y$10$Bc6Z.jRG26hUOgycmeQBfeB70rNnIO.XdFUTtAFbPExUFgZKOjL8S', 4, '18', 3, '0000-00-00', 0, '', '', '', '', '', '', 4, 4, 1, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
 ('201511140006', 'CARL', 'KESTER LIGUTOM', 'PELIGRO', NULL, '$2y$10$5jvHmOKXl1kiIiQjhzOq0.nMX6E3meAjEBynFwbj/ri5asp9MTBrS', 4, '201511140006', 2, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('33333333', 'Patricia', '', 'Aspirass', 'jabagat.jacklindenise@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '2003-02-21', 20, 'Roman Catholic', 'Iponan', '', '', '', '', 10, 4, 1, '2025-08-06 12:42:47', '2025-08-31 13:55:04'),
+('33333333', 'Patricia', '', 'Aspirass', 'jabagat.jacklindenise@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '2003-02-21', 20, 'Roman Catholic', 'Iponan', '', '', '', '', 10, 4, 2, '2025-08-06 12:42:47', '2025-09-01 00:50:14'),
 ('405155150193', 'MARICEL', 'SIBOLON', 'MANOS', NULL, '$2y$10$9eET.qQUrtDwOqlf2YnX4Os1lOS8XZUMGUJGUnOouoO8.eu7OArby', 4, '405155150193', 2, '0000-00-00', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
 ('405176150009', 'BRAD', 'LUNA', 'PADERANGA', NULL, '$2y$10$IKa07rDnOnyyDRgU9Pld8.ax4NvtqJlrJOAZf2fu455/SfagePJei', 4, '405176150009', 3, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
 ('405241150066', 'ARJAY', 'PALMARES', 'REYES', NULL, '$2y$10$BTcS0XTgogiC8zaYkwIi7uquX/Vjq/LKBlZa5.NHzS/tWjh5ZWvOe', 4, '405241150066', 2, '0000-00-00', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
@@ -750,6 +781,12 @@ ALTER TABLE `tbldocumentrequirement`
   ADD KEY `documentId` (`documentId`),
   ADD KEY `requirementTId` (`requirementTId`),
   ADD KEY `userId` (`userId`);
+
+--
+-- Indexes for table `tblexpecteddays`
+--
+ALTER TABLE `tblexpecteddays`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `tblforgotlrn`
@@ -935,10 +972,16 @@ ALTER TABLE `tbldocumentrequirement`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
+-- AUTO_INCREMENT for table `tblexpecteddays`
+--
+ALTER TABLE `tblexpecteddays`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `tblforgotlrn`
 --
 ALTER TABLE `tblforgotlrn`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `tblgradelevel`
@@ -962,19 +1005,19 @@ ALTER TABLE `tblreleaseschedule`
 -- AUTO_INCREMENT for table `tblrequest`
 --
 ALTER TABLE `tblrequest`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `tblrequestpurpose`
 --
 ALTER TABLE `tblrequestpurpose`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `tblrequeststatus`
 --
 ALTER TABLE `tblrequeststatus`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `tblrequirementcomments`
@@ -986,7 +1029,7 @@ ALTER TABLE `tblrequirementcomments`
 -- AUTO_INCREMENT for table `tblrequirements`
 --
 ALTER TABLE `tblrequirements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tblrequirementstype`
