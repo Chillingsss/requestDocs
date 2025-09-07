@@ -757,6 +757,7 @@ class User {
                 s.schoolyearId,
                 s.strandId,
                 s.gradeLevelId,
+                s.contactNo,
                 sec.name as sectionName,
                 sy.year as schoolYear,
                 t.name as track,
@@ -806,6 +807,7 @@ class User {
                   motherName = :motherName,
                   guardianName = :guardianName,
                   guardianRelationship = :guardianRelationship,
+                  contactNo = :contactNo,
                   updatedAt = NOW()
               WHERE id = :userId";
 
@@ -822,6 +824,7 @@ class User {
       $stmt->bindParam(':motherName', $json['motherName']);
       $stmt->bindParam(':guardianName', $json['guardianName']);
       $stmt->bindParam(':guardianRelationship', $json['guardianRelationship']);
+      $stmt->bindParam(':contactNo', $json['contactNo']);
       $stmt->bindParam(':userId', $userId);
 
       if ($stmt->execute()) {

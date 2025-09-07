@@ -203,7 +203,7 @@ export default function CavTemplate({
 					prev.page4SchoolYearLastAttended || studentInfo.schoolYear || "",
 				page4PresentAddress:
 					prev.page4PresentAddress || studentInfo.completeAddress || "",
-				page4ContactNo: prev.page4ContactNo || "",
+				page4ContactNo: prev.page4ContactNo || studentInfo.contactNo || "",
 				page4Purposes:
 					prev.page4Purposes ||
 					(purposeText

@@ -476,6 +476,7 @@ class User {
                 t.name as track,
                 s.email,
                 s.completeAddress,
+                s.contactNo,
                 sec.gradeLevelId,
                 gl.name as gradeLevel,
                 sy.year as schoolYear,
