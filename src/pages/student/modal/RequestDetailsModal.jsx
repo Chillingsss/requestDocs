@@ -321,6 +321,76 @@ export default function RequestDetailsModal({
 											</p>
 										</div>
 									)}
+
+									{/* Expected Release Date and Countdown */}
+									{request.expectedReleaseDateFormatted &&
+										request.daysRemaining !== null && (
+											<div
+												className={`p-4 rounded-lg border ${
+													request.daysRemaining >= 0
+														? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+														: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
+												}`}
+											>
+												<div className="flex gap-3 items-center mb-3">
+													<Calendar
+														className={`w-5 h-5 ${
+															request.daysRemaining >= 0
+																? "text-blue-600"
+																: "text-red-600"
+														}`}
+													/>
+													<span
+														className={`text-sm font-medium ${
+															request.daysRemaining >= 0
+																? "text-blue-700 dark:text-blue-300"
+																: "text-red-700 dark:text-red-300"
+														}`}
+													>
+														Expected Release Date
+													</span>
+												</div>
+												<p
+													className={`text-lg font-semibold ${
+														request.daysRemaining >= 0
+															? "text-blue-800 dark:text-blue-200"
+															: "text-red-800 dark:text-red-200"
+													}`}
+												>
+													{request.expectedReleaseDateFormatted}
+												</p>
+												<div
+													className={`text-sm mt-2 ${
+														request.daysRemaining >= 0
+															? "text-blue-600 dark:text-blue-400"
+															: "text-red-600 dark:text-red-400"
+													}`}
+												>
+													{request.daysRemaining === 0 ? (
+														<span className="font-medium">
+															📅 Expected release: Today!
+														</span>
+													) : request.daysRemaining > 0 ? (
+														<span>
+															⏱️{" "}
+															<span className="font-medium">
+																{request.daysRemaining}{" "}
+																{request.daysRemaining === 1 ? "day" : "days"}{" "}
+																remaining
+															</span>
+														</span>
+													) : (
+														<span className="font-medium">
+															⚠️ {Math.abs(request.daysRemaining)}{" "}
+															{Math.abs(request.daysRemaining) === 1
+																? "day"
+																: "days"}{" "}
+															overdue
+														</span>
+													)}
+												</div>
+											</div>
+										)}
 								</div>
 
 								{/* Purpose */}
