@@ -14,6 +14,8 @@ export default function CavTemplate({
 	strandDefaults,
 	strandType,
 	request,
+	expectedReleaseDate,
+	purposeText,
 }) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -99,6 +101,16 @@ export default function CavTemplate({
 		page3SpecialOrderNumber: "N/A",
 		page3SpecialOrderDate: "N/A",
 		page3IssueDate: "1st day of August 2023",
+		// Page 4 editable fields
+		page4ControlNo: "",
+		page4DateOfApplication: "",
+		page4DateOfRelease: "",
+		page4StudentName: "",
+		page4SchoolId: "",
+		page4SchoolYearLastAttended: "",
+		page4PresentAddress: "",
+		page4ContactNo: "",
+		page4Purposes: [],
 	});
 
 	const [strands, setStrands] = useState([]);
@@ -170,6 +182,33 @@ export default function CavTemplate({
 				page3SpecialOrderNumber: prev.page3SpecialOrderNumber || "N/A",
 				page3SpecialOrderDate: prev.page3SpecialOrderDate || "N/A",
 				page3IssueDate: prev.page3IssueDate || "1st day of August 2023",
+				// Page 4 editable fields
+				page4ControlNo:
+					prev.page4ControlNo ||
+					(studentInfo.controlNo ? String(studentInfo.controlNo) : ""),
+				page4DateOfApplication:
+					prev.page4DateOfApplication ||
+					(request?.dateRequested
+						? new Date(request.dateRequested).toLocaleDateString("en-US", {
+								year: "numeric",
+								month: "long",
+								day: "numeric",
+						  })
+						: ""),
+				page4DateOfRelease:
+					prev.page4DateOfRelease || expectedReleaseDate || "",
+				page4StudentName: prev.page4StudentName || fullName,
+				page4SchoolId: prev.page4SchoolId || studentInfo.lrn || "",
+				page4SchoolYearLastAttended:
+					prev.page4SchoolYearLastAttended || studentInfo.schoolYear || "",
+				page4PresentAddress:
+					prev.page4PresentAddress || studentInfo.completeAddress || "",
+				page4ContactNo: prev.page4ContactNo || "",
+				page4Purposes:
+					prev.page4Purposes ||
+					(purposeText
+						? [{ purposeName: purposeText }]
+						: studentInfo.purposes || []),
 			}));
 		}
 
@@ -191,7 +230,7 @@ export default function CavTemplate({
 			}
 		};
 		fetchStrands();
-	}, [studentInfo, strandDefaults, request]);
+	}, [studentInfo, strandDefaults, request, expectedReleaseDate, purposeText]);
 
 	// When strands load, if we don't yet have a strandId, try to derive it from the strand text/acronym
 	useEffect(() => {
@@ -243,6 +282,14 @@ export default function CavTemplate({
 		}));
 	};
 
+	const isPurposeSelected = (purposeName) => {
+		return certificateData.page4Purposes.some(
+			(p) =>
+				p.purposeName &&
+				p.purposeName.toLowerCase().includes(purposeName.toLowerCase())
+		);
+	};
+
 	const generatePDF = async () => {
 		if (
 			!certificateData.fullName ||
@@ -286,21 +333,39 @@ export default function CavTemplate({
 
 					<div style="font-size: 12pt; color: #222;">
 						<p style="margin-bottom: 4.5mm;"><strong>TO WHOM IT MAY CONCERN:</strong></p>
-						<p style="margin-bottom: 4.5mm; text-indent: 10mm;">This is to certify that, based on the available records in this school, the following information pertaining to <span style="font-weight: bold; text-transform: uppercase; text-decoration: underline;">${certificateData.fullName}</span> with Learner Reference Number <span style="font-weight: bold; text-decoration: underline;">${certificateData.lrn}</span> appear:</p>
+						<p style="margin-bottom: 4.5mm; text-indent: 10mm;">This is to certify that, based on the available records in this school, the following information pertaining to <span style="font-weight: bold; text-transform: uppercase; text-decoration: underline;">${
+							certificateData.fullName
+						}</span> with Learner Reference Number <span style="font-weight: bold; text-decoration: underline;">${
+				certificateData.lrn
+			}</span> appear:</p>
 						
 						<div style="margin-left: 20mm; margin-top: 4mm; margin-bottom: 4mm;">
 							<p style="margin-bottom: 2mm;">( / ) enrolled in <span style="font-weight: bold; text-decoration: underline;">Grade 11</span> during the School Year <span style="font-weight: bold; text-decoration: underline;">2021 - 2022</span></p>
-							<p style="margin-bottom: 2mm;">( / ) completed <span style="font-weight: bold; text-decoration: underline;">Grade 12</span> during the School Year <span style="font-weight: bold; text-decoration: underline;">${certificateData.schoolYear}</span></p>
-							<p style="margin-bottom: 2mm;">Track: <span style="font-weight: bold; text-decoration: underline;">Academic</span> Strand: <span style="font-weight: bold; text-decoration: underline;">${certificateData.strand}</span></p>
+							<p style="margin-bottom: 2mm;">( / ) completed <span style="font-weight: bold; text-decoration: underline;">Grade 12</span> during the School Year <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.schoolYear
+							}</span></p>
+							<p style="margin-bottom: 2mm;">Track: <span style="font-weight: bold; text-decoration: underline;">Academic</span> Strand: <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.strand
+							}</span></p>
 							<p style="margin-bottom: 2mm;">( / ) satisfactorily graduated <span style="font-weight: bold; text-decoration: underline;">from Senior High School</span> for the School Year <span style="font-weight: bold; text-decoration: underline;">2022-2023</span> per <span style="font-weight: bold; text-decoration: underline;">Special Order Number __N/A__</span> dated <span style="font-weight: bold; text-decoration: underline;">__N/A__</span> as prescribed by the Department of Education.</p>
 						</div>
 						
-						<p style="margin-bottom: 4.5mm; text-indent: 10mm;">This certification is issued on <span style="font-weight: bold; text-decoration: underline;">${certificateData.dateIssued}</span> upon the request of <span style="font-weight: bold; text-transform: uppercase; text-decoration: underline;">${certificateData.fullName}</span>, in connection with the application for ${certificateData.purpose}.</p>
+						<p style="margin-bottom: 4.5mm; text-indent: 10mm;">This certification is issued on <span style="font-weight: bold; text-decoration: underline;">${
+							certificateData.dateIssued
+						}</span> upon the request of <span style="font-weight: bold; text-transform: uppercase; text-decoration: underline;">${
+				certificateData.fullName
+			}</span>, in connection with the application for ${
+				certificateData.purpose
+			}.</p>
 					</div>
 
 					<div style="margin-top: 14mm;">
-						<div style="font-weight: bold; text-transform: uppercase; margin-bottom: 1mm; color: #111;">${certificateData.principalName}</div>
-						<div style="font-size: 10pt; margin-bottom: 1mm; color: #333;">${certificateData.principalTitle}</div>
+						<div style="font-weight: bold; text-transform: uppercase; margin-bottom: 1mm; color: #111;">${
+							certificateData.principalName
+						}</div>
+						<div style="font-size: 10pt; margin-bottom: 1mm; color: #333;">${
+							certificateData.principalTitle
+						}</div>
 					</div>
 				</div>
 
@@ -318,10 +383,14 @@ export default function CavTemplate({
 					<div style="border-top: 1px solid #666; width: 100%; margin-bottom: 8mm;"></div>
 
 					<div style="text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 4mm;">1st Indorsement</div>
-					<div style="text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 8mm;">${certificateData.page2Date}</div>
+					<div style="text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 8mm;">${
+						certificateData.page2Date
+					}</div>
 
 					<div style="font-size: 12pt; color: #222;">
-						<p style="margin-bottom: 4mm; text-align: justify;">Respectfully forwarded to the Regional Director, DepEd Regional Office Masterson Avenue, Upper Balulang, Zone 1, Cagayan de Oro City, the request of <span style="font-weight: bold; text-transform: uppercase; text-decoration: underline;">Mr. ${certificateData.page2StudentName}</span>, for Certification, Authentication and Verification (CAV) of his Academic School Records.</p>
+						<p style="margin-bottom: 4mm; text-align: justify;">Respectfully forwarded to the Regional Director, DepEd Regional Office Masterson Avenue, Upper Balulang, Zone 1, Cagayan de Oro City, the request of <span style="font-weight: bold; text-transform: uppercase; text-decoration: underline;">Mr. ${
+							certificateData.page2StudentName
+						}</span>, for Certification, Authentication and Verification (CAV) of his Academic School Records.</p>
 						
 						<p style="margin-bottom: 4mm; text-align: justify;">For ready reference and perusal, attached are the following documents / records (✓) below properly enclosed in sealed envelope:</p>
 						
@@ -336,8 +405,12 @@ export default function CavTemplate({
 					</div>
 
 					<div style="margin-top: 14mm;">
-						<div style="font-weight: bold; text-transform: uppercase; margin-bottom: 1mm; color: #111;">${certificateData.principalName}</div>
-						<div style="font-size: 10pt; margin-bottom: 1mm; color: #333;">${certificateData.principalTitle}</div>
+						<div style="font-weight: bold; text-transform: uppercase; margin-bottom: 1mm; color: #111;">${
+							certificateData.principalName
+						}</div>
+						<div style="font-size: 10pt; margin-bottom: 1mm; color: #333;">${
+							certificateData.principalTitle
+						}</div>
 					</div>
 
 					<div style="margin-top: 8mm; font-size: 9pt; text-align: left; color: #666;">
@@ -376,31 +449,178 @@ export default function CavTemplate({
 
 					<div style="font-size: 11pt; color: #222;">
 						<p style="margin-bottom: 3.5mm;"><strong>TO WHOM IT MAY CONCERN:</strong></p>
-						<p style="margin-bottom: 3.5mm; text-indent: 8mm;">This is to Certify that <span style="font-weight: bold; text-transform: uppercase; text-decoration: underline;">Mr. ${certificateData.page3StudentName}</span>, with Learner Reference Number <span style="font-weight: bold; text-decoration: underline;">${certificateData.lrn}</span> has <strong>graduated</strong> Senior High School Course as prescribed by the Department of Education, with the following particulars:</p>
+						<p style="margin-bottom: 3.5mm; text-indent: 8mm;">This is to Certify that <span style="font-weight: bold; text-transform: uppercase; text-decoration: underline;">Mr. ${
+							certificateData.page3StudentName
+						}</span>, with Learner Reference Number <span style="font-weight: bold; text-decoration: underline;">${
+				certificateData.lrn
+			}</span> has <strong>graduated</strong> Senior High School Course as prescribed by the Department of Education, with the following particulars:</p>
 						
 						<div style="margin-left: 12mm; margin-top: 2mm; margin-bottom: 2mm;">
-							<p style="margin-bottom: 0.8mm;"><strong>1. Name of School:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolName}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>2. School Address:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolAddress}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>3. Grade Level Completed:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3GradeLevel}</span> <strong>School Year Completed:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolYearCompleted}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>Track:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3Track}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>Strand:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.strand}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>4. Graduated on:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3GraduationDate}</span> <strong>School Year graduated:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolYearGraduated}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>5. Special Order Number*:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SpecialOrderNumber}</span></p>
-							<p style="margin-bottom: 0.8mm;">&nbsp;&nbsp;&nbsp;&nbsp;<strong>Date:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SpecialOrderDate}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>1. Name of School:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3SchoolName
+							}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>2. School Address:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3SchoolAddress
+							}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>3. Grade Level Completed:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3GradeLevel
+							}</span> <strong>School Year Completed:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+				certificateData.page3SchoolYearCompleted
+			}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>Track:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3Track
+							}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>Strand:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.strand
+							}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>4. Graduated on:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3GraduationDate
+							}</span> <strong>School Year graduated:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+				certificateData.page3SchoolYearGraduated
+			}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>5. Special Order Number*:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3SpecialOrderNumber
+							}</span></p>
+							<p style="margin-bottom: 0.8mm;">&nbsp;&nbsp;&nbsp;&nbsp;<strong>Date:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3SpecialOrderDate
+							}</span></p>
 						</div>
 						
 						<p style="margin-bottom: 3.5mm; text-indent: 8mm;">This is to further certify that English Language was used as the medium of instruction in all subjects taught in the above-mentioned school, except for subjects that require the use of Filipino language only.</p>
 						
-						<p style="margin-bottom: 3.5mm; text-indent: 8mm;">This certification is issued on <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3IssueDate}</span>, upon the request of <span style="font-weight: bold; text-transform: uppercase; text-decoration: underline;">${certificateData.page3StudentName}</span> in connection with his application for <strong>Certification, Authentication and Verification</strong>.</p>
+						<p style="margin-bottom: 3.5mm; text-indent: 8mm;">This certification is issued on <span style="font-weight: bold; text-decoration: underline;">${
+							certificateData.page3IssueDate
+						}</span>, upon the request of <span style="font-weight: bold; text-transform: uppercase; text-decoration: underline;">${
+				certificateData.page3StudentName
+			}</span> in connection with his application for <strong>Certification, Authentication and Verification</strong>.</p>
 					</div>
 
 					<div style="margin-top: 10mm;">
-						<div style="font-weight: bold; text-transform: uppercase; margin-bottom: 1mm; color: #111;">${certificateData.principalName}</div>
-						<div style="font-size: 9pt; margin-bottom: 1mm; color: #333;">${certificateData.principalTitle}</div>
+						<div style="font-weight: bold; text-transform: uppercase; margin-bottom: 1mm; color: #111;">${
+							certificateData.principalName
+						}</div>
+						<div style="font-size: 9pt; margin-bottom: 1mm; color: #333;">${
+							certificateData.principalTitle
+						}</div>
 					</div>
 
 					<div style="margin-top: 4mm; font-style: italic; font-size: 8pt; color: #666;">
 						*If graduated from secondary course in private school, indicate Special Order Number and date.
+					</div>
+
+					<div style="margin-top: 6mm; font-size: 8pt; text-align: left; color: #666;">
+						Not Valid Without<br>School Dry Seal
+					</div>
+
+					<div style="border-top: 1px solid #666; margin-top: 8mm; margin-bottom: 3mm;"></div>
+					<div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 0 2mm;">
+						<div style="display: flex; align-items: center; gap: 6mm;">
+							<img style="width: 150px; height: auto; display: block;" src="/images/depedMatatag.png" alt="DepEd Matatag" />
+							<img style="width: 60px; height: auto; display: block;" src="/images/mogchs.jpg" alt="MOGCHS" />
+						</div>
+						<div style="font-size: 9pt; text-align: right; color: #333;">
+							Address: Velez Street, Brgy. 29, Cagayan de Oro City 9000<br>
+							Telephone Nos.: (088) 856-3202<br>
+							Website: www.depedmisor.com<br>
+							Email: 304091@deped.gov.ph
+						</div>
+					</div>
+				</div>
+
+				<!-- PAGE 4: Request Form -->
+				<div style="width: 210mm; height: 297mm; padding: 18mm; position: relative;">
+					<div style="text-align: center; margin-bottom: 8mm;">
+						<div style="font-size: 12pt; margin-bottom: 2mm; font-style: italic; color: #222;">Republic of the Philippines</div>
+						<div style="font-size: 16pt; font-weight: bold; margin-bottom: 2mm; color: #111;">Department of Education</div>
+						<div style="font-size: 10pt; font-weight: bold; color: #222;">REGION - X NORTHERN MINDANAO</div>
+						<div style="font-size: 10pt; font-weight: bold; color: #222;">SCHOOLS DIVISION OF MISAMIS ORIENTAL</div>
+						<div style="font-size: 12pt; font-weight: bold; margin-top: 1mm; color: #111;">MISAMIS ORIENTAL GENERAL COMPREHENSIVE HIGH SCHOOL</div>
+					</div>
+
+					<div style="text-align: right; margin-bottom: 4mm;">
+						<div style="font-size: 10pt; color: #222;">Control No.: <span style="font-weight: bold; text-decoration: underline;">${
+							certificateData.page4ControlNo || "___"
+						}</span></div>
+					</div>
+
+					<div style="text-align: right; margin-bottom: 4mm;">
+						<div style="font-size: 10pt; color: #222;">Date of Application: <span style="font-weight: bold;">${
+							certificateData.page4DateOfApplication
+						}</span></div>
+					</div>
+
+					<div style="text-align: right; margin-bottom: 8mm;">
+						<div style="font-size: 10pt; color: #222;">Date of Release: <span style="font-weight: bold;">${
+							certificateData.page4DateOfRelease
+						}</span></div>
+					</div>
+
+					<div style="text-align: left; margin-bottom: 4mm;">
+						<div style="font-size: 11pt; font-weight: bold; text-decoration: underline; color: #111;">School Name: MISAMIS ORIENTAL GENERAL COMPREHENSIVE HIGH SCHOOL</div>
+					</div>
+
+					<div style="text-align: left; margin-bottom: 8mm;">
+						<div style="font-size: 11pt; font-weight: bold; text-decoration: underline; color: #111;">School ID: ${
+							certificateData.page4SchoolId
+						}</div>
+					</div>
+
+					<div style="text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 8mm; text-transform: uppercase; letter-spacing: 0.5px; color: #111;">REQUEST FORM FOR ACADEMIC SCHOOL RECORDS</div>
+
+					<div style="font-size: 11pt; color: #222; line-height: 1.6;">
+						<div style="margin-bottom: 4mm;">
+							<span style="font-weight: bold;">NAME OF LEARNER:</span> 
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 300px; padding-bottom: 1px; margin-left: 5px; font-weight: bold;">
+								${certificateData.page4StudentName}
+							</span>
+						</div>
+						
+						<div style="margin-bottom: 4mm;">
+							<span style="font-weight: bold;">DATE & PLACE OF BIRTH:</span> 
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 300px; padding-bottom: 1px; margin-left: 5px;">
+								_________________________________
+							</span>
+						</div>
+						
+						<div style="margin-bottom: 4mm;">
+							<span style="font-weight: bold;">SCHOOL YEAR LAST ATTENDED / GRADUATED:</span> 
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 200px; padding-bottom: 1px; margin-left: 5px;">
+								${certificateData.page4SchoolYearLastAttended || "_________________"}
+							</span>
+						</div>
+						
+						<div style="margin-bottom: 6mm;">
+							<span style="font-weight: bold;">PRESENT ADDRESS:</span> 
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 300px; padding-bottom: 1px; margin-left: 5px;">
+								${certificateData.page4PresentAddress || "_________________________________"}
+							</span>
+						</div>
+						
+						<div style="margin-bottom: 6mm;">
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 400px; padding-bottom: 1px;">
+								_________________________________________________
+							</span>
+						</div>
+						
+						<div style="margin-bottom: 6mm;">
+							<span style="font-weight: bold;">CONTACT NO.:</span> 
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 200px; padding-bottom: 1px; margin-left: 5px;">
+								${certificateData.page4ContactNo || "____________________"}
+							</span>
+						</div>
+
+						<div style="margin-bottom: 6mm;">
+							<div style="font-weight: bold; margin-bottom: 4mm;">PURPOSE:</div>
+							<div style="margin-left: 10mm; font-size: 11pt;">
+								${
+									purposeText ||
+									certificateData.page4Purposes
+										.map((p) => p.purposeName)
+										.join(", ") ||
+									"No purpose specified"
+								}
+							</div>
+						</div>
 					</div>
 
 					<div style="margin-top: 6mm; font-size: 8pt; text-align: left; color: #666;">
@@ -553,16 +773,32 @@ export default function CavTemplate({
 
 										<div class="content">
 						<p><strong>TO WHOM IT MAY CONCERN:</strong></p>
-						<p class="indent">This is to certify that, based on the available records in this school, the following information pertaining to <span class="student-name">${certificateData.fullName}</span> with Learner Reference Number <span class="lrn">${certificateData.lrn}</span> appear:</p>
+						<p class="indent">This is to certify that, based on the available records in this school, the following information pertaining to <span class="student-name">${
+							certificateData.fullName
+						}</span> with Learner Reference Number <span class="lrn">${
+			certificateData.lrn
+		}</span> appear:</p>
 						
 						<div style="margin-left: 20mm; margin-top: 4mm; margin-bottom: 4mm;">
-							<p style="margin-bottom: 2mm;">( / ) enrolled in <span style="font-weight: bold; text-decoration: underline;">Grade 11</span> during the School Year <span style="font-weight: bold; text-decoration: underline;">${certificateData.page1SchoolYear}</span></p>
-							<p style="margin-bottom: 2mm;">( / ) completed <span style="font-weight: bold; text-decoration: underline;">Grade 12</span> during the School Year <span style="font-weight: bold; text-decoration: underline;">${certificateData.schoolYear}</span></p>
-							<p style="margin-bottom: 2mm;">Track: <span style="font-weight: bold; text-decoration: underline;">Academic</span> Strand: <span style="font-weight: bold; text-decoration: underline;">${certificateData.strand}</span></p>
+							<p style="margin-bottom: 2mm;">( / ) enrolled in <span style="font-weight: bold; text-decoration: underline;">Grade 11</span> during the School Year <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page1SchoolYear
+							}</span></p>
+							<p style="margin-bottom: 2mm;">( / ) completed <span style="font-weight: bold; text-decoration: underline;">Grade 12</span> during the School Year <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.schoolYear
+							}</span></p>
+							<p style="margin-bottom: 2mm;">Track: <span style="font-weight: bold; text-decoration: underline;">Academic</span> Strand: <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.strand
+							}</span></p>
 							<p style="margin-bottom: 2mm;">( / ) satisfactorily graduated <span style="font-weight: bold; text-decoration: underline;">from Senior High School</span> for the School Year <span style="font-weight: bold; text-decoration: underline;">2022-2023</span> per <span style="font-weight: bold; text-decoration: underline;">Special Order Number __N/A__</span> dated <span style="font-weight: bold; text-decoration: underline;">__N/A__</span> as prescribed by the Department of Education.</p>
 						</div>
 						
-						<p class="indent">This certification is issued on <span style="font-weight: bold; text-decoration: underline;">${certificateData.dateIssued}</span> upon the request of <span class="student-name">${certificateData.fullName}</span>, in connection with the application for ${certificateData.purpose}.</p>
+						<p class="indent">This certification is issued on <span style="font-weight: bold; text-decoration: underline;">${
+							certificateData.dateIssued
+						}</span> upon the request of <span class="student-name">${
+			certificateData.fullName
+		}</span>, in connection with the application for ${
+			certificateData.purpose
+		}.</p>
 					</div>
 
 					<div class="signature">
@@ -602,7 +838,9 @@ export default function CavTemplate({
 					<div class="indorsement-date">${certificateData.page2Date}</div>
 
 					<div class="indorsement-content">
-						<p>Respectfully forwarded to the Regional Director, DepEd Regional Office Masterson Avenue, Upper Balulang, Zone 1, Cagayan de Oro City, the request of <span class="student-name">Mr. ${certificateData.page2StudentName}</span>, for Certification, Authentication and Verification (CAV) of his Academic School Records.</p>
+						<p>Respectfully forwarded to the Regional Director, DepEd Regional Office Masterson Avenue, Upper Balulang, Zone 1, Cagayan de Oro City, the request of <span class="student-name">Mr. ${
+							certificateData.page2StudentName
+						}</span>, for Certification, Authentication and Verification (CAV) of his Academic School Records.</p>
 						
 						<p>For ready reference and perusal, attached are the following documents / records (✓) below properly enclosed in sealed envelope:</p>
 						
@@ -651,21 +889,49 @@ export default function CavTemplate({
 
 					<div class="content">
 						<p><strong>TO WHOM IT MAY CONCERN:</strong></p>
-						<p class="indent">This is to Certify that <span class="student-name">Mr. ${certificateData.page3StudentName}</span>, with Learner Reference Number <span class="lrn">${certificateData.lrn}</span> has <strong>graduated</strong> Senior High School Course as prescribed by the Department of Education, with the following particulars:</p>
+						<p class="indent">This is to Certify that <span class="student-name">Mr. ${
+							certificateData.page3StudentName
+						}</span>, with Learner Reference Number <span class="lrn">${
+			certificateData.lrn
+		}</span> has <strong>graduated</strong> Senior High School Course as prescribed by the Department of Education, with the following particulars:</p>
 						
 						<div style="margin-left: 12mm; margin-top: 2mm; margin-bottom: 2mm;">
-							<p style="margin-bottom: 0.8mm;"><strong>1. Name of School:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolName}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>2. School Address:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolAddress}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>3. Grade Level Completed:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3GradeLevel}</span> <strong>School Year Completed:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolYearCompleted}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>Track:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3Track}</span> <strong>Strand:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.strand}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>4. Graduated on:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3GraduationDate}</span> <strong>School Year graduated:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SchoolYearGraduated}</span></p>
-							<p style="margin-bottom: 0.8mm;"><strong>5. Special Order Number*:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SpecialOrderNumber}</span></p>
-							<p style="margin-bottom: 0.8mm;">&nbsp;&nbsp;&nbsp;&nbsp;<strong>Date:</strong> <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3SpecialOrderDate}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>1. Name of School:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3SchoolName
+							}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>2. School Address:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3SchoolAddress
+							}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>3. Grade Level Completed:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3GradeLevel
+							}</span> <strong>School Year Completed:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+			certificateData.page3SchoolYearCompleted
+		}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>Track:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3Track
+							}</span> <strong>Strand:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+			certificateData.strand
+		}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>4. Graduated on:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3GraduationDate
+							}</span> <strong>School Year graduated:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+			certificateData.page3SchoolYearGraduated
+		}</span></p>
+							<p style="margin-bottom: 0.8mm;"><strong>5. Special Order Number*:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3SpecialOrderNumber
+							}</span></p>
+							<p style="margin-bottom: 0.8mm;">&nbsp;&nbsp;&nbsp;&nbsp;<strong>Date:</strong> <span style="font-weight: bold; text-decoration: underline;">${
+								certificateData.page3SpecialOrderDate
+							}</span></p>
 						</div>
 						
 						<p class="indent">This is to further certify that English Language was used as the medium of instruction in all subjects taught in the above-mentioned school, except for subjects that require the use of Filipino language only.</p>
 						
-						<p class="indent">This certification is issued on <span style="font-weight: bold; text-decoration: underline;">${certificateData.page3IssueDate}</span>, upon the request of <span class="student-name">${certificateData.page3StudentName}</span> in connection with his application for <strong>Certification, Authentication and Verification</strong>.</p>
+						<p class="indent">This certification is issued on <span style="font-weight: bold; text-decoration: underline;">${
+							certificateData.page3IssueDate
+						}</span>, upon the request of <span class="student-name">${
+			certificateData.page3StudentName
+		}</span> in connection with his application for <strong>Certification, Authentication and Verification</strong>.</p>
 					</div>
 
 					<div class="signature">
@@ -675,6 +941,122 @@ export default function CavTemplate({
 
 					<div style="margin-top: 4mm; font-style: italic; font-size: 8pt; color: #666;">
 						*If graduated from secondary course in private school, indicate Special Order Number and date.
+					</div>
+
+					<div class="footer-line"></div>
+					<div class="footer">
+						<div class="deped-logo">
+							<img class="matatag-logo" src="/images/depedMatatag.png" alt="DepEd Matatag" />
+							<img class="mogchs-logo" src="/images/mogchs.jpg" alt="MOGCHS" />
+						</div>
+						<div class="contact-info">
+							Address: Velez Street, Brgy. 29, Cagayan de Oro City 9000<br>
+							Telephone Nos.: (088) 856-3202<br>
+							Website: www.depedmisor.com<br>
+							Email: 304091@deped.gov.ph
+						</div>
+					</div>
+				</div>
+
+				<!-- PAGE 4: Request Form -->
+				<div class="page-container">
+					<div class="header">
+						<img class="logo-img" src="/images/logo.png" alt="MOGCHS" />
+						<div class="republic">Republic of the Philippines</div>
+						<div class="department">Department of Education</div>
+						<div class="region">REGION - X NORTHERN MINDANAO</div>
+						<div class="school-division">SCHOOLS DIVISION OF MISAMIS ORIENTAL</div>
+						<div class="school-name">MISAMIS ORIENTAL GENERAL COMPREHENSIVE HIGH SCHOOL</div>
+					</div>
+
+					<div style="text-align: right; margin-bottom: 4mm;">
+						<div style="font-size: 10pt; color: #222;">Control No.: <span style="font-weight: bold; text-decoration: underline;">${
+							certificateData.page4ControlNo || "___"
+						}</span></div>
+					</div>
+
+					<div style="text-align: right; margin-bottom: 4mm;">
+						<div style="font-size: 10pt; color: #222;">Date of Application: <span style="font-weight: bold;">${
+							certificateData.page4DateOfApplication
+						}</span></div>
+					</div>
+
+					<div style="text-align: right; margin-bottom: 8mm;">
+						<div style="font-size: 10pt; color: #222;">Date of Release: <span style="font-weight: bold;">${
+							certificateData.page4DateOfRelease
+						}</span></div>
+					</div>
+
+					<div style="text-align: left; margin-bottom: 4mm;">
+						<div style="font-size: 11pt; font-weight: bold; text-decoration: underline; color: #111;">School Name: MISAMIS ORIENTAL GENERAL COMPREHENSIVE HIGH SCHOOL</div>
+					</div>
+
+					<div style="text-align: left; margin-bottom: 8mm;">
+						<div style="font-size: 11pt; font-weight: bold; text-decoration: underline; color: #111;">School ID: ${
+							certificateData.page4SchoolId
+						}</div>
+					</div>
+
+					<div style="text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 8mm; text-transform: uppercase; letter-spacing: 0.5px; color: #111;">REQUEST FORM FOR ACADEMIC SCHOOL RECORDS</div>
+
+					<div style="font-size: 11pt; color: #222; line-height: 1.6;">
+						<div style="margin-bottom: 4mm;">
+							<span style="font-weight: bold;">NAME OF LEARNER:</span> 
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 300px; padding-bottom: 1px; margin-left: 5px; font-weight: bold;">
+								${certificateData.page4StudentName}
+							</span>
+						</div>
+						
+						<div style="margin-bottom: 4mm;">
+							<span style="font-weight: bold;">DATE & PLACE OF BIRTH:</span> 
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 300px; padding-bottom: 1px; margin-left: 5px;">
+								_________________________________
+							</span>
+						</div>
+						
+						<div style="margin-bottom: 4mm;">
+							<span style="font-weight: bold;">SCHOOL YEAR LAST ATTENDED / GRADUATED:</span> 
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 200px; padding-bottom: 1px; margin-left: 5px;">
+								${certificateData.page4SchoolYearLastAttended || "_________________"}
+							</span>
+						</div>
+						
+						<div style="margin-bottom: 6mm;">
+							<span style="font-weight: bold;">PRESENT ADDRESS:</span> 
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 300px; padding-bottom: 1px; margin-left: 5px;">
+								${certificateData.page4PresentAddress || "_________________________________"}
+							</span>
+						</div>
+						
+						<div style="margin-bottom: 6mm;">
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 400px; padding-bottom: 1px;">
+								_________________________________________________
+							</span>
+						</div>
+						
+						<div style="margin-bottom: 6mm;">
+							<span style="font-weight: bold;">CONTACT NO.:</span> 
+							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 200px; padding-bottom: 1px; margin-left: 5px;">
+								${certificateData.page4ContactNo || "____________________"}
+							</span>
+						</div>
+
+						<div style="margin-bottom: 6mm;">
+							<div style="font-weight: bold; margin-bottom: 4mm;">PURPOSE:</div>
+							<div style="margin-left: 10mm; font-size: 11pt;">
+								${
+									purposeText ||
+									certificateData.page4Purposes
+										.map((p) => p.purposeName)
+										.join(", ") ||
+									"No purpose specified"
+								}
+							</div>
+						</div>
+					</div>
+
+					<div style="margin-top: 6mm; font-size: 8pt; text-align: left; color: #666;">
+						Not Valid Without<br>School Dry Seal
 					</div>
 
 					<div class="footer-line"></div>
@@ -1460,6 +1842,259 @@ export default function CavTemplate({
 								</div>
 							</div>
 						</div>
+
+						{/* Page 4 Preview with Editing */}
+						<div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
+							<h3 className="mb-4 text-lg font-bold text-gray-900">
+								Page 4 - Request Form
+							</h3>
+
+							<div className="p-6 bg-white rounded-lg border border-gray-300 shadow-sm">
+								{/* Header with seal */}
+								<div className="mb-6 text-center">
+									<img
+										src="/images/logo.png"
+										alt="MOGCHS"
+										className="object-contain mx-auto mb-4 w-16 h-16"
+									/>
+
+									{/* Republic and Department with decorative styling */}
+									<p className="mb-2 font-serif text-sm italic text-gray-700">
+										Republic of the Philippines
+									</p>
+									<p className="mb-2 text-lg font-bold text-gray-900">
+										Department of Education
+									</p>
+									<p className="mb-1 text-xs font-bold text-gray-800">
+										REGION - X NORTHERN MINDANAO
+									</p>
+									<p className="mb-1 text-xs font-bold text-gray-800">
+										SCHOOLS DIVISION OF MISAMIS ORIENTAL
+									</p>
+									<p className="mb-4 text-sm font-bold text-gray-900">
+										MISAMIS ORIENTAL GENERAL COMPREHENSIVE HIGH SCHOOL
+									</p>
+								</div>
+
+								{/* Control Number, Dates */}
+								<div className="mb-6 text-right space-y-2">
+									<div className="text-sm">
+										<span className="font-medium">Control No.: </span>
+										{isEditing ? (
+											<Input
+												value={certificateData.page4ControlNo}
+												onChange={(e) =>
+													handleInputChange("page4ControlNo", e.target.value)
+												}
+												className="inline-block mx-1 w-24 text-center text-gray-900 bg-transparent border-b-2 border-blue-400"
+												placeholder="Control No."
+											/>
+										) : (
+											<span className="font-bold underline">
+												{certificateData.page4ControlNo || "___"}
+											</span>
+										)}
+									</div>
+									<div className="text-sm">
+										<span className="font-medium">Date of Application: </span>
+										{isEditing ? (
+											<Input
+												value={certificateData.page4DateOfApplication}
+												onChange={(e) =>
+													handleInputChange(
+														"page4DateOfApplication",
+														e.target.value
+													)
+												}
+												className="inline-block mx-1 w-40 text-center text-gray-900 bg-transparent border-b-2 border-blue-400"
+												placeholder="Date of Application"
+											/>
+										) : (
+											<span className="font-bold">
+												{certificateData.page4DateOfApplication}
+											</span>
+										)}
+									</div>
+									<div className="text-sm">
+										<span className="font-medium">Date of Release: </span>
+										{isEditing ? (
+											<Input
+												value={certificateData.page4DateOfRelease}
+												onChange={(e) =>
+													handleInputChange(
+														"page4DateOfRelease",
+														e.target.value
+													)
+												}
+												className="inline-block mx-1 w-40 text-center text-gray-900 bg-transparent border-b-2 border-blue-400"
+												placeholder="Date of Release"
+											/>
+										) : (
+											<span className="font-bold">
+												{certificateData.page4DateOfRelease}
+											</span>
+										)}
+									</div>
+								</div>
+
+								{/* School Info */}
+								<div className="mb-6 text-left space-y-2">
+									<div className="text-sm font-bold underline">
+										School Name: MISAMIS ORIENTAL GENERAL COMPREHENSIVE HIGH
+										SCHOOL
+									</div>
+									<div className="text-sm font-bold underline">
+										School ID: {certificateData.page4SchoolId}
+									</div>
+								</div>
+
+								{/* Title */}
+								<h1 className="mb-6 text-lg font-bold tracking-wide text-center text-gray-900">
+									REQUEST FORM FOR ACADEMIC SCHOOL RECORDS
+								</h1>
+
+								{/* Form Fields */}
+								<div className="mb-6 space-y-4 text-sm leading-relaxed text-left text-gray-800">
+									<div className="flex items-center space-x-2">
+										<span className="font-bold">NAME OF LEARNER:</span>
+										{isEditing ? (
+											<Input
+												value={certificateData.page4StudentName}
+												onChange={(e) =>
+													handleInputChange("page4StudentName", e.target.value)
+												}
+												className="flex-1 font-bold text-gray-900 bg-transparent border-b-2 border-blue-400"
+												placeholder="Student name"
+											/>
+										) : (
+											<span className="flex-1 font-bold border-b border-gray-400">
+												{certificateData.page4StudentName}
+											</span>
+										)}
+									</div>
+
+									<div className="flex items-center space-x-2">
+										<span className="font-bold">DATE & PLACE OF BIRTH:</span>
+										<span className="flex-1 border-b border-gray-400">
+											_________________________________
+										</span>
+									</div>
+
+									<div className="flex items-center space-x-2">
+										<span className="font-bold">
+											SCHOOL YEAR LAST ATTENDED / GRADUATED:
+										</span>
+										{isEditing ? (
+											<Input
+												value={certificateData.page4SchoolYearLastAttended}
+												onChange={(e) =>
+													handleInputChange(
+														"page4SchoolYearLastAttended",
+														e.target.value
+													)
+												}
+												className="w-40 text-gray-900 bg-transparent border-b-2 border-blue-400"
+												placeholder="School year"
+											/>
+										) : (
+											<span className="border-b border-gray-400">
+												{certificateData.page4SchoolYearLastAttended ||
+													"_________________"}
+											</span>
+										)}
+									</div>
+
+									<div className="flex items-center space-x-2">
+										<span className="font-bold">PRESENT ADDRESS:</span>
+										{isEditing ? (
+											<Input
+												value={certificateData.page4PresentAddress}
+												onChange={(e) =>
+													handleInputChange(
+														"page4PresentAddress",
+														e.target.value
+													)
+												}
+												className="flex-1 text-gray-900 bg-transparent border-b-2 border-blue-400"
+												placeholder="Present address"
+											/>
+										) : (
+											<span className="flex-1 border-b border-gray-400">
+												{certificateData.page4PresentAddress ||
+													"_________________________________"}
+											</span>
+										)}
+									</div>
+
+									<div className="border-b border-gray-400 w-full">
+										_________________________________________________
+									</div>
+
+									<div className="flex items-center space-x-2">
+										<span className="font-bold">CONTACT NO.:</span>
+										{isEditing ? (
+											<Input
+												value={certificateData.page4ContactNo}
+												onChange={(e) =>
+													handleInputChange("page4ContactNo", e.target.value)
+												}
+												className="w-40 text-gray-900 bg-transparent border-b-2 border-blue-400"
+												placeholder="Contact number"
+											/>
+										) : (
+											<span className="border-b border-gray-400">
+												{certificateData.page4ContactNo ||
+													"____________________"}
+											</span>
+										)}
+									</div>
+
+									{/* Purposes Section */}
+									<div className="mt-6">
+										<div className="mb-4 font-bold">PURPOSE:</div>
+										<div className="ml-4 text-sm text-gray-700">
+											{purposeText ||
+												(certificateData.page4Purposes.length > 0
+													? certificateData.page4Purposes
+															.map((p) => p.purposeName)
+															.join(", ")
+													: "No purposes selected")}
+										</div>
+									</div>
+								</div>
+
+								{/* Not Valid Without */}
+								<div className="mt-6 text-xs text-left text-gray-600">
+									<p>Not Valid Without</p>
+									<p>School Dry Seal</p>
+								</div>
+
+								{/* Footer */}
+								<div className="mt-4 border-t border-gray-400"></div>
+								<div className="flex justify-between items-end p-4 bg-gray-50">
+									<div className="flex gap-3 items-end text-center">
+										<img
+											src="/images/depedMatatag.png"
+											alt="DepEd Matatag"
+											className="object-contain mx-auto w-36 h-auto"
+										/>
+										<img
+											src="/images/mogchs.jpg"
+											alt="MOGCHS"
+											className="object-contain w-16 h-auto"
+										/>
+									</div>
+									<div className="text-xs text-right text-gray-700">
+										<p>
+											Address: Velez Street, Brgy. 29, Cagayan de Oro City 9000
+										</p>
+										<p>Telephone Nos.: (088) 856-3202</p>
+										<p>Website: www.depedmisor.com</p>
+										<p>Email: 304091@deped.gov.ph</p>
+									</div>
+								</div>
+							</div>
+						</div>
 					</div>
 				)}
 			</div>
@@ -1485,7 +2120,7 @@ export default function CavTemplate({
 								) : (
 									<>
 										<Download className="mr-2 w-4 h-4" />
-										Download CAV Package
+										Download CAV Package (4 Pages)
 									</>
 								)}
 							</Button>
@@ -1493,7 +2128,7 @@ export default function CavTemplate({
 								onClick={handlePrint}
 								className="text-white bg-green-600 hover:bg-green-700"
 							>
-								<Printer className="mr-2 w-4 h-4" /> Print CAV Package
+								<Printer className="mr-2 w-4 h-4" /> Print CAV Package (4 Pages)
 							</Button>
 						</>
 					) : (

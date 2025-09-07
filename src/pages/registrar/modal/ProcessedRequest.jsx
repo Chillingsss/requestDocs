@@ -1150,6 +1150,8 @@ export default function ProcessedRequest({
 					studentInfo={studentInfo}
 					onSave={handleCavSave}
 					fetchStudentInfo={fetchStudentInfo}
+					expectedReleaseDate={currentRequest?.expectedReleaseDateFormatted}
+					purposeText={currentRequest?.displayPurpose}
 				/>
 			)}
 

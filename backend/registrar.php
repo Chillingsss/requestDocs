@@ -475,14 +475,19 @@ class User {
                 st.name as strand,
                 t.name as track,
                 s.email,
+                s.completeAddress,
                 sec.gradeLevelId,
-                gl.name as gradeLevel
+                gl.name as gradeLevel,
+                sy.year as schoolYear,
+                r.id as requestId,
+                r.documentId
               FROM tblrequest r
               INNER JOIN tblstudent s ON r.studentId = s.id
               LEFT JOIN tblstrand st ON s.strandId = st.id
               LEFT JOIN tbltrack t ON st.trackId = t.id
               LEFT JOIN tblsection sec ON s.sectionId = sec.id
               LEFT JOIN tblgradelevel gl ON sec.gradeLevelId = gl.id
+              LEFT JOIN tblschoolyear sy ON s.schoolyearId = sy.id
               WHERE r.id = :requestId ORDER BY s.createdAt ASC";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':requestId', $requestId);
@@ -490,6 +495,33 @@ class User {
 
       if ($stmt->rowCount() > 0) {
         $studentInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Get control number for CAV documents (count of completed CAV requests)
+        if ($studentInfo['documentId'] == 7) { // 7 is CAV document ID
+          $controlSql = "SELECT COUNT(*) as controlNo 
+                        FROM tblrequest r
+                        INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
+                        INNER JOIN tblstatus st ON rs.statusId = st.id
+                        WHERE r.documentId = 7 AND st.name = 'Completed' AND r.id <= :requestId
+                        ORDER BY r.id";
+          $controlStmt = $conn->prepare($controlSql);
+          $controlStmt->bindParam(':requestId', $requestId);
+          $controlStmt->execute();
+          $controlResult = $controlStmt->fetch(PDO::FETCH_ASSOC);
+          $studentInfo['controlNo'] = $controlResult['controlNo'] ?? 1;
+        }
+        
+        // Get request purposes
+        $purposeSql = "SELECT p.name as purposeName 
+                      FROM tblrequestpurpose rp
+                      INNER JOIN tblpurpose p ON rp.purposeId = p.id
+                      WHERE rp.requestId = :requestId";
+        $purposeStmt = $conn->prepare($purposeSql);
+        $purposeStmt->bindParam(':requestId', $requestId);
+        $purposeStmt->execute();
+        $purposes = $purposeStmt->fetchAll(PDO::FETCH_ASSOC);
+        $studentInfo['purposes'] = $purposes;
+        
         return json_encode($studentInfo);
       }
       
