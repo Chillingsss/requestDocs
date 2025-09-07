@@ -613,6 +613,48 @@ export default function RegistrarDashboard() {
 																<div className="truncate max-w-[120px] lg:max-w-none">
 																	{req.document}
 																</div>
+																{/* Expected Release Date and Countdown */}
+																{req.expectedReleaseDateFormatted &&
+																	req.daysRemaining !== null && (
+																		<div className="text-xs mt-1">
+																			{req.daysRemaining === 0 ? (
+																				<span className="text-green-600 dark:text-green-400 font-medium">
+																					📅 Expected release: Today!
+																				</span>
+																			) : req.daysRemaining > 0 ? (
+																				<span className="text-blue-600 dark:text-blue-400">
+																					📅 Expected release:{" "}
+																					{req.expectedReleaseDateFormatted}
+																					<span className="font-medium text-blue-700 dark:text-blue-300">
+																						({req.daysRemaining}{" "}
+																						{req.daysRemaining === 1
+																							? "day"
+																							: "days"}{" "}
+																						left)
+																					</span>
+																				</span>
+																			) : (
+																				<span className="text-red-600 dark:text-red-400 font-medium">
+																					⚠️ Expected release was:{" "}
+																					{req.expectedReleaseDateFormatted}
+																					<span className="text-red-700 dark:text-red-300">
+																						({Math.abs(req.daysRemaining)}{" "}
+																						{Math.abs(req.daysRemaining) === 1
+																							? "day"
+																							: "days"}{" "}
+																						overdue)
+																					</span>
+																				</span>
+																			)}
+																		</div>
+																	)}
+																{/* Release Date (if officially scheduled) */}
+																{req.releaseDate && (
+																	<div className="text-xs text-green-600 dark:text-green-400 mt-1">
+																		📅 Releasing Date:{" "}
+																		{req.releaseDateFormatted}
+																	</div>
+																)}
 															</td>
 															<td className="hidden px-3 py-3 lg:px-4 lg:py-2 sm:table-cell">
 																{formatShortDateTime(req.dateRequested)}
@@ -669,7 +711,7 @@ export default function RegistrarDashboard() {
 					) : activeTab === "documents" ? (
 						/* Documents Tab - New component for student documents */
 						<DocumentsTab />
-					) : activeTab === "lrn_requests" ? ( 
+					) : activeTab === "lrn_requests" ? (
 						/* LRN Requests Tab */
 						<LrnRequestsTab userId={userId} students={students} />
 					) : null}

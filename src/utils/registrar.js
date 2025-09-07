@@ -504,3 +504,19 @@ export async function updateCommentStatus(commentId, status) {
 		throw error;
 	}
 }
+
+export async function getExpectedDays() {
+	const formData = new FormData();
+	formData.append("operation", "getExpectedDays");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

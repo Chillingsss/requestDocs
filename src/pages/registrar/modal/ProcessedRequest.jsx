@@ -738,6 +738,96 @@ export default function ProcessedRequest({
 								</div>
 							</div>
 
+							{/* Expected Release Date Information */}
+							{currentRequest?.expectedReleaseDateFormatted &&
+								currentRequest?.daysRemaining !== null && (
+									<div
+										className={`p-4 rounded-lg border-2 ${
+											currentRequest.daysRemaining >= 0
+												? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+												: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
+										}`}
+									>
+										<div className="flex gap-3 items-center mb-3">
+											<Clock
+												className={`w-5 h-5 ${
+													currentRequest.daysRemaining >= 0
+														? "text-blue-600 dark:text-blue-400"
+														: "text-red-600 dark:text-red-400"
+												}`}
+											/>
+											<span
+												className={`text-sm font-medium ${
+													currentRequest.daysRemaining >= 0
+														? "text-blue-700 dark:text-blue-300"
+														: "text-red-700 dark:text-red-300"
+												}`}
+											>
+												Expected Release Date
+											</span>
+										</div>
+										<div
+											className={`mb-3 text-sm ${
+												currentRequest.daysRemaining >= 0
+													? "text-blue-600 dark:text-blue-400"
+													: "text-red-600 dark:text-red-400"
+											}`}
+										>
+											<strong>Expected Date:</strong>{" "}
+											{currentRequest.expectedReleaseDateFormatted}
+										</div>
+										<div
+											className={`text-sm ${
+												currentRequest.daysRemaining >= 0
+													? "text-blue-600 dark:text-blue-400"
+													: "text-red-600 dark:text-red-400"
+											}`}
+										>
+											{currentRequest.daysRemaining === 0 ? (
+												<span className="font-medium">
+													📅 Expected release: Today!
+												</span>
+											) : currentRequest.daysRemaining > 0 ? (
+												<span>
+													⏱️{" "}
+													<span className="font-medium">
+														{currentRequest.daysRemaining}{" "}
+														{currentRequest.daysRemaining === 1
+															? "day"
+															: "days"}{" "}
+														remaining
+													</span>
+												</span>
+											) : (
+												<span className="font-medium">
+													⚠️ {Math.abs(currentRequest.daysRemaining)}{" "}
+													{Math.abs(currentRequest.daysRemaining) === 1
+														? "day"
+														: "days"}{" "}
+													overdue
+												</span>
+											)}
+										</div>
+										<div
+											className={`mt-3 text-xs ${
+												currentRequest.daysRemaining >= 0
+													? "text-blue-600 dark:text-blue-400"
+													: "text-red-600 dark:text-red-400"
+											}`}
+										>
+											<strong>Note:</strong> Based on{" "}
+											{currentRequest.expectedDays || 7} days processing time
+											from request date.
+											{!releaseSchedule && currentRequest.daysRemaining < 0 && (
+												<span className="block mt-1 font-medium">
+													⚠️ This request is overdue. Please prioritize or
+													schedule release date.
+												</span>
+											)}
+										</div>
+									</div>
+								)}
+
 							{/* Release Schedule Information */}
 							{releaseSchedule && (
 								<div className="p-4 bg-green-50 rounded-lg border-2 border-green-200 dark:bg-green-900/20 dark:border-green-700">
@@ -1006,7 +1096,7 @@ export default function ProcessedRequest({
 							<Button
 								onClick={onClose}
 								variant="outline"
-								className="py-3 w-full text-base font-medium sm:flex-1 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-900 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-900"
+								className="py-3 w-full text-base font-medium sm:flex-1 bg-white dark:bg-gray-900 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-gray-800 hover:text-slate-100"
 							>
 								Cancel
 							</Button>

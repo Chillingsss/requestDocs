@@ -81,6 +81,8 @@ class User {
                 DATE(r.createdAt) as dateRequested,
                 s.name as status,
                 s.id as statusId,
+                rs_schedule.dateSchedule as releaseDate,
+                DATE_FORMAT(rs_schedule.dateSchedule, '%M %d, %Y') as releaseDateFormatted,
                 CASE 
                   WHEN r.purpose IS NOT NULL THEN r.purpose
                   WHEN EXISTS (SELECT 1 FROM tblrequestpurpose rp WHERE rp.requestId = r.id) THEN 
@@ -89,12 +91,33 @@ class User {
                      INNER JOIN tblpurpose p ON rp.purposeId = p.id 
                      WHERE rp.requestId = r.id)
                   ELSE 'No purpose specified'
-                END as displayPurpose
+                END as displayPurpose,
+                -- Calculate expected release date and days remaining
+                CASE 
+                  WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
+                  ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
+                END as expectedReleaseDate,
+                DATE_FORMAT(
+                  CASE 
+                    WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
+                    ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
+                  END, 
+                  '%M %d, %Y'
+                ) as expectedReleaseDateFormatted,
+                DATEDIFF(
+                  CASE 
+                    WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
+                    ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
+                  END,
+                  CURDATE()
+                ) as daysRemaining,
+                (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) as expectedDays
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
               INNER JOIN tblstatus s ON rs.statusId = s.id
               INNER JOIN tblstudent u ON r.studentId = u.id
+              LEFT JOIN tblreleaseschedule rs_schedule ON r.id = rs_schedule.requestId
               WHERE rs.id = (
                 SELECT MAX(rs2.id) 
                 FROM tblrequeststatus rs2 
@@ -1586,6 +1609,26 @@ function sendLrnEmail($requestData)
     }
   }
 
+  function getExpectedDays()
+  {
+    include "connection.php";
+
+    try {
+      $sql = "SELECT days FROM tblexpecteddays WHERE id = 1 LIMIT 1";
+      $stmt = $conn->prepare($sql);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return json_encode(['success' => true, 'days' => $result['days']]);
+      } else {
+        return json_encode(['success' => true, 'days' => 7]); // Default to 7 days
+      }
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
   // Send email notification for requirement comments
   function sendRequirementCommentEmail($studentData, $requirementData, $comment)
   {
@@ -1773,6 +1816,9 @@ switch ($operation) {
     break;
   case "updateCommentStatus":
     echo $user->updateCommentStatus($json);
+    break;
+  case "getExpectedDays":
+    echo $user->getExpectedDays();
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");
