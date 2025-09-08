@@ -81,6 +81,8 @@ class User {
                 DATE(r.createdAt) as dateRequested,
                 s.name as status,
                 s.id as statusId,
+                rs_schedule.dateSchedule as releaseDate,
+                DATE_FORMAT(rs_schedule.dateSchedule, '%M %d, %Y') as releaseDateFormatted,
                 CASE 
                   WHEN r.purpose IS NOT NULL THEN r.purpose
                   WHEN EXISTS (SELECT 1 FROM tblrequestpurpose rp WHERE rp.requestId = r.id) THEN 
@@ -89,12 +91,37 @@ class User {
                      INNER JOIN tblpurpose p ON rp.purposeId = p.id 
                      WHERE rp.requestId = r.id)
                   ELSE 'No purpose specified'
-                END as displayPurpose
+                END as displayPurpose,
+                -- Calculate expected release date and days remaining
+                CASE 
+                  WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
+                  ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
+                END as expectedReleaseDate,
+                DATE_FORMAT(
+                  CASE 
+                    WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
+                    ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
+                  END, 
+                  '%M %d, %Y'
+                ) as expectedReleaseDateFormatted,
+                DATEDIFF(
+                  CASE 
+                    WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
+                    ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
+                  END,
+                  CURDATE()
+                ) as daysRemaining,
+                (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) as expectedDays,
+                -- Count additional requirements that haven't been viewed
+                (SELECT COUNT(*) 
+                 FROM tblrequirements req 
+                 WHERE req.requestId = r.id AND req.isAdditional = 1) as hasAdditionalRequirements
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
               INNER JOIN tblstatus s ON rs.statusId = s.id
               INNER JOIN tblstudent u ON r.studentId = u.id
+              LEFT JOIN tblreleaseschedule rs_schedule ON r.id = rs_schedule.requestId
               WHERE rs.id = (
                 SELECT MAX(rs2.id) 
                 FROM tblrequeststatus rs2 
@@ -452,14 +479,20 @@ class User {
                 st.name as strand,
                 t.name as track,
                 s.email,
+                s.completeAddress,
+                s.contactNo,
                 sec.gradeLevelId,
-                gl.name as gradeLevel
+                gl.name as gradeLevel,
+                sy.year as schoolYear,
+                r.id as requestId,
+                r.documentId
               FROM tblrequest r
               INNER JOIN tblstudent s ON r.studentId = s.id
               LEFT JOIN tblstrand st ON s.strandId = st.id
               LEFT JOIN tbltrack t ON st.trackId = t.id
               LEFT JOIN tblsection sec ON s.sectionId = sec.id
               LEFT JOIN tblgradelevel gl ON sec.gradeLevelId = gl.id
+              LEFT JOIN tblschoolyear sy ON s.schoolyearId = sy.id
               WHERE r.id = :requestId ORDER BY s.createdAt ASC";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':requestId', $requestId);
@@ -467,6 +500,33 @@ class User {
 
       if ($stmt->rowCount() > 0) {
         $studentInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Get control number for CAV documents (count of completed CAV requests)
+        if ($studentInfo['documentId'] == 7) { // 7 is CAV document ID
+          $controlSql = "SELECT COUNT(*) as controlNo 
+                        FROM tblrequest r
+                        INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
+                        INNER JOIN tblstatus st ON rs.statusId = st.id
+                        WHERE r.documentId = 7 AND st.name = 'Completed' AND r.id <= :requestId
+                        ORDER BY r.id";
+          $controlStmt = $conn->prepare($controlSql);
+          $controlStmt->bindParam(':requestId', $requestId);
+          $controlStmt->execute();
+          $controlResult = $controlStmt->fetch(PDO::FETCH_ASSOC);
+          $studentInfo['controlNo'] = $controlResult['controlNo'] ?? 1;
+        }
+        
+        // Get request purposes
+        $purposeSql = "SELECT p.name as purposeName 
+                      FROM tblrequestpurpose rp
+                      INNER JOIN tblpurpose p ON rp.purposeId = p.id
+                      WHERE rp.requestId = :requestId";
+        $purposeStmt = $conn->prepare($purposeSql);
+        $purposeStmt->bindParam(':requestId', $requestId);
+        $purposeStmt->execute();
+        $purposes = $purposeStmt->fetchAll(PDO::FETCH_ASSOC);
+        $studentInfo['purposes'] = $purposes;
+        
         return json_encode($studentInfo);
       }
       
@@ -1586,6 +1646,53 @@ function sendLrnEmail($requestData)
     }
   }
 
+  function getExpectedDays()
+  {
+    include "connection.php";
+
+    try {
+      $sql = "SELECT days FROM tblexpecteddays WHERE id = 1 LIMIT 1";
+      $stmt = $conn->prepare($sql);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return json_encode(['success' => true, 'days' => $result['days']]);
+      } else {
+        return json_encode(['success' => true, 'days' => 7]); // Default to 7 days
+      }
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  // Mark additional requirements as viewed
+  function markAdditionalRequirementsViewed($json)
+  {
+    include "connection.php";
+    
+    $json = json_decode($json, true);
+    $requestId = $json['requestId'];
+    
+    try {
+      $sql = "UPDATE tblrequirements 
+              SET isAdditional = 0 
+              WHERE requestId = :requestId AND isAdditional = 1";
+      
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':requestId', $requestId);
+      
+      if ($stmt->execute()) {
+        return json_encode(['success' => true, 'message' => 'Additional requirements marked as viewed']);
+      } else {
+        return json_encode(['error' => 'Failed to update additional requirements status']);
+      }
+      
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
   // Send email notification for requirement comments
   function sendRequirementCommentEmail($studentData, $requirementData, $comment)
   {
@@ -1773,6 +1880,12 @@ switch ($operation) {
     break;
   case "updateCommentStatus":
     echo $user->updateCommentStatus($json);
+    break;
+  case "getExpectedDays":
+    echo $user->getExpectedDays();
+    break;
+  case "markAdditionalRequirementsViewed":
+    echo $user->markAdditionalRequirementsViewed($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

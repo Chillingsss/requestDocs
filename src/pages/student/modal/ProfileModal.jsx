@@ -56,6 +56,7 @@ export default function ProfileModal({ isOpen, onClose, userId }) {
 					motherName: data.motherName || "",
 					guardianName: data.guardianName || "",
 					guardianRelationship: data.guardianRelationship || "",
+					contactNo: data.contactNo || "",
 				});
 			}
 		} catch (error) {
@@ -92,6 +93,7 @@ export default function ProfileModal({ isOpen, onClose, userId }) {
 				motherName: profile.motherName || "",
 				guardianName: profile.guardianName || "",
 				guardianRelationship: profile.guardianRelationship || "",
+				contactNo: profile.contactNo || "",
 			});
 		}
 	};
@@ -303,6 +305,23 @@ export default function ProfileModal({ isOpen, onClose, userId }) {
 										) : (
 											<div className="p-3 bg-white rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500">
 												{profile.age || "N/A"}
+											</div>
+										)}
+									</div>
+									<div className="space-y-2">
+										<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+											Contact Number
+										</Label>
+										{isEditing ? (
+											<Input
+												name="contactNo"
+												value={formData.contactNo}
+												onChange={handleInputChange}
+												className="w-full"
+											/>
+										) : (
+											<div className="p-3 bg-white rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500">
+												{profile.contactNo || "N/A"}
 											</div>
 										)}
 									</div>

@@ -9,6 +9,8 @@ export default function CavTemplateModal({
 	studentInfo,
 	onSave,
 	fetchStudentInfo,
+	expectedReleaseDate,
+	purposeText,
 }) {
 	if (!isOpen) return null;
 
@@ -43,6 +45,8 @@ export default function CavTemplateModal({
 							onSave={onSave}
 							isEditable={true}
 							request={request}
+							expectedReleaseDate={expectedReleaseDate}
+							purposeText={purposeText}
 						/>
 					</div>
 				</div>

@@ -467,20 +467,27 @@ class User {
     $userId = $json['userId'];
 
     try {
+      // Set Philippine timezone for calculations
+      date_default_timezone_set('Asia/Manila');
+      
       $sql = "SELECT 
                 r.id,
+                r.documentId,
                 d.name as document,
                 r.purpose,
                 DATE(r.createdAt) as dateRequested,
+                r.createdAt as dateRequestedFull,
                 s.name as status,
                 s.id as statusId,
                 rs_schedule.dateSchedule as releaseDate,
-                DATE_FORMAT(rs_schedule.dateSchedule, '%M %d, %Y') as releaseDateFormatted
+                DATE_FORMAT(rs_schedule.dateSchedule, '%M %d, %Y') as releaseDateFormatted,
+                ed.days as expectedDays
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
               INNER JOIN tblstatus s ON rs.statusId = s.id
               LEFT JOIN tblreleaseschedule rs_schedule ON r.id = rs_schedule.requestId
+              LEFT JOIN tblexpecteddays ed ON ed.id = 1
               WHERE r.studentId = :userId
               AND rs.id = (
                 SELECT MAX(rs2.id) 
@@ -495,6 +502,46 @@ class User {
 
       if ($stmt->rowCount() > 0) {
         $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Calculate expected release date and days remaining for each request
+        foreach ($requests as &$request) {
+          if ($request['expectedDays']) {
+            // Calculate expected release date (request date + expected days)
+            $requestDate = new DateTime($request['dateRequestedFull']);
+            $expectedReleaseDate = clone $requestDate;
+            $expectedReleaseDate->add(new DateInterval('P' . $request['expectedDays'] . 'D'));
+            
+            $request['expectedReleaseDate'] = $expectedReleaseDate->format('Y-m-d');
+            $request['expectedReleaseDateFormatted'] = $expectedReleaseDate->format('F d, Y');
+            
+            // Calculate days remaining
+            $currentDate = new DateTime();
+            $currentDate->setTime(0, 0, 0); // Set to start of day for accurate calculation
+            $expectedReleaseDate->setTime(0, 0, 0);
+            
+            $interval = $currentDate->diff($expectedReleaseDate);
+            
+            if ($currentDate <= $expectedReleaseDate) {
+              $request['daysRemaining'] = $interval->days;
+              $request['isOverdue'] = false;
+            } else {
+              $request['daysRemaining'] = -$interval->days; // Negative for overdue
+              $request['isOverdue'] = true;
+            }
+            
+            // If request is completed or cancelled, don't show countdown
+            if (in_array(strtolower($request['status']), ['completed', 'cancelled'])) {
+              $request['daysRemaining'] = null;
+              $request['isOverdue'] = false;
+            }
+          } else {
+            $request['expectedReleaseDate'] = null;
+            $request['expectedReleaseDateFormatted'] = null;
+            $request['daysRemaining'] = null;
+            $request['isOverdue'] = false;
+          }
+        }
+        
         return json_encode($requests);
       }
       return json_encode([]);
@@ -517,6 +564,39 @@ class User {
       return json_encode($requestTypes);
     }
     return json_encode([]);
+  }
+
+  function getExpectedDays()
+  {
+    include "connection.php";
+
+    try {
+      $sql = "SELECT days FROM tblexpecteddays WHERE id = 1 LIMIT 1";
+      $stmt = $conn->prepare($sql);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Set Philippine timezone for calculations
+        date_default_timezone_set('Asia/Manila');
+        
+        // Calculate expected release date
+        $currentDate = new DateTime();
+        $expectedReleaseDate = clone $currentDate;
+        $expectedReleaseDate->add(new DateInterval('P' . $result['days'] . 'D'));
+        
+        return json_encode([
+          'days' => $result['days'],
+          'expectedReleaseDate' => $expectedReleaseDate->format('Y-m-d'),
+          'expectedReleaseDateFormatted' => $expectedReleaseDate->format('F d, Y')
+        ]);
+      }
+      return json_encode(['days' => 7, 'expectedReleaseDate' => null, 'expectedReleaseDateFormatted' => null]);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
   }
 
   function getRequestAttachments($json)
@@ -677,6 +757,7 @@ class User {
                 s.schoolyearId,
                 s.strandId,
                 s.gradeLevelId,
+                s.contactNo,
                 sec.name as sectionName,
                 sy.year as schoolYear,
                 t.name as track,
@@ -726,6 +807,7 @@ class User {
                   motherName = :motherName,
                   guardianName = :guardianName,
                   guardianRelationship = :guardianRelationship,
+                  contactNo = :contactNo,
                   updatedAt = NOW()
               WHERE id = :userId";
 
@@ -742,6 +824,7 @@ class User {
       $stmt->bindParam(':motherName', $json['motherName']);
       $stmt->bindParam(':guardianName', $json['guardianName']);
       $stmt->bindParam(':guardianRelationship', $json['guardianRelationship']);
+      $stmt->bindParam(':contactNo', $json['contactNo']);
       $stmt->bindParam(':userId', $userId);
 
       if ($stmt->execute()) {
@@ -802,7 +885,7 @@ class User {
 
         if (move_uploaded_file($_FILES['attachment']['tmp_name'], $filePath)) {
           // Insert into tblrequirements
-          $reqSql = "INSERT INTO tblrequirements (requestId, filepath, typeId, createdAt) VALUES (:requestId, :filepath, :typeId, :datetime)";
+          $reqSql = "INSERT INTO tblrequirements (requestId, filepath, typeId, createdAt, isAdditional) VALUES (:requestId, :filepath, :typeId, :datetime, 1)";
           $reqStmt = $conn->prepare($reqSql);
           $reqStmt->bindParam(':requestId', $requestId);
           $reqStmt->bindParam(':filepath', $originalFileName);
@@ -810,6 +893,12 @@ class User {
           $reqStmt->bindParam(':datetime', $philippineDateTime);
           
           if ($reqStmt->execute()) {
+            // Update isMarkAsRead in tblrequirementcomments
+            $updateSql = "UPDATE tblrequirementcomments SET isMarkAsRead = 1 WHERE requestId = :requestId";
+            $updateStmt = $conn->prepare($updateSql);
+            $updateStmt->bindParam(':requestId', $requestId);
+            $updateStmt->execute();
+
             $conn->commit();
             return json_encode(['success' => true, 'message' => 'Requirement uploaded successfully']);
           } else {
@@ -842,6 +931,7 @@ class User {
                 rc.status,
                 rc.createdAt,
                 rc.isNotified,
+                rc.isMarkAsRead,
                 u.firstname as registrarFirstName,
                 u.lastname as registrarLastName,
                 req.filepath,
@@ -850,7 +940,7 @@ class User {
               INNER JOIN tbluser u ON rc.registrarId = u.id
               INNER JOIN tblrequirements req ON rc.requirementId = req.id
               INNER JOIN tblrequirementstype rt ON req.typeId = rt.id
-              WHERE rc.requestId = :requestId
+              WHERE rc.requestId = :requestId AND rc.isMarkAsRead = 0
               ORDER BY rc.createdAt DESC";
 
       $stmt = $conn->prepare($sql);
@@ -981,6 +1071,9 @@ switch ($operation) {
     break;
   case "getRequirementsType":
     echo $user->getRequirementsType();
+    break;
+  case "getExpectedDays":
+    echo $user->getExpectedDays();
     break;
   case "getRequestAttachments":
     echo $user->getRequestAttachments($json);

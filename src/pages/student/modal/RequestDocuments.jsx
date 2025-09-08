@@ -9,6 +9,7 @@ import {
 	getDocumentPurposes,
 	addRequestDocument,
 	addCombinedRequestDocument,
+	getExpectedDays,
 } from "../../../utils/student";
 import toast from "react-hot-toast";
 
@@ -38,12 +39,15 @@ export default function RequestDocuments({
 	const [loadingDocumentPurposes, setLoadingDocumentPurposes] = useState(false);
 	const [isPurposeDropdownOpen, setIsPurposeDropdownOpen] = useState(false);
 	const [purposeSearchTerm, setPurposeSearchTerm] = useState("");
+	const [expectedDays, setExpectedDays] = useState(null);
+	const [loadingExpectedDays, setLoadingExpectedDays] = useState(false);
 
 	// Fetch documents and request types when modal opens
 	React.useEffect(() => {
 		if (isOpen) {
 			setLoadingDocs(true);
 			setLoadingRequestTypes(true);
+			setLoadingExpectedDays(true);
 
 			Promise.all([
 				getDocuments().then((data) => {
@@ -52,9 +56,19 @@ export default function RequestDocuments({
 				getRequirementsType().then((data) => {
 					setRequestTypes(Array.isArray(data) ? data : []);
 				}),
+				getExpectedDays()
+					.then((data) => {
+						setExpectedDays(data);
+					})
+					.catch((error) => {
+						console.error("Failed to fetch expected days:", error);
+						// Set default values if fetch fails
+						setExpectedDays({ days: 7, expectedReleaseDateFormatted: null });
+					}),
 			]).finally(() => {
 				setLoadingDocs(false);
 				setLoadingRequestTypes(false);
+				setLoadingExpectedDays(false);
 			});
 		}
 	}, [isOpen]);
@@ -681,10 +695,10 @@ export default function RequestDocuments({
 	);
 
 	return (
-		<div className="flex fixed inset-0 z-50 justify-center items-center backdrop-blur-sm bg-black/40">
-			<div className="relative mx-2 w-full max-w-2xl bg-white rounded-2xl border shadow-2xl dark:bg-slate-800 dark:border-slate-700 border-slate-200">
+		<div className="flex fixed inset-0 z-50 justify-center items-center backdrop-blur-sm bg-black/40 p-4">
+			<div className="relative w-full max-w-2xl bg-white rounded-2xl border shadow-2xl dark:bg-slate-800 dark:border-slate-700 border-slate-200 flex flex-col max-h-[90vh]">
 				{/* Title Bar */}
-				<div className="flex justify-between items-center px-6 py-4 rounded-t-2xl border-b bg-slate-50 border-slate-100 dark:bg-slate-700 dark:border-slate-600">
+				<div className="flex justify-between items-center px-6 py-4 rounded-t-2xl border-b bg-slate-50 border-slate-100 dark:bg-slate-700 dark:border-slate-600 flex-shrink-0">
 					<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
 						Request Document
 					</h3>
@@ -709,7 +723,10 @@ export default function RequestDocuments({
 						</svg>
 					</button>
 				</div>
-				<form onSubmit={handleRequestSubmit} className="px-6 py-6 space-y-5">
+				<form
+					onSubmit={handleRequestSubmit}
+					className="px-6 py-6 space-y-5 flex-1 overflow-y-auto"
+				>
 					<div>
 						<Label
 							htmlFor="document-type"
@@ -779,6 +796,54 @@ export default function RequestDocuments({
 							))}
 						</select>
 					</div>
+
+					{/* Expected Release Date Display */}
+					{expectedDays && !loadingExpectedDays && (
+						<div className="p-4 bg-green-50 rounded-lg border border-green-200 dark:bg-green-900/20 dark:border-green-700">
+							<div className="flex items-start space-x-3">
+								<div className="flex-shrink-0 mt-0.5">
+									<svg
+										className="w-5 h-5 text-green-600 dark:text-green-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+										/>
+									</svg>
+								</div>
+								<div className="flex-1">
+									<h4 className="text-sm font-semibold text-green-800 dark:text-green-200">
+										Expected Processing Time
+									</h4>
+									<p className="text-sm text-green-700 dark:text-green-300 mt-1">
+										Your document will be ready for release in{" "}
+										<span className="font-semibold">
+											{expectedDays.days} days
+										</span>
+										{expectedDays.expectedReleaseDateFormatted && (
+											<span>
+												{" "}
+												(Expected Release Date:{" "}
+												<span className="font-semibold">
+													{expectedDays.expectedReleaseDateFormatted}
+												</span>
+												)
+											</span>
+										)}
+									</p>
+									<p className="text-xs text-green-600 dark:text-green-400 mt-2">
+										💡 This is an estimate based on normal processing times.
+										Actual release dates may vary.
+									</p>
+								</div>
+							</div>
+						</div>
+					)}
 
 					{/* Only show Purpose and Attachments when a document is selected */}
 					{selectedDocument && (
