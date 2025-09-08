@@ -1410,20 +1410,9 @@ export default function CavTemplate({
 										Respectfully forwarded to the Regional Director, DepEd
 										Regional Office Masterson Avenue, Upper Balulang, Zone 1,
 										Cagayan de Oro City, the request of{" "}
-										{isEditing ? (
-											<Input
-												value={certificateData.page2StudentName}
-												onChange={(e) =>
-													handleInputChange("page2StudentName", e.target.value)
-												}
-												className="inline-block mx-1 w-56 font-bold text-center text-gray-900 uppercase bg-transparent border-b-2 border-blue-400"
-												placeholder="Student name"
-											/>
-										) : (
-											<span className="font-bold text-gray-900 underline uppercase">
-												{certificateData.page2StudentName}
-											</span>
-										)}
+										<span className="font-bold text-gray-900 underline uppercase">
+											{certificateData.page2StudentName}
+										</span>
 										, for Certification, Authentication and Verification (CAV)
 										of his Academic School Records.
 									</p>
@@ -1568,20 +1557,9 @@ export default function CavTemplate({
 
 									<p className="mb-4 leading-6 text-justify">
 										This is to Certify that{" "}
-										{isEditing ? (
-											<Input
-												value={certificateData.page3StudentName}
-												onChange={(e) =>
-													handleInputChange("page3StudentName", e.target.value)
-												}
-												className="inline-block mx-1 w-56 font-bold text-center text-gray-900 uppercase bg-transparent border-b-2 border-blue-400"
-												placeholder="Student name"
-											/>
-										) : (
-											<span className="font-bold text-gray-900 underline uppercase">
-												{certificateData.page3StudentName}
-											</span>
-										)}
+										<span className="font-bold text-gray-900 underline uppercase">
+											{certificateData.page3StudentName}
+										</span>
 										, with Learner Reference Number{" "}
 										<span className="font-bold text-gray-900 underline">
 											{certificateData.lrn}
@@ -1631,55 +1609,19 @@ export default function CavTemplate({
 										</p>
 										<p>
 											<strong>3. Grade Level Completed:</strong>{" "}
-											{isEditing ? (
-												<Input
-													value={certificateData.page3GradeLevel}
-													onChange={(e) =>
-														handleInputChange("page3GradeLevel", e.target.value)
-													}
-													className="inline-block mx-1 w-32 font-bold text-gray-900 bg-transparent border-b-2 border-blue-400"
-													placeholder="Grade level"
-												/>
-											) : (
-												<span className="font-bold underline">
-													{certificateData.page3GradeLevel}
-												</span>
-											)}{" "}
+											<span className="font-bold underline">
+												{certificateData.page3GradeLevel}
+											</span>{" "}
 											<strong>School Year Completed:</strong>{" "}
-											{isEditing ? (
-												<Input
-													value={certificateData.page3SchoolYearCompleted}
-													onChange={(e) =>
-														handleInputChange(
-															"page3SchoolYearCompleted",
-															e.target.value
-														)
-													}
-													className="inline-block mx-1 w-32 font-bold text-gray-900 bg-transparent border-b-2 border-blue-400"
-													placeholder="School year"
-												/>
-											) : (
-												<span className="font-bold underline">
-													{certificateData.page3SchoolYearCompleted}
-												</span>
-											)}
+											<span className="font-bold underline">
+												{certificateData.page3SchoolYearCompleted}
+											</span>
 										</p>
 										<p>
 											<strong>Track:</strong>{" "}
-											{isEditing ? (
-												<Input
-													value={certificateData.page3Track}
-													onChange={(e) =>
-														handleInputChange("page3Track", e.target.value)
-													}
-													className="inline-block mx-1 w-32 font-bold text-gray-900 bg-transparent border-b-2 border-blue-400"
-													placeholder="Track"
-												/>
-											) : (
-												<span className="font-bold underline">
-													{certificateData.page3Track}
-												</span>
-											)}{" "}
+											<span className="font-bold underline">
+												{certificateData.page3Track}
+											</span>{" "}
 											<strong>Strand:</strong>{" "}
 											<span className="font-bold underline">
 												{certificateData.strand}
@@ -1705,23 +1647,9 @@ export default function CavTemplate({
 												</span>
 											)}{" "}
 											<strong>School Year graduated:</strong>{" "}
-											{isEditing ? (
-												<Input
-													value={certificateData.page3SchoolYearGraduated}
-													onChange={(e) =>
-														handleInputChange(
-															"page3SchoolYearGraduated",
-															e.target.value
-														)
-													}
-													className="inline-block mx-1 w-32 font-bold text-gray-900 bg-transparent border-b-2 border-blue-400"
-													placeholder="School year"
-												/>
-											) : (
-												<span className="font-bold underline">
-													{certificateData.page3SchoolYearGraduated}
-												</span>
-											)}
+											<span className="font-bold underline">
+												{certificateData.page3SchoolYearGraduated}
+											</span>
 										</p>
 										<p>
 											<strong>5. Special Order Number*:</strong>{" "}
@@ -1919,23 +1847,9 @@ export default function CavTemplate({
 									</div>
 									<div className="text-sm">
 										<span className="font-medium">Date of Application: </span>
-										{isEditing ? (
-											<Input
-												value={certificateData.page4DateOfApplication}
-												onChange={(e) =>
-													handleInputChange(
-														"page4DateOfApplication",
-														e.target.value
-													)
-												}
-												className="inline-block mx-1 w-40 text-center text-gray-900 bg-transparent border-b-2 border-blue-400"
-												placeholder="Date of Application"
-											/>
-										) : (
-											<span className="font-bold">
-												{certificateData.page4DateOfApplication}
-											</span>
-										)}
+										<span className="font-bold">
+											{certificateData.page4DateOfApplication}
+										</span>
 									</div>
 									<div className="text-sm">
 										<span className="font-medium">Date of Release: </span>
@@ -1979,20 +1893,9 @@ export default function CavTemplate({
 								<div className="mb-6 space-y-4 text-sm leading-relaxed text-left text-gray-800">
 									<div className="flex items-center space-x-2">
 										<span className="font-bold">NAME OF LEARNER:</span>
-										{isEditing ? (
-											<Input
-												value={certificateData.page4StudentName}
-												onChange={(e) =>
-													handleInputChange("page4StudentName", e.target.value)
-												}
-												className="flex-1 font-bold text-gray-900 bg-transparent border-b-2 border-blue-400"
-												placeholder="Student name"
-											/>
-										) : (
-											<span className="flex-1 font-bold border-b border-gray-400">
-												{certificateData.page4StudentName}
-											</span>
-										)}
+										<span className="flex-1 font-bold border-b border-gray-400">
+											{certificateData.page4StudentName}
+										</span>
 									</div>
 
 									<div className="flex items-center space-x-2">
@@ -2006,46 +1909,18 @@ export default function CavTemplate({
 										<span className="font-bold">
 											SCHOOL YEAR LAST ATTENDED / GRADUATED:
 										</span>
-										{isEditing ? (
-											<Input
-												value={certificateData.page4SchoolYearLastAttended}
-												onChange={(e) =>
-													handleInputChange(
-														"page4SchoolYearLastAttended",
-														e.target.value
-													)
-												}
-												className="w-40 text-gray-900 bg-transparent border-b-2 border-blue-400"
-												placeholder="School year"
-											/>
-										) : (
-											<span className="border-b border-gray-400">
-												{certificateData.page4SchoolYearLastAttended ||
-													"_________________"}
-											</span>
-										)}
+										<span className="border-b border-gray-400">
+											{certificateData.page4SchoolYearLastAttended ||
+												"_________________"}
+										</span>
 									</div>
 
 									<div className="flex items-center space-x-2">
 										<span className="font-bold">PRESENT ADDRESS:</span>
-										{isEditing ? (
-											<Input
-												value={certificateData.page4PresentAddress}
-												onChange={(e) =>
-													handleInputChange(
-														"page4PresentAddress",
-														e.target.value
-													)
-												}
-												className="flex-1 text-gray-900 bg-transparent border-b-2 border-blue-400"
-												placeholder="Present address"
-											/>
-										) : (
-											<span className="flex-1 border-b border-gray-400">
-												{certificateData.page4PresentAddress ||
-													"_________________________________"}
-											</span>
-										)}
+										<span className="flex-1 border-b border-gray-400">
+											{certificateData.page4PresentAddress ||
+												"_________________________________"}
+										</span>
 									</div>
 
 									<div className="border-b border-gray-400 w-full">
@@ -2054,21 +1929,9 @@ export default function CavTemplate({
 
 									<div className="flex items-center space-x-2">
 										<span className="font-bold">CONTACT NO.:</span>
-										{isEditing ? (
-											<Input
-												value={certificateData.page4ContactNo}
-												onChange={(e) =>
-													handleInputChange("page4ContactNo", e.target.value)
-												}
-												className="w-40 text-gray-900 bg-transparent border-b-2 border-blue-400"
-												placeholder="Contact number"
-											/>
-										) : (
-											<span className="border-b border-gray-400">
-												{certificateData.page4ContactNo ||
-													"____________________"}
-											</span>
-										)}
+										<span className="border-b border-gray-400">
+											{certificateData.page4ContactNo || "____________________"}
+										</span>
 									</div>
 
 									{/* Purposes Section */}

@@ -7,6 +7,7 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	UserPlus,
+	Search,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import StudentImport from "../../../components/StudentImport";
@@ -43,6 +44,7 @@ export default function TeacherStudentsTab() {
 	const [selectedStrand, setSelectedStrand] = useState("");
 	const [schoolYears, setSchoolYears] = useState([]);
 	const [selectedSchoolYear, setSelectedSchoolYear] = useState("");
+	const [searchTerm, setSearchTerm] = useState("");
 
 	// Get teacher's section from stored user data
 	useEffect(() => {
@@ -98,15 +100,21 @@ export default function TeacherStudentsTab() {
 		}
 	}, [sections, teacherSectionId, teacherSectionName]);
 
-	// Apply filters when students, teacherSectionId, selectedStrand, or selectedSchoolYear changes
+	// Apply filters when students, teacherSectionId, selectedStrand, selectedSchoolYear, or searchTerm changes
 	useEffect(() => {
 		applyFilters();
-	}, [students, teacherSectionId, selectedStrand, selectedSchoolYear]);
+	}, [
+		students,
+		teacherSectionId,
+		selectedStrand,
+		selectedSchoolYear,
+		searchTerm,
+	]);
 
 	// Reset to page 1 when filters change
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [teacherSectionId, selectedStrand, selectedSchoolYear]);
+	}, [teacherSectionId, selectedStrand, selectedSchoolYear, searchTerm]);
 
 	const fetchStudents = async () => {
 		setStudentsLoading(true);
@@ -230,6 +238,21 @@ export default function TeacherStudentsTab() {
 			});
 		}
 
+		// Apply search filter
+		if (searchTerm && searchTerm.trim() !== "") {
+			const searchLower = searchTerm.toLowerCase().trim();
+			filtered = filtered.filter((student) => {
+				const fullName = `${student.firstname || ""} ${
+					student.middlename || ""
+				} ${student.lastname || ""}`
+					.toLowerCase()
+					.trim();
+				const lrn = (student.lrn || "").toLowerCase();
+
+				return fullName.includes(searchLower) || lrn.includes(searchLower);
+			});
+		}
+
 		setFilteredStudents(filtered);
 	};
 
@@ -239,6 +262,9 @@ export default function TeacherStudentsTab() {
 	};
 	const handleSchoolYearChange = (schoolYearValue) => {
 		setSelectedSchoolYear(schoolYearValue);
+	};
+	const handleSearchChange = (searchValue) => {
+		setSearchTerm(searchValue);
 	};
 
 	// Calculate pagination
@@ -343,6 +369,18 @@ export default function TeacherStudentsTab() {
 
 					{/* Filter Controls */}
 					<div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center">
+						{/* Search Bar */}
+						<div className="relative flex-1 max-w-md">
+							<Search className="absolute left-3 top-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 transform -translate-y-1/2" />
+							<input
+								type="text"
+								placeholder="Search by name or LRN..."
+								value={searchTerm}
+								onChange={(e) => handleSearchChange(e.target.value)}
+								className="w-full pl-10 pr-4 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white dark:placeholder-slate-400"
+							/>
+						</div>
+
 						<div className="flex gap-2 items-center">
 							<Filter className="w-4 h-4 text-slate-500 dark:text-slate-400" />
 							{/* Teacher's Section Display (Read-only) */}
