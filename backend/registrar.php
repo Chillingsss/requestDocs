@@ -111,7 +111,11 @@ class User {
                   END,
                   CURDATE()
                 ) as daysRemaining,
-                (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) as expectedDays
+                (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) as expectedDays,
+                -- Count additional requirements that haven't been viewed
+                (SELECT COUNT(*) 
+                 FROM tblrequirements req 
+                 WHERE req.requestId = r.id AND req.isAdditional = 1) as hasAdditionalRequirements
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
@@ -1662,6 +1666,33 @@ function sendLrnEmail($requestData)
     }
   }
 
+  // Mark additional requirements as viewed
+  function markAdditionalRequirementsViewed($json)
+  {
+    include "connection.php";
+    
+    $json = json_decode($json, true);
+    $requestId = $json['requestId'];
+    
+    try {
+      $sql = "UPDATE tblrequirements 
+              SET isAdditional = 0 
+              WHERE requestId = :requestId AND isAdditional = 1";
+      
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':requestId', $requestId);
+      
+      if ($stmt->execute()) {
+        return json_encode(['success' => true, 'message' => 'Additional requirements marked as viewed']);
+      } else {
+        return json_encode(['error' => 'Failed to update additional requirements status']);
+      }
+      
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
   // Send email notification for requirement comments
   function sendRequirementCommentEmail($studentData, $requirementData, $comment)
   {
@@ -1852,6 +1883,9 @@ switch ($operation) {
     break;
   case "getExpectedDays":
     echo $user->getExpectedDays();
+    break;
+  case "markAdditionalRequirementsViewed":
+    echo $user->markAdditionalRequirementsViewed($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

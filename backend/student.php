@@ -885,7 +885,7 @@ class User {
 
         if (move_uploaded_file($_FILES['attachment']['tmp_name'], $filePath)) {
           // Insert into tblrequirements
-          $reqSql = "INSERT INTO tblrequirements (requestId, filepath, typeId, createdAt) VALUES (:requestId, :filepath, :typeId, :datetime)";
+          $reqSql = "INSERT INTO tblrequirements (requestId, filepath, typeId, createdAt, isAdditional) VALUES (:requestId, :filepath, :typeId, :datetime, 1)";
           $reqStmt = $conn->prepare($reqSql);
           $reqStmt->bindParam(':requestId', $requestId);
           $reqStmt->bindParam(':filepath', $originalFileName);
@@ -893,6 +893,12 @@ class User {
           $reqStmt->bindParam(':datetime', $philippineDateTime);
           
           if ($reqStmt->execute()) {
+            // Update isMarkAsRead in tblrequirementcomments
+            $updateSql = "UPDATE tblrequirementcomments SET isMarkAsRead = 1 WHERE requestId = :requestId";
+            $updateStmt = $conn->prepare($updateSql);
+            $updateStmt->bindParam(':requestId', $requestId);
+            $updateStmt->execute();
+
             $conn->commit();
             return json_encode(['success' => true, 'message' => 'Requirement uploaded successfully']);
           } else {
@@ -925,6 +931,7 @@ class User {
                 rc.status,
                 rc.createdAt,
                 rc.isNotified,
+                rc.isMarkAsRead,
                 u.firstname as registrarFirstName,
                 u.lastname as registrarLastName,
                 req.filepath,
@@ -933,7 +940,7 @@ class User {
               INNER JOIN tbluser u ON rc.registrarId = u.id
               INNER JOIN tblrequirements req ON rc.requirementId = req.id
               INNER JOIN tblrequirementstype rt ON req.typeId = rt.id
-              WHERE rc.requestId = :requestId
+              WHERE rc.requestId = :requestId AND rc.isMarkAsRead = 0
               ORDER BY rc.createdAt DESC";
 
       $stmt = $conn->prepare($sql);

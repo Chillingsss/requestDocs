@@ -520,3 +520,20 @@ export async function getExpectedDays() {
 		throw error;
 	}
 }
+
+export async function markAdditionalRequirementsViewed(requestId) {
+	const formData = new FormData();
+	formData.append("operation", "markAdditionalRequirementsViewed");
+	formData.append("json", JSON.stringify({ requestId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
