@@ -74,6 +74,8 @@ export default function CavTemplate({
 		middlename: "",
 		lastname: "",
 		lrn: "",
+		birthPlace: "",
+		birthDate: "",
 		gradeLevel: "Grade-12",
 		strand: "Science, Technology, Engineering, and Mathematics (STEM)",
 		semester: "Second Semester",
@@ -146,6 +148,14 @@ export default function CavTemplate({
 				middlename: studentInfo.middlename ?? prev.middlename ?? "",
 				lastname: studentInfo.lastname ?? prev.lastname ?? "",
 				lrn: studentInfo.lrn ?? prev.lrn ?? "",
+				birthPlace: studentInfo.birthPlace ?? prev.birthPlace ?? "",
+				birthDate: studentInfo.birthDate
+					? new Date(studentInfo.birthDate).toLocaleDateString("en-US", {
+							month: "long",
+							day: "numeric",
+							year: "numeric",
+					  })
+					: prev.birthDate ?? "",
 				strand: defaultStrand || prev.strand,
 				strandId: studentInfo.strandId
 					? String(studentInfo.strandId)
@@ -578,7 +588,13 @@ export default function CavTemplate({
 						<div style="margin-bottom: 4mm;">
 							<span style="font-weight: bold;">DATE & PLACE OF BIRTH:</span> 
 							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 300px; padding-bottom: 1px; margin-left: 5px;">
-								_________________________________
+								${
+									certificateData.birthDate
+										? `${certificateData.birthDate}, ${
+												certificateData.birthPlace || ""
+										  }`
+										: "_________________________________"
+								}
 							</span>
 						</div>
 						
@@ -1010,7 +1026,13 @@ export default function CavTemplate({
 						<div style="margin-bottom: 4mm;">
 							<span style="font-weight: bold;">DATE & PLACE OF BIRTH:</span> 
 							<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 300px; padding-bottom: 1px; margin-left: 5px;">
-								_________________________________
+								${
+									certificateData.birthDate
+										? `${certificateData.birthDate}, ${
+												certificateData.birthPlace || ""
+										  }`
+										: "_________________________________"
+								}
 							</span>
 						</div>
 						

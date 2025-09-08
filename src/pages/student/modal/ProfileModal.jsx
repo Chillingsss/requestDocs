@@ -292,6 +292,23 @@ export default function ProfileModal({ isOpen, onClose, userId }) {
 									</div>
 									<div className="space-y-2">
 										<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+											Birth Place
+										</Label>
+										{isEditing ? (
+											<Input
+												name="birthPlace"
+												value={formData.birthPlace}
+												onChange={handleInputChange}
+												className="w-full"
+											/>
+										) : (
+											<div className="p-3 bg-white rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500">
+												{profile.birthPlace || "N/A"}
+											</div>
+										)}
+									</div>
+									<div className="space-y-2">
+										<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
 											Age
 										</Label>
 										{isEditing ? (

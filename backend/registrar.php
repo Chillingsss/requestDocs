@@ -481,6 +481,8 @@ class User {
                 s.email,
                 s.completeAddress,
                 s.contactNo,
+                s.birthPlace,
+                s.birthDate,
                 sec.gradeLevelId,
                 gl.name as gradeLevel,
                 sy.year as schoolYear,
