@@ -89,6 +89,19 @@ export default function StudentFileManagement({
 		}
 	}, [sectionsByGradeLevel, selectedGradeLevel]);
 
+	// Auto-select section when a grade level is chosen and sections are available
+	useEffect(() => {
+		if (!selectedGradeLevel) return;
+
+		const sections = sectionsByGradeLevel[selectedGradeLevel] || [];
+		if (sections.length === 0) return;
+
+		// If no section selected yet, or the current one is no longer valid, pick the first
+		if (!selectedSection || !sections.includes(selectedSection)) {
+			setSelectedSection(sections[0]);
+		}
+	}, [selectedGradeLevel, sectionsByGradeLevel, selectedSection]);
+
 	const fetchStudents = async () => {
 		try {
 			const data = await getStudentRecords(
@@ -567,7 +580,7 @@ export default function StudentFileManagement({
 											placeholder="Search by name or LRN..."
 											value={searchQuery}
 											onChange={handleSearchChange}
-											className="py-2 pr-10 pl-10 w-full rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400"
+											className="py-2 pr-10 pl-10 w-full rounded-lg border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white dark:placeholder-slate-400"
 										/>
 										{searchQuery && (
 											<Button

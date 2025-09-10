@@ -481,6 +481,8 @@ class User {
                 s.email,
                 s.completeAddress,
                 s.contactNo,
+                s.birthPlace,
+                s.birthDate,
                 sec.gradeLevelId,
                 gl.name as gradeLevel,
                 sy.year as schoolYear,
@@ -513,7 +515,9 @@ class User {
           $controlStmt->bindParam(':requestId', $requestId);
           $controlStmt->execute();
           $controlResult = $controlStmt->fetch(PDO::FETCH_ASSOC);
-          $studentInfo['controlNo'] = $controlResult['controlNo'] ?? 1;
+          // Add +1 to the completed CAV count to get the next control number
+          $completedCount = isset($controlResult['controlNo']) ? (int)$controlResult['controlNo'] : 0;
+          $studentInfo['controlNo'] = $completedCount + 1;
         }
         
         // Get request purposes

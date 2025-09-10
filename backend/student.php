@@ -746,6 +746,7 @@ class User {
                 s.lrn,
                 s.email,
                 s.birthDate,
+                s.birthPlace,
                 s.age,
                 s.religion,
                 s.completeAddress,
@@ -800,6 +801,7 @@ class User {
                   lastname = :lastname, 
                   email = :email,
                   birthDate = :birthDate,
+                  birthPlace = :birthPlace,
                   age = :age,
                   religion = :religion,
                   completeAddress = :completeAddress,
@@ -817,6 +819,7 @@ class User {
       $stmt->bindParam(':lastname', $json['lastname']);
       $stmt->bindParam(':email', $json['email']);
       $stmt->bindParam(':birthDate', $json['birthDate']);
+      $stmt->bindParam(':birthPlace', $json['birthPlace']);
       $stmt->bindParam(':age', $json['age']);
       $stmt->bindParam(':religion', $json['religion']);
       $stmt->bindParam(':completeAddress', $json['completeAddress']);
