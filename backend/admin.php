@@ -27,9 +27,16 @@ class User {
             error_log("Login attempt - User: " . $user['id'] . ", Lastname: " . $user['lastname'] . ", Input password: " . $json['password']);
             error_log("Password comparison - Lastname lower: " . $lastnameLower . ", Input lower: " . $inputPasswordLower);
             
-            // Check if password matches lastname (case-insensitive)
-            if ($inputPasswordLower === $lastnameLower) {
-                error_log("Password reset required for user: " . $user['id']);
+            // Check if password matches lastname (case-insensitive) and if PIN matches last 4 digits of ID
+            $lastFourDigits = substr($user['id'], -4);
+            $needsPasswordReset = $inputPasswordLower === $lastnameLower;
+            
+            // Check if PIN matches last 4 digits of ID using password_verify
+            $needsPinReset = password_verify($lastFourDigits, $user['pinCode']);
+            error_log("PIN verification - Last 4 digits: " . $lastFourDigits . ", Needs Reset: " . ($needsPinReset ? "Yes" : "No"));
+            
+            if ($needsPasswordReset || $needsPinReset) {
+                error_log("Password/PIN reset required for user: " . $user['id'] . ", Password Reset: " . ($needsPasswordReset ? "Yes" : "No") . ", PIN Reset: " . ($needsPinReset ? "Yes" : "No"));
                 return json_encode([
                     'id' => $user['id'],
                     'userLevel' => $user['userLevel'],
@@ -38,7 +45,8 @@ class User {
                     'email' => $user['email'],
                     'gradeLevelId' => $user['gradeLevelId'],
                     'sectionId' => $user['sectionId'],
-                    'needsPasswordReset' => true
+                    'needsPasswordReset' => $needsPasswordReset,
+                    'needsPinReset' => $needsPinReset
                 ]);
             }
             error_log("Normal login for user: " . $user['id']);
@@ -415,30 +423,61 @@ class User {
     
     $userId = $json['userId'];
     $userType = $json['userType'];
-    $newPassword = $json['newPassword'];
+    $newPassword = isset($json['newPassword']) ? $json['newPassword'] : null;
+    $newPinCode = isset($json['newPinCode']) ? $json['newPinCode'] : null;
     
-    // Hash the new password
-    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-    
-    // Update password in appropriate table
-    $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
-    $sql = "UPDATE $table SET password = :password WHERE id = :userId";
-    $stmt = $conn->prepare($sql);
-    $stmt->bindParam(':password', $hashedPassword);
-    $stmt->bindParam(':userId', $userId);
-    
-    if ($stmt->execute()) {
-        // Clean up OTP after successful password reset
-        // global $otpStorage; // Removed global otpStorage
-        // $otpKey = $userId . '_' . $userType;
-        // if (isset($otpStorage[$otpKey])) {
-        //     unset($otpStorage[$otpKey]);
-        // }
+    try {
+        $conn->beginTransaction();
         
-        return json_encode(['status' => 'success', 'message' => 'Password reset successfully']);
+        // Determine what needs to be updated
+        $updatePassword = !empty($newPassword);
+        $updatePinCode = !empty($newPinCode) && $userType !== 'student';
+        
+        if (!$updatePassword && !$updatePinCode) {
+            return json_encode(['status' => 'error', 'message' => 'No credentials provided for update']);
+        }
+        
+        $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+        $updates = [];
+        $params = [':userId' => $userId];
+        
+        // Build dynamic SQL update statement
+        if ($updatePassword) {
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            $updates[] = "password = :password";
+            $params[':password'] = $hashedPassword;
+        }
+        
+        if ($updatePinCode) {
+            $hashedPinCode = password_hash($newPinCode, PASSWORD_DEFAULT);
+            $updates[] = "pinCode = :pinCode";
+            $params[':pinCode'] = $hashedPinCode;
+        }
+        
+        $sql = "UPDATE $table SET " . implode(", ", $updates) . " WHERE id = :userId";
+        $stmt = $conn->prepare($sql);
+        
+        foreach ($params as $key => &$value) {
+            $stmt->bindParam($key, $value);
+        }
+        
+        if ($stmt->execute()) {
+            $conn->commit();
+            $message = [];
+            if ($updatePassword) $message[] = "password";
+            if ($updatePinCode) $message[] = "PIN code";
+            return json_encode([
+                'status' => 'success', 
+                'message' => ucfirst(implode(" and ", $message)) . " reset successfully"
+            ]);
+        } else {
+            $conn->rollBack();
+            return json_encode(['status' => 'error', 'message' => 'Failed to reset credentials']);
+        }
+    } catch (Exception $e) {
+        $conn->rollBack();
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
     }
-    
-    return json_encode(['status' => 'error', 'message' => 'Failed to reset password']);
    }
    
    // Removed private function cleanupExpiredOTPs()

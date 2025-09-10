@@ -125,10 +125,18 @@ export async function verifyPasswordResetOTP(userId, userType, otp) {
 	}
 }
 
-export async function resetPassword(userId, userType, newPassword) {
+export async function resetPassword(
+	userId,
+	userType,
+	newPassword,
+	newPinCode = ""
+) {
 	const formData = new FormData();
 	formData.append("operation", "resetPassword");
-	formData.append("json", JSON.stringify({ userId, userType, newPassword }));
+	formData.append(
+		"json",
+		JSON.stringify({ userId, userType, newPassword, newPinCode })
+	);
 
 	// Get the encrypted API URL from session storage
 	const apiUrl = getDecryptedApiUrl();

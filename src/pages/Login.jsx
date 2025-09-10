@@ -261,14 +261,14 @@ export default function LoginPage() {
 				setShowEmailSetup(true);
 				setIsLoading(false);
 				toast.success("Please set up your email address to continue.");
-			} else if (user && user.needsPasswordReset) {
-				// User needs password reset (email already exists)
-				console.log("User needs password reset");
+			} else if (user && (user.needsPasswordReset || user.needsPinReset)) {
+				// User needs password or PIN reset
+				console.log("User needs password/PIN reset");
 				setPendingUser(user);
 				setShowPasswordReset(true);
 				setIsLoading(false);
 				toast.success(
-					"Password reset required. Please check your email for OTP."
+					"Password/PIN reset required. Please check your email for OTP."
 				);
 			} else if (user && user.userLevel === "Admin") {
 				// Admin needs PIN verification

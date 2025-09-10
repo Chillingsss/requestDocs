@@ -4,11 +4,7 @@ import { Label } from "@radix-ui/react-label";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import {
-	sendPasswordResetOTP,
-	verifyPasswordResetOTP,
-	resetPassword,
-} from "../utils/admin";
+import { sendPasswordResetOTP, resetPassword } from "../utils/admin";
 import toast from "react-hot-toast";
 
 export default function PasswordReset({ user, onPasswordReset, onCancel }) {
@@ -16,10 +12,14 @@ export default function PasswordReset({ user, onPasswordReset, onCancel }) {
 	const [otp, setOtp] = useState("");
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
+	const [newPinCode, setNewPinCode] = useState("");
+	const [confirmPinCode, setConfirmPinCode] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+	const [showPinCode, setShowPinCode] = useState(false);
+	const [showConfirmPinCode, setShowConfirmPinCode] = useState(false);
 	const [storedOTP, setStoredOTP] = useState(""); // Store OTP in JavaScript
 
 	// Remove automatic OTP sending - user will click button instead
@@ -84,24 +84,60 @@ export default function PasswordReset({ user, onPasswordReset, onCancel }) {
 	};
 
 	const handleResetPassword = async () => {
-		// Validate password
-		if (newPassword.length < 8) {
-			setError("Password must be at least 8 characters long");
-			toast.error("Password must be at least 8 characters long");
-			return;
+		const needsPasswordReset = user.needsPasswordReset;
+		const needsPinReset = user.needsPinReset;
+		let validPassword = true;
+		let validPin = true;
+
+		// Validate password if it needs to be reset
+		if (needsPasswordReset) {
+			if (newPassword.length < 8) {
+				setError("Password must be at least 8 characters long");
+				toast.error("Password must be at least 8 characters long");
+				return;
+			}
+
+			if (newPassword !== confirmPassword) {
+				setError("Passwords do not match");
+				toast.error("Passwords do not match");
+				return;
+			}
+
+			// Check if password is not the same as lastname
+			if (newPassword.toLowerCase() === user.lastname.toLowerCase()) {
+				setError("Password cannot be your lastname");
+				toast.error("Password cannot be your lastname");
+				return;
+			}
 		}
 
-		if (newPassword !== confirmPassword) {
-			setError("Passwords do not match");
-			toast.error("Passwords do not match");
-			return;
-		}
+		// Validate PIN code if it needs to be reset
+		if (user.userLevel !== "Student" && needsPinReset) {
+			if (newPinCode.length !== 4) {
+				setError("PIN code must be 4 digits");
+				toast.error("PIN code must be 4 digits");
+				return;
+			}
 
-		// Check if password is not the same as lastname
-		if (newPassword.toLowerCase() === user.lastname.toLowerCase()) {
-			setError("Password cannot be your lastname");
-			toast.error("Password cannot be your lastname");
-			return;
+			if (!/^\d+$/.test(newPinCode)) {
+				setError("PIN code must contain only numbers");
+				toast.error("PIN code must contain only numbers");
+				return;
+			}
+
+			if (newPinCode !== confirmPinCode) {
+				setError("PIN codes do not match");
+				toast.error("PIN codes do not match");
+				return;
+			}
+
+			// Check if PIN is not the last 4 digits of ID
+			const lastFourDigits = user.id.slice(-4);
+			if (newPinCode === lastFourDigits) {
+				setError("PIN code cannot be the last 4 digits of your ID");
+				toast.error("PIN code cannot be the last 4 digits of your ID");
+				return;
+			}
 		}
 
 		setIsLoading(true);
@@ -109,19 +145,24 @@ export default function PasswordReset({ user, onPasswordReset, onCancel }) {
 
 		try {
 			const userType = user.userLevel === "Student" ? "student" : "user";
-			const result = await resetPassword(user.id, userType, newPassword);
+			const result = await resetPassword(
+				user.id,
+				userType,
+				needsPasswordReset ? newPassword : null,
+				needsPinReset ? newPinCode : null
+			);
 
 			if (result.status === "success") {
-				toast.success("Password reset successfully!");
+				toast.success(result.message);
 				onPasswordReset();
 			} else {
-				setError(result.message || "Failed to reset password");
-				toast.error(result.message || "Failed to reset password");
+				setError(result.message || "Failed to reset credentials");
+				toast.error(result.message || "Failed to reset credentials");
 			}
 		} catch (error) {
-			console.error("Reset password error:", error);
-			setError("Failed to reset password. Please try again.");
-			toast.error("Failed to reset password. Please try again.");
+			console.error("Reset credentials error:", error);
+			setError("Failed to reset credentials. Please try again.");
+			toast.error("Failed to reset credentials. Please try again.");
 		}
 
 		setIsLoading(false);
@@ -155,12 +196,24 @@ export default function PasswordReset({ user, onPasswordReset, onCancel }) {
 						</div>
 					</div>
 					<CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
-						Password Reset Required
+						{user.needsPasswordReset && user.needsPinReset
+							? "Password & PIN Reset Required"
+							: user.needsPasswordReset
+							? "Password Reset Required"
+							: "PIN Reset Required"}
 					</CardTitle>
 					<p className="mt-2 text-gray-600 dark:text-gray-300">
 						{step === 1 && "Click the button below to send OTP to your email"}
 						{step === 2 && "Enter the 6-digit OTP sent to your email"}
-						{step === 3 && "Create a new password"}
+						{step === 3 && (
+							<>
+								{user.needsPasswordReset && user.needsPinReset
+									? "Create your new password and PIN code"
+									: user.needsPasswordReset
+									? "Create your new password"
+									: "Create your new PIN code"}
+							</>
+						)}
 					</p>
 				</CardHeader>
 
@@ -237,75 +290,155 @@ export default function PasswordReset({ user, onPasswordReset, onCancel }) {
 					{/* Step 3: New Password */}
 					{step === 3 && (
 						<div className="space-y-4">
-							<div>
-								<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-									New Password
-								</Label>
-								<div className="relative mt-1">
-									<Input
-										type={showPassword ? "text" : "password"}
-										value={newPassword}
-										onChange={handlePasswordChange}
-										placeholder="Enter new password"
-										className="pr-10"
-									/>
-									<button
-										type="button"
-										onClick={() => setShowPassword(!showPassword)}
-										className="flex absolute inset-y-0 right-0 items-center pr-3"
-									>
-										{showPassword ? (
-											<EyeOff className="w-4 h-4 text-gray-400" />
-										) : (
-											<Eye className="w-4 h-4 text-gray-400" />
-										)}
-									</button>
-								</div>
-								<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-									Must be at least 8 characters long
-								</p>
-							</div>
+							{user.needsPasswordReset && (
+								<>
+									<div>
+										<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+											New Password
+										</Label>
+										<div className="relative mt-1">
+											<Input
+												type={showPassword ? "text" : "password"}
+												value={newPassword}
+												onChange={handlePasswordChange}
+												placeholder="Enter new password"
+												className="pr-10"
+											/>
+											<button
+												type="button"
+												onClick={() => setShowPassword(!showPassword)}
+												className="flex absolute inset-y-0 right-0 items-center pr-3"
+											>
+												{showPassword ? (
+													<EyeOff className="w-4 h-4 text-gray-400" />
+												) : (
+													<Eye className="w-4 h-4 text-gray-400" />
+												)}
+											</button>
+										</div>
+										<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+											Must be at least 8 characters long
+										</p>
+									</div>
 
-							<div>
-								<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-									Confirm New Password
-								</Label>
-								<div className="relative mt-1">
-									<Input
-										type={showConfirmPassword ? "text" : "password"}
-										value={confirmPassword}
-										onChange={handleConfirmPasswordChange}
-										placeholder="Confirm new password"
-										className="pr-10"
-									/>
-									<button
-										type="button"
-										onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-										className="flex absolute inset-y-0 right-0 items-center pr-3"
-									>
-										{showConfirmPassword ? (
-											<EyeOff className="w-4 h-4 text-gray-400" />
-										) : (
-											<Eye className="w-4 h-4 text-gray-400" />
-										)}
-									</button>
-								</div>
-							</div>
+									<div>
+										<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+											Confirm New Password
+										</Label>
+										<div className="relative mt-1">
+											<Input
+												type={showConfirmPassword ? "text" : "password"}
+												value={confirmPassword}
+												onChange={handleConfirmPasswordChange}
+												placeholder="Confirm new password"
+												className="pr-10"
+											/>
+											<button
+												type="button"
+												onClick={() =>
+													setShowConfirmPassword(!showConfirmPassword)
+												}
+												className="flex absolute inset-y-0 right-0 items-center pr-3"
+											>
+												{showConfirmPassword ? (
+													<EyeOff className="w-4 h-4 text-gray-400" />
+												) : (
+													<Eye className="w-4 h-4 text-gray-400" />
+												)}
+											</button>
+										</div>
+									</div>
+								</>
+							)}
+
+							{user.userLevel !== "Student" && user.needsPinReset && (
+								<>
+									<div>
+										<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+											New PIN Code
+										</Label>
+										<div className="relative mt-1">
+											<Input
+												type={showPinCode ? "text" : "password"}
+												value={newPinCode}
+												onChange={(e) => {
+													const value = e.target.value.replace(/\D/g, "");
+													if (value.length <= 4) setNewPinCode(value);
+												}}
+												placeholder="Enter 4-digit PIN code"
+												className="pr-10 text-lg tracking-widest text-center"
+												maxLength={4}
+											/>
+											<button
+												type="button"
+												onClick={() => setShowPinCode(!showPinCode)}
+												className="flex absolute inset-y-0 right-0 items-center pr-3"
+											>
+												{showPinCode ? (
+													<EyeOff className="w-4 h-4 text-gray-400" />
+												) : (
+													<Eye className="w-4 h-4 text-gray-400" />
+												)}
+											</button>
+										</div>
+										<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+											Must be 4 digits
+										</p>
+									</div>
+
+									<div>
+										<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+											Confirm New PIN Code
+										</Label>
+										<div className="relative mt-1">
+											<Input
+												type={showConfirmPinCode ? "text" : "password"}
+												value={confirmPinCode}
+												onChange={(e) => {
+													const value = e.target.value.replace(/\D/g, "");
+													if (value.length <= 4) setConfirmPinCode(value);
+												}}
+												placeholder="Confirm 4-digit PIN code"
+												className="pr-10 text-lg tracking-widest text-center"
+												maxLength={4}
+											/>
+											<button
+												type="button"
+												onClick={() =>
+													setShowConfirmPinCode(!showConfirmPinCode)
+												}
+												className="flex absolute inset-y-0 right-0 items-center pr-3"
+											>
+												{showConfirmPinCode ? (
+													<EyeOff className="w-4 h-4 text-gray-400" />
+												) : (
+													<Eye className="w-4 h-4 text-gray-400" />
+												)}
+											</button>
+										</div>
+									</div>
+								</>
+							)}
 
 							<div className="text-center">
 								<Button
 									onClick={handleResetPassword}
 									disabled={
 										isLoading ||
-										newPassword.length < 8 ||
-										newPassword !== confirmPassword
+										(user.needsPasswordReset &&
+											(newPassword.length < 8 ||
+												newPassword !== confirmPassword)) ||
+										(user.userLevel !== "Student" &&
+											user.needsPinReset &&
+											(newPinCode.length !== 4 ||
+												newPinCode !== confirmPinCode))
 									}
 									className="w-full"
 								>
 									{isLoading ? (
 										<div className="mx-auto w-5 h-5 rounded-full border-2 border-white animate-spin border-t-transparent" />
 									) : (
-										"Reset Password"
+										"Reset Credentials"
 									)}
 								</Button>
 							</div>
