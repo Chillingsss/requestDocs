@@ -182,21 +182,22 @@ if ($operation === 'savePreviewedStudents') {
             $motherName = findHeader($rowAssoc, ['MOTHER']);
             $guardianName = findHeader($rowAssoc, ['GUARDIAN']);
             $relationship = findHeader($rowAssoc, ['RELATIONSHIP']);
-            
+            $emailFromCSV = findHeader($rowAssoc, ['EMAIL']);
+
             // Validate required fields
             if (empty($lrn) || empty($fullName)) {
                 $errors[] = "Row " . ($rowIndex + 1) . ": LRN and Name are required";
                 continue;
             }
-            
+
             // Parse the full name into components
             $nameParts = $importer->parseFullName($fullName);
             $firstName = $nameParts['firstName'];
             $middleName = $nameParts['middleName'];
             $lastName = $nameParts['lastName'];
-            
-            // Set email to null if not provided
-            $email = null;
+
+            // Set email to null if not provided in CSV, otherwise use the CSV value
+            $email = (!empty($emailFromCSV)) ? $emailFromCSV : null;
             
             // Generate default password using lastName
             $defaultPassword = password_hash($lastName, PASSWORD_DEFAULT);
@@ -209,73 +210,118 @@ if ($operation === 'savePreviewedStudents') {
             $checkStmt = $conn->prepare($checkSql);
             $checkStmt->bindParam(':lrn', $lrn);
             $checkStmt->execute();
-            
-            if ($checkStmt->rowCount() > 0) {
-                $errors[] = "Row " . ($rowIndex + 1) . ": Student with LRN $lrn already exists";
-                continue;
-            }
-            
+
+            $studentExists = $checkStmt->rowCount() > 0;
+            $isUpdate = false;
+
             // Use selected grade level ID from UI instead of deriving from section
             $sectionGradeLevelId = $gradeLevelId;
-            
-            // Insert student data with schoolyearId
-            $sql = "INSERT INTO tblstudent (
-                id, firstname, middlename, lastname, lrn, email, password, 
-                userLevel, birthDate, age, religion, 
-                completeAddress, fatherName, motherName, guardianName, 
-                guardianRelationship, sectionId, schoolyearId, strandId, gradeLevelId, createdAt
-            ) VALUES (
-                :id, :firstname, :middlename, :lastname, :lrn, :email, :password,
-                :userLevel, :birthDate, :age, :religion,
-                :completeAddress, :fatherName, :motherName, :guardianName,
-                :guardianRelationship, :sectionId, :schoolyearId, :strandId, :gradeLevelId, NOW()
-            )";
-            
-            $stmt = $conn->prepare($sql);
-            $studentId = $lrn;
-            $stmt->bindParam(':id', $studentId);
-            $stmt->bindParam(':firstname', $firstName);
-            $stmt->bindParam(':middlename', $middleName);
-            $stmt->bindParam(':lastname', $lastName);
-            $stmt->bindParam(':lrn', $lrn);
-            $stmt->bindParam(':email', $email);
-            $stmt->bindParam(':password', $defaultPassword);
-            $stmt->bindParam(':userLevel', $defaultUserLevel);
-            $stmt->bindParam(':birthDate', $birthDate);
-            $stmt->bindParam(':age', $age);
-            $stmt->bindParam(':religion', $religion);
-            $stmt->bindParam(':completeAddress', $completeAddress);
-            $stmt->bindParam(':fatherName', $fatherName);
-            $stmt->bindParam(':motherName', $motherName);
-            $stmt->bindParam(':guardianName', $guardianName);
-            $stmt->bindParam(':guardianRelationship', $relationship);
-            $stmt->bindParam(':sectionId', $sectionId);
-            $stmt->bindParam(':schoolyearId', $schoolYearId);
-            $stmt->bindParam(':strandId', $strandId);
-            $stmt->bindParam(':gradeLevelId', $sectionGradeLevelId);
-            
-            if ($stmt->execute()) {
-                // Insert into tblsfrecord after successful student insertion
-                $sfRecordSql = "INSERT INTO tblsfrecord (
-                    fileName, studentId, gradeLevelId, userId, createdAt
+
+            if ($studentExists) {
+                // Update existing student - preserve existing email if present
+                $sql = "UPDATE tblstudent SET
+                    firstname = :firstname,
+                    middlename = :middlename,
+                    lastname = :lastname,
+                    email = CASE WHEN email IS NOT NULL AND email != '' THEN email ELSE :email END,
+                    birthDate = :birthDate,
+                    age = :age,
+                    religion = :religion,
+                    completeAddress = :completeAddress,
+                    fatherName = :fatherName,
+                    motherName = :motherName,
+                    guardianName = :guardianName,
+                    guardianRelationship = :guardianRelationship,
+                    sectionId = :sectionId,
+                    schoolyearId = :schoolyearId,
+                    strandId = :strandId,
+                    gradeLevelId = :gradeLevelId
+                    WHERE lrn = :lrn";
+
+                $stmt = $conn->prepare($sql);
+                $stmt->bindParam(':firstname', $firstName);
+                $stmt->bindParam(':middlename', $middleName);
+                $stmt->bindParam(':lastname', $lastName);
+                $stmt->bindParam(':email', $email);
+                $stmt->bindParam(':birthDate', $birthDate);
+                $stmt->bindParam(':age', $age);
+                $stmt->bindParam(':religion', $religion);
+                $stmt->bindParam(':completeAddress', $completeAddress);
+                $stmt->bindParam(':fatherName', $fatherName);
+                $stmt->bindParam(':motherName', $motherName);
+                $stmt->bindParam(':guardianName', $guardianName);
+                $stmt->bindParam(':guardianRelationship', $relationship);
+                $stmt->bindParam(':sectionId', $sectionId);
+                $stmt->bindParam(':schoolyearId', $schoolYearId);
+                $stmt->bindParam(':strandId', $strandId);
+                $stmt->bindParam(':gradeLevelId', $sectionGradeLevelId);
+                $stmt->bindParam(':lrn', $lrn);
+
+                $isUpdate = true;
+            } else {
+                // Insert new student
+                $sql = "INSERT INTO tblstudent (
+                    id, firstname, middlename, lastname, lrn, email, password,
+                    userLevel, birthDate, age, religion,
+                    completeAddress, fatherName, motherName, guardianName,
+                    guardianRelationship, sectionId, schoolyearId, strandId, gradeLevelId, createdAt
                 ) VALUES (
-                    :fileName, :studentId, :gradeLevelId, :userId, NOW()
+                    :id, :firstname, :middlename, :lastname, :lrn, :email, :password,
+                    :userLevel, :birthDate, :age, :religion,
+                    :completeAddress, :fatherName, :motherName, :guardianName,
+                    :guardianRelationship, :sectionId, :schoolyearId, :strandId, :gradeLevelId, NOW()
                 )";
-                
-                $sfRecordStmt = $conn->prepare($sfRecordSql);
-                $sfRecordStmt->bindParam(':fileName', $studentFileName); // Using the personalized fileName
-                $sfRecordStmt->bindParam(':studentId', $lrn); // Using LRN as studentId
-                $sfRecordStmt->bindParam(':gradeLevelId', $sectionGradeLevelId); // Use section's grade level ID
-                $sfRecordStmt->bindParam(':userId', $importUserId);
-                
-                if ($sfRecordStmt->execute()) {
-                    $importedCount++;
-                } else {
-                    $errors[] = "Row " . ($rowIndex + 1) . ": Student $fullName inserted but failed to create SF record";
-                    $importedCount++; // Still count as imported since student was created
+
+                $stmt = $conn->prepare($sql);
+                $studentId = $lrn;
+                $stmt->bindParam(':id', $studentId);
+                $stmt->bindParam(':firstname', $firstName);
+                $stmt->bindParam(':middlename', $middleName);
+                $stmt->bindParam(':lastname', $lastName);
+                $stmt->bindParam(':lrn', $lrn);
+                $stmt->bindParam(':email', $email);
+                $stmt->bindParam(':password', $defaultPassword);
+                $stmt->bindParam(':userLevel', $defaultUserLevel);
+                $stmt->bindParam(':birthDate', $birthDate);
+                $stmt->bindParam(':age', $age);
+                $stmt->bindParam(':religion', $religion);
+                $stmt->bindParam(':completeAddress', $completeAddress);
+                $stmt->bindParam(':fatherName', $fatherName);
+                $stmt->bindParam(':motherName', $motherName);
+                $stmt->bindParam(':guardianName', $guardianName);
+                $stmt->bindParam(':guardianRelationship', $relationship);
+                $stmt->bindParam(':sectionId', $sectionId);
+                $stmt->bindParam(':schoolyearId', $schoolYearId);
+                $stmt->bindParam(':strandId', $strandId);
+                $stmt->bindParam(':gradeLevelId', $sectionGradeLevelId);
+            }
+
+            if ($stmt->execute()) {
+                if (!$isUpdate) {
+                    // Only create SF record for new students
+                    $sfRecordSql = "INSERT INTO tblsfrecord (
+                        fileName, studentId, gradeLevelId, userId, createdAt
+                    ) VALUES (
+                        :fileName, :studentId, :gradeLevelId, :userId, NOW()
+                    )";
+
+                    $sfRecordStmt = $conn->prepare($sfRecordSql);
+                    $sfRecordStmt->bindParam(':fileName', $studentFileName);
+                    $sfRecordStmt->bindParam(':studentId', $lrn);
+                    $sfRecordStmt->bindParam(':gradeLevelId', $sectionGradeLevelId);
+                    $sfRecordStmt->bindParam(':userId', $importUserId);
+
+                    if (!$sfRecordStmt->execute()) {
+                        $errors[] = "Row " . ($rowIndex + 1) . ": Student $fullName " . ($isUpdate ? "updated" : "inserted") . " but failed to create SF record";
+                    }
+                }
+
+                $importedCount++;
+                if ($isUpdate) {
+                    $errors[] = "Row " . ($rowIndex + 1) . ": Student $fullName updated successfully";
                 }
             } else {
-                $errors[] = "Row " . ($rowIndex + 1) . ": Failed to insert student $fullName";
+                $errors[] = "Row " . ($rowIndex + 1) . ": Failed to " . ($isUpdate ? "update" : "insert") . " student $fullName";
             }
         }
         
