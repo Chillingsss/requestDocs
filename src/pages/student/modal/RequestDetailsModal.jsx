@@ -698,7 +698,7 @@ export default function RequestDetailsModal({
 						<Button
 							onClick={onClose}
 							variant="outline"
-							className="border-slate-300 text-slate-700 hover:bg-slate-100"
+							className="border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-slate-700 dark:hover:text-slate-700"
 						>
 							Close
 						</Button>
