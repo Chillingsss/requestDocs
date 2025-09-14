@@ -19,6 +19,7 @@ export default function RequestDocuments({
 	userId,
 	onSuccess,
 	studentGradeLevel,
+	userRequests = [], // Add userRequests prop to check for duplicates
 }) {
 	const [selectedDocument, setSelectedDocument] = useState("");
 	const [purpose, setPurpose] = useState("");
@@ -41,10 +42,18 @@ export default function RequestDocuments({
 	const [purposeSearchTerm, setPurposeSearchTerm] = useState("");
 	const [expectedDays, setExpectedDays] = useState(null);
 	const [loadingExpectedDays, setLoadingExpectedDays] = useState(false);
+	const [duplicateWarning, setDuplicateWarning] = useState(null);
 
 	// Fetch documents and request types when modal opens
 	React.useEffect(() => {
 		if (isOpen) {
+			console.log("=== Modal Opening Debug ===");
+			console.log("userRequests prop:", userRequests);
+			console.log("userRequests length:", userRequests?.length);
+			if (userRequests?.length > 0) {
+				console.log("Sample request:", userRequests[0]);
+			}
+
 			setLoadingDocs(true);
 			setLoadingRequestTypes(true);
 			setLoadingExpectedDays(true);
@@ -72,6 +81,18 @@ export default function RequestDocuments({
 			});
 		}
 	}, [isOpen]);
+
+	// Check for duplicates when documents are loaded and a document is selected
+	React.useEffect(() => {
+		if (selectedDocument && documents.length > 0 && userRequests.length > 0) {
+			console.log("Re-checking for duplicates after documents loaded");
+			const duplicateInfo = checkForDuplicateRequest(selectedDocument);
+			if (duplicateInfo) {
+				console.log("Found duplicate after documents loaded:", duplicateInfo);
+				setDuplicateWarning(duplicateInfo);
+			}
+		}
+	}, [selectedDocument, documents, userRequests]);
 
 	// Handle clicking outside dropdown to close it
 	React.useEffect(() => {
@@ -205,9 +226,16 @@ export default function RequestDocuments({
 		console.log("purpose:", purpose);
 		console.log("selectedPurposeIds:", selectedPurposeIds);
 		console.log("selectedFiles:", selectedFiles);
+		console.log("duplicateWarning:", duplicateWarning);
 
 		if (!selectedDocument) {
 			console.log("Missing document");
+			return true;
+		}
+
+		// Disable submit if there's a duplicate warning
+		if (duplicateWarning) {
+			console.log("Duplicate request detected - button disabled");
 			return true;
 		}
 
@@ -264,6 +292,26 @@ export default function RequestDocuments({
 
 	// Handle document type change
 	const handleDocumentChange = async (documentId) => {
+		console.log("=== handleDocumentChange Debug ===");
+		console.log("documentId:", documentId);
+		console.log("userRequests length:", userRequests?.length);
+
+		// Clear any existing duplicate warning
+		setDuplicateWarning(null);
+
+		// Check for duplicate requests first (only if documents are loaded)
+		if (documentId && documents.length > 0) {
+			const duplicateInfo = checkForDuplicateRequest(documentId);
+			console.log("duplicateInfo result:", duplicateInfo);
+			if (duplicateInfo) {
+				console.log("Setting duplicate warning:", duplicateInfo);
+				setDuplicateWarning(duplicateInfo);
+				// Don't return here - let user see the warning but still allow selection
+			}
+		} else if (documentId && documents.length === 0) {
+			console.log("Skipping duplicate check - documents not loaded yet");
+		}
+
 		// Validate document selection based on grade level
 		if (studentGradeLevel && documentId) {
 			const selectedDoc = documents.find(
@@ -643,6 +691,7 @@ export default function RequestDocuments({
 		setDocumentPurposes([]);
 		setIsPurposeDropdownOpen(false);
 		setPurposeSearchTerm("");
+		setDuplicateWarning(null);
 		// Reset file inputs
 		const fileInput = document.getElementById("file-upload");
 		const addMoreInput = document.getElementById("add-more-files");
@@ -693,6 +742,59 @@ export default function RequestDocuments({
 	const filteredPurposes = documentPurposes.filter((purpose) =>
 		purpose.name.toLowerCase().includes(purposeSearchTerm.toLowerCase())
 	);
+
+	// Helper function to check for duplicate requests
+	const checkForDuplicateRequest = (documentId) => {
+		console.log("=== checkForDuplicateRequest Debug ===");
+		console.log("documentId:", documentId);
+		console.log("userRequests:", userRequests);
+		console.log("documents:", documents);
+
+		if (!documentId || !userRequests || userRequests.length === 0) {
+			console.log("Early return: missing data");
+			return null;
+		}
+
+		const selectedDoc = documents.find(
+			(doc) => String(doc.id) === String(documentId)
+		);
+
+		console.log("selectedDoc:", selectedDoc);
+		if (!selectedDoc) return null;
+
+		// Find any existing request for the same document type that is not completed or cancelled
+		const existingRequest = userRequests.find((request) => {
+			console.log("Checking request:", request);
+			console.log("request.document:", request.document);
+			console.log("selectedDoc.name:", selectedDoc.name);
+			console.log("request.status:", request.status);
+
+			const isSameDocument =
+				request.document &&
+				request.document.toLowerCase() === selectedDoc.name.toLowerCase();
+			const isPending =
+				request.status &&
+				!["completed", "cancelled"].includes(request.status.toLowerCase());
+
+			console.log("isSameDocument:", isSameDocument);
+			console.log("isPending:", isPending);
+
+			return isSameDocument && isPending;
+		});
+
+		console.log("existingRequest found:", existingRequest);
+
+		if (existingRequest) {
+			return {
+				documentName: existingRequest.document, // Use the actual document name from the request
+				existingStatus: existingRequest.status,
+				requestDate: existingRequest.dateRequested,
+				requestId: existingRequest.id,
+			};
+		}
+
+		return null;
+	};
 
 	return (
 		<div className="flex fixed inset-0 z-50 justify-center items-center backdrop-blur-sm bg-black/40 p-4">
@@ -796,6 +898,71 @@ export default function RequestDocuments({
 							))}
 						</select>
 					</div>
+
+					{/* Duplicate Request Warning */}
+					{duplicateWarning && (
+						<div className="p-4 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700">
+							<div className="flex items-start space-x-3">
+								<div className="flex-shrink-0 mt-0.5">
+									<svg
+										className="w-5 h-5 text-amber-600 dark:text-amber-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+										/>
+									</svg>
+								</div>
+								<div className="flex-1">
+									<h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+										Duplicate Request Detected
+									</h4>
+									<p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+										You already have a pending request for{" "}
+										<span className="font-semibold">
+											{duplicateWarning.documentName}
+										</span>{" "}
+										submitted on{" "}
+										<span className="font-semibold">
+											{new Date(
+												duplicateWarning.requestDate
+											).toLocaleDateString("en-US", {
+												month: "long",
+												day: "numeric",
+												year: "numeric",
+											})}
+										</span>
+										.
+									</p>
+									<p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+										Current status:{" "}
+										<span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded-full dark:bg-amber-900 dark:text-amber-200">
+											{duplicateWarning.existingStatus}
+										</span>
+									</p>
+									<div className="mt-3 p-3 bg-amber-100 rounded-md border border-amber-200 dark:bg-amber-900/30 dark:border-amber-600">
+										<p className="text-xs text-amber-800 dark:text-amber-200 font-medium">
+											📋 What you can do:
+										</p>
+										<ul className="text-xs text-amber-700 dark:text-amber-300 mt-1 space-y-1">
+											<li>• Wait for your current request to be completed</li>
+											<li>• Check the status in "My Requests" section</li>
+											<li>• Contact the registrar if you have concerns</li>
+											<li>
+												• You can submit a new request once the current one is
+												completed
+											</li>
+										</ul>
+									</div>
+								</div>
+							</div>
+						</div>
+					)}
 
 					{/* Expected Release Date Display */}
 					{expectedDays && !loadingExpectedDays && (

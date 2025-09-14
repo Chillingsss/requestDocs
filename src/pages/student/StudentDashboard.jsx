@@ -220,6 +220,7 @@ export default function StudentDashboard() {
 						userId={userId}
 						onSuccess={handleRequestSuccess}
 						studentGradeLevel={studentProfile?.gradeLevel}
+						userRequests={userRequests}
 					/>
 				)}
 
