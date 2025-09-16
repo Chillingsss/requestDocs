@@ -18,7 +18,12 @@ import { getDecryptedApiUrl } from "../utils/apiConfig";
 import { getSection, getSchoolYear, getStrands } from "../utils/registrar";
 import { getGradeLevel as getAdminGradeLevel } from "../utils/admin";
 
-const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
+const StudentImport = ({
+	onClose,
+	onImportComplete,
+	teacherSectionId,
+	teacherGradeLevelId,
+}) => {
 	const [file, setFile] = useState(null);
 	const [previewData, setPreviewData] = useState([]);
 	const [headers, setHeaders] = useState([]);
@@ -62,12 +67,18 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 		loadGradeLevels();
 	}, []);
 
-	// Auto-select teacher's section if provided
+	// Auto-select teacher's section, grade level, and strand if provided
 	useEffect(() => {
 		if (teacherSectionId) {
 			setSelectedSection(teacherSectionId);
 		}
 	}, [teacherSectionId]);
+
+	useEffect(() => {
+		if (teacherGradeLevelId) {
+			setSelectedGradeLevel(teacherGradeLevelId);
+		}
+	}, [teacherGradeLevelId]);
 
 	const loadSections = async () => {
 		setLoadingSections(true);
@@ -528,9 +539,6 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 										</option>
 									))}
 								</select>
-								<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-									All imported students will be assigned to the selected strand.
-								</p>
 							</div>
 
 							{/* Grade Level Selection */}
@@ -538,18 +546,22 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 								<div className="flex items-center mb-2 space-x-2">
 									<Users className="w-5 h-5 text-blue-500 dark:text-blue-400" />
 									<label className="font-medium text-gray-900 dark:text-white">
-										Select Grade Level for All Students:
+										{teacherGradeLevelId
+											? "Grade Level (Auto-selected):"
+											: "Select Grade Level for All Students:"}
 									</label>
 								</div>
 								<select
 									value={selectedGradeLevel}
 									onChange={(e) => setSelectedGradeLevel(e.target.value)}
 									className="px-3 py-2 w-full text-gray-900 bg-white rounded-md border border-gray-300 dark:text-white dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									disabled={loadingGrades}
+									disabled={loadingGrades || !!teacherGradeLevelId}
 								>
 									<option value="">
 										{loadingGrades
 											? "Loading grade levels..."
+											: teacherGradeLevelId
+											? "Grade level automatically selected"
 											: "Select a grade level"}
 									</option>
 									{gradeLevels.map((gl) => (
@@ -559,8 +571,9 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 									))}
 								</select>
 								<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-									All imported students will be assigned to the selected grade
-									level.
+									{teacherGradeLevelId
+										? "Grade level is automatically selected based on your teacher account."
+										: "All imported students will be assigned to the selected grade level."}
 								</p>
 							</div>
 
@@ -699,8 +712,9 @@ const StudentImport = ({ onClose, onImportComplete, teacherSectionId }) => {
 											<span>
 												{!selectedSection ||
 												!selectedSchoolYear ||
+												!selectedStrand ||
 												!selectedGradeLevel
-													? "Select Section, School Year and Grade Level to Save"
+													? "Select Required Fields to Save"
 													: "Save to Database"}
 											</span>
 										</>

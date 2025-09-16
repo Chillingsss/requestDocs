@@ -57,7 +57,7 @@ class User {
                 'lastname' => $user['lastname'],
                 'email' => $user['email'],
                 'gradeLevelId' => $user['gradeLevelId'],
-                'sectionId' => $user['sectionId']
+                'sectionId' => $user['sectionId'],
             ]);
         }
     }

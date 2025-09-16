@@ -30,6 +30,7 @@ export default function TeacherStudentsTab() {
 	// Teacher section state
 	const [teacherSectionId, setTeacherSectionId] = useState(null);
 	const [teacherSectionName, setTeacherSectionName] = useState("");
+	const [teacherGradeLevelId, setTeacherGradeLevelId] = useState(null);
 
 	// Constants for authentication
 	const COOKIE_KEY = "mogchs_user";
@@ -67,8 +68,14 @@ export default function TeacherStudentsTab() {
 						const sectionName =
 							decrypted.sectionName || decrypted.section || "";
 						setTeacherSectionName(sectionName);
+						// Set teacher's grade level
+						setTeacherGradeLevelId(decrypted.gradeLevelId || null);
 						console.log("Debug - Set teacherSectionId:", decrypted.sectionId);
 						console.log("Debug - Set teacherSectionName:", sectionName);
+						console.log(
+							"Debug - Set teacherGradeLevelId:",
+							decrypted.gradeLevelId
+						);
 						console.log("Debug - Full decrypted data:", decrypted);
 					}
 				}
@@ -588,6 +595,7 @@ export default function TeacherStudentsTab() {
 						onClose={() => setShowImportModal(false)}
 						onImportComplete={handleImportComplete}
 						teacherSectionId={teacherSectionId}
+						teacherGradeLevelId={teacherGradeLevelId}
 					/>
 				)}
 

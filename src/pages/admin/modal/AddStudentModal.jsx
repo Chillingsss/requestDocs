@@ -16,6 +16,7 @@ export default function AddStudentModal({
 	schoolYearOptions = [],
 	createdBy,
 	teacherSectionId,
+	teacherGradeLevelId,
 }) {
 	const [strands, setStrands] = useState([]);
 	const [gradeLevels, setGradeLevels] = useState([]);
@@ -41,7 +42,8 @@ export default function AddStudentModal({
 		guardianRelationship: "",
 		sectionId: teacherSectionId || "", // Auto-set teacher section if available
 		schoolYearId: "",
-		gradeLevelId: "",
+		gradeLevelId: teacherGradeLevelId || "", // Auto-set teacher grade level if available
+		strandId: "", // Manual selection required
 		userLevel: "4", // Add default userLevel for students
 		createdBy: createdBy || "",
 	});
@@ -183,7 +185,8 @@ export default function AddStudentModal({
 				guardianRelationship: "",
 				sectionId: teacherSectionId || "", // Keep teacher section if available
 				schoolYearId: "",
-				gradeLevelId: "",
+				gradeLevelId: teacherGradeLevelId || "", // Keep teacher grade level if available
+				strandId: "", // Reset to empty for manual selection
 				userLevel: "4", // Reset userLevel
 				createdBy: createdBy || "",
 			});
@@ -218,7 +221,8 @@ export default function AddStudentModal({
 			guardianRelationship: "",
 			sectionId: teacherSectionId || "", // Keep teacher section if available
 			schoolYearId: "",
-			gradeLevelId: "",
+			gradeLevelId: teacherGradeLevelId || "", // Keep teacher grade level if available
+			strandId: "", // Reset to empty for manual selection
 			userLevel: "4", // Reset userLevel
 			createdBy: createdBy || "",
 		});
@@ -580,7 +584,9 @@ export default function AddStudentModal({
 									htmlFor="gradeLevelId"
 									className="text-gray-700 dark:text-gray-200"
 								>
-									Grade Level
+									{teacherGradeLevelId
+										? "Grade Level (Auto-selected)"
+										: "Grade Level"}
 								</Label>
 								<select
 									id="gradeLevelId"
@@ -588,11 +594,14 @@ export default function AddStudentModal({
 									value={formData.gradeLevelId}
 									onChange={handleInputChange}
 									required
+									disabled={!!teacherGradeLevelId}
 									className="px-4 py-3 w-full bg-gray-50 rounded-xl border-2 border-gray-200 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-400"
 								>
 									<option value="">
 										{loadingGrades
 											? "Loading grade levels..."
+											: teacherGradeLevelId
+											? "Grade level automatically selected"
 											: "Select grade level"}
 									</option>
 									{gradeLevels.map((gl) => (

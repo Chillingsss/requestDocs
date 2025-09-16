@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 08, 2025 at 03:34 AM
+-- Generation Time: Sep 15, 2025 at 02:52 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -213,8 +213,7 @@ CREATE TABLE `tblrequest` (
 --
 
 INSERT INTO `tblrequest` (`id`, `studentId`, `documentId`, `purpose`, `createdAt`) VALUES
-(1, '33333333', 5, 'enrollment', '2025-09-07 10:42:24'),
-(2, '33333333', 7, NULL, '2025-09-07 11:30:37');
+(1, '33333333', 5, 'enrollment college', '2025-09-14 03:09:20');
 
 -- --------------------------------------------------------
 
@@ -227,13 +226,6 @@ CREATE TABLE `tblrequestpurpose` (
   `requestId` int(11) NOT NULL,
   `purposeId` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `tblrequestpurpose`
---
-
-INSERT INTO `tblrequestpurpose` (`id`, `requestId`, `purposeId`) VALUES
-(1, 2, 1);
 
 -- --------------------------------------------------------
 
@@ -254,14 +246,7 @@ CREATE TABLE `tblrequeststatus` (
 --
 
 INSERT INTO `tblrequeststatus` (`id`, `requestId`, `statusId`, `userId`, `createdAt`) VALUES
-(2, 2, 1, NULL, '2025-08-31 07:05:25'),
-(7, 2, 7, NULL, '2025-08-31 09:07:00'),
-(8, 3, 1, NULL, '2025-08-31 09:21:45'),
-(9, 4, 1, NULL, '2025-08-31 09:35:40'),
-(10, 5, 1, NULL, '2025-08-31 09:35:40'),
-(12, 7, 1, NULL, '2025-09-01 11:28:11'),
-(13, 1, 1, NULL, '2025-09-07 10:42:24'),
-(14, 2, 1, NULL, '2025-09-07 11:30:37');
+(1, 1, 1, NULL, '2025-09-14 03:09:20');
 
 -- --------------------------------------------------------
 
@@ -278,7 +263,8 @@ CREATE TABLE `tblrequirementcomments` (
   `status` enum('pending','resolved') NOT NULL DEFAULT 'pending',
   `isNotified` tinyint(1) NOT NULL DEFAULT 0,
   `createdAt` datetime NOT NULL DEFAULT current_timestamp(),
-  `updatedAt` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updatedAt` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `isMarkAsRead` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -295,13 +281,6 @@ CREATE TABLE `tblrequirements` (
   `createdAt` datetime NOT NULL,
   `isAdditional` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `tblrequirements`
---
-
-INSERT INTO `tblrequirements` (`id`, `requestId`, `filepath`, `typeId`, `createdAt`, `isAdditional`) VALUES
-(1, 2, '521827746_1955938708539586_392632500952961470_n.jpg', 1, '2025-09-07 11:30:37', 0);
 
 -- --------------------------------------------------------
 
@@ -569,7 +548,6 @@ CREATE TABLE `tblstudent` (
 --
 
 INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, `contactNo`, `password`, `userLevel`, `lrn`, `strandId`, `birthDate`, `age`, `religion`, `completeAddress`, `fatherName`, `motherName`, `guardianName`, `guardianRelationship`, `sectionId`, `schoolyearId`, `gradeLevelId`, `createdAt`, `updatedAt`) VALUES
-('0000000', 'Mel', '', 'Macario', 'mel@gmail.com', NULL, '$2y$10$IHxI5jXXSg8JjqXBZGk0n.IqU4sM9QIv9bLZuV3MaCBHQKjbXKXh2', 4, '0000000', 2, '0000-00-00', 0, '', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:33:27', '2025-09-07 16:04:56'),
 ('117851130016', 'STEPHEN', 'CABALLERO', 'JOHNSON', NULL, NULL, '$2y$10$XxnfSYDm7EYTCrIi5qgH7eB.fu4BcBX16yjn0r3nxB4WMmvx0f7WW', 4, '117851130016', 2, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('119453140027', 'MARTIN', 'NICOLE TAYO', 'HABONITA', NULL, NULL, '$2y$10$TQ.LhjaTOTie8kXpd/1NguGaEIoobnnqlcNUAruZ/f77LbLDi9NCq', 4, '119453140027', 3, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
 ('126277140066', 'CHELLIE', 'ASHLY AMANTE', 'BADBAD', NULL, NULL, '$2y$10$aDnaqsKTFz3LF7MZ10iui.kRIlTL2Jl1jh29mnLHZ5ujvqrcdwm5.', 4, '126277140066', 3, '0000-00-00', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
@@ -716,19 +694,21 @@ CREATE TABLE `tbluser` (
   `userLevel` int(11) NOT NULL,
   `pinCode` varchar(255) NOT NULL,
   `gradeLevelId` int(11) DEFAULT NULL,
-  `sectionId` int(11) DEFAULT NULL
+  `sectionId` int(11) DEFAULT NULL,
+  `strandId` int(11) DEFAULT NULL,
+  `createdAt` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tbluser`
 --
 
-INSERT INTO `tbluser` (`id`, `firstname`, `lastname`, `middlename`, `email`, `password`, `userLevel`, `pinCode`, `gradeLevelId`, `sectionId`) VALUES
-('02-1819-01500', 'Patty', 'Aspiras', '', 'patty@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 1, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL),
-('02-1819-01509', 'Patty', 'Aspiras', '', 'patty@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL),
-('4771830', 'Maribelle', 'Acas', '', 'aspiraspat13@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 3),
-('4771833', 'Alexis', 'Gonzaga', '', 'alex@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 2, 10),
-('47718333', 'Mary', 'Aspiras', '', 'paja.aspiras.coc@phinmaed.com\n', '$2y$10$JooVcuK3ntZQdiPGcAhvle9y1Q9z0vKeeDJWui0ybvjLgXYcZboNq', 3, '$2y$10$YOD62VSS2kaYsIhX9LQqzOhs2AZ6Er0qdkakw4Gd67WxoeSgRk8wq', 1, 2);
+INSERT INTO `tbluser` (`id`, `firstname`, `lastname`, `middlename`, `email`, `password`, `userLevel`, `pinCode`, `gradeLevelId`, `sectionId`, `strandId`, `createdAt`) VALUES
+('02-1819-01500', 'Patty', 'Aspiras', '', 'patty@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 1, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL, NULL, NULL),
+('02-1819-01509', 'Patty', 'Aspiras', '', 'patty@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL, NULL, NULL),
+('4771830', 'Maribelle', 'Acas', '', 'aspiraspat13@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 3, NULL, NULL),
+('4771833', 'Alexis', 'Gonzaga', '', 'alex@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 2, 10, NULL, NULL),
+('47718333', 'Mary', 'Aspiras', '', 'rape.gallegos.coc@phinmaed.com', '$2y$10$JooVcuK3ntZQdiPGcAhvle9y1Q9z0vKeeDJWui0ybvjLgXYcZboNq', 3, '$2y$10$hJexLGVB8PmW0khOWYKkA..pBOSB9dYyp34862M8zTk381Zf1vD32', 1, 2, 3, NULL);
 
 -- --------------------------------------------------------
 
@@ -937,7 +917,8 @@ ALTER TABLE `tbluser`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_level` (`userLevel`),
   ADD KEY `gradeLevelId` (`gradeLevelId`),
-  ADD KEY `fk_sectionId` (`sectionId`);
+  ADD KEY `fk_sectionId` (`sectionId`),
+  ADD KEY `strandId` (`strandId`);
 
 --
 -- Indexes for table `tbluserlevel`
@@ -1001,19 +982,19 @@ ALTER TABLE `tblreleaseschedule`
 -- AUTO_INCREMENT for table `tblrequest`
 --
 ALTER TABLE `tblrequest`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `tblrequestpurpose`
 --
 ALTER TABLE `tblrequestpurpose`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblrequeststatus`
 --
 ALTER TABLE `tblrequeststatus`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `tblrequirementcomments`
@@ -1025,7 +1006,7 @@ ALTER TABLE `tblrequirementcomments`
 -- AUTO_INCREMENT for table `tblrequirements`
 --
 ALTER TABLE `tblrequirements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblrequirementstype`
@@ -1220,7 +1201,8 @@ ALTER TABLE `tblstudentdocument`
 ALTER TABLE `tbluser`
   ADD CONSTRAINT `fk_sectionId` FOREIGN KEY (`sectionId`) REFERENCES `tblsection` (`id`),
   ADD CONSTRAINT `tbluser_ibfk_1` FOREIGN KEY (`userLevel`) REFERENCES `tbluserlevel` (`id`),
-  ADD CONSTRAINT `tbluser_ibfk_2` FOREIGN KEY (`gradeLevelId`) REFERENCES `tblgradelevel` (`id`);
+  ADD CONSTRAINT `tbluser_ibfk_2` FOREIGN KEY (`gradeLevelId`) REFERENCES `tblgradelevel` (`id`),
+  ADD CONSTRAINT `tbluser_ibfk_3` FOREIGN KEY (`strandId`) REFERENCES `tblstrand` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
