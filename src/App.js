@@ -17,7 +17,7 @@ function App() {
 	return (
 		<ThemeProvider>
 			<Routes>
-				<Route path="/mogchs" element={<LoginPage />} />
+				<Route path="/" element={<LoginPage />} />
 				<Route
 					path="/AdminDashboard"
 					element={

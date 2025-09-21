@@ -323,7 +323,7 @@ export default function RegistrarDashboard() {
 
 	const logout = () => {
 		Cookies.remove("mogchs_user");
-		navigate("/mogchs");
+		navigate("/");
 	};
 
 	return (

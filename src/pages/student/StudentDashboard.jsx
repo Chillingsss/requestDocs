@@ -107,7 +107,7 @@ export default function StudentDashboard() {
 
 	const logout = () => {
 		Cookies.remove("mogchs_user");
-		navigate("/mogchs");
+		navigate("/");
 	};
 
 	const handleRequestSuccess = () => {

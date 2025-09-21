@@ -149,7 +149,7 @@ export default function TeacherDashboard() {
 
 	const logout = () => {
 		Cookies.remove("mogchs_user");
-		navigate("/mogchs");
+		navigate("/");
 	};
 
 	const handleNavClick = (key) => {

@@ -596,3 +596,71 @@ export async function updateDocumentRequirements(
 		throw error;
 	}
 }
+
+// Purpose management functions
+export async function getPurposes() {
+	const formData = new FormData();
+	formData.append("operation", "getPurposes");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addPurpose(purposeData) {
+	const formData = new FormData();
+	formData.append("operation", "addPurpose");
+	formData.append("json", JSON.stringify(purposeData));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updatePurpose(purposeId, purposeData) {
+	const formData = new FormData();
+	formData.append("operation", "updatePurpose");
+	formData.append("json", JSON.stringify({ id: purposeId, ...purposeData }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deletePurpose(purposeId) {
+	const formData = new FormData();
+	formData.append("operation", "deletePurpose");
+	formData.append("json", JSON.stringify({ id: purposeId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

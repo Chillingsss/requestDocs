@@ -1535,40 +1535,40 @@ class User {
    {
     include "connection.php";
     $json = json_decode($json, true);
-    
+
     try {
         $conn->beginTransaction();
-        
+
         $documentId = $json['documentId'];
         $newRequirementTypeIds = $json['requirementTypeIds'];
         $userId = $json['userId'] ?? null;
-        
+
         // Get current requirements for this document
         $currentSql = "SELECT requirementTId FROM tbldocumentrequirement WHERE documentId = :documentId";
         $currentStmt = $conn->prepare($currentSql);
         $currentStmt->bindParam(':documentId', $documentId);
         $currentStmt->execute();
         $currentRequirements = $currentStmt->fetchAll(PDO::FETCH_COLUMN);
-        
+
         // Remove requirements that are no longer selected
         $toRemove = array_diff($currentRequirements, $newRequirementTypeIds);
         if (!empty($toRemove)) {
             $removeSql = "DELETE FROM tbldocumentrequirement WHERE documentId = :documentId AND requirementTId = :requirementTId";
             $removeStmt = $conn->prepare($removeSql);
-            
+
             foreach ($toRemove as $reqId) {
                 $removeStmt->bindParam(':documentId', $documentId);
                 $removeStmt->bindParam(':requirementTId', $reqId);
                 $removeStmt->execute();
             }
         }
-        
+
         // Add new requirements that weren't there before
         $toAdd = array_diff($newRequirementTypeIds, $currentRequirements);
         if (!empty($toAdd)) {
             $addSql = "INSERT INTO tbldocumentrequirement (documentId, requirementTId, userId, createdAt) VALUES (:documentId, :requirementTId, :userId, NOW())";
             $addStmt = $conn->prepare($addSql);
-            
+
             foreach ($toAdd as $reqTypeId) {
                 $addStmt->bindParam(':documentId', $documentId);
                 $addStmt->bindParam(':requirementTId', $reqTypeId);
@@ -1576,12 +1576,133 @@ class User {
                 $addStmt->execute();
             }
         }
-        
+
         $conn->commit();
         return json_encode(['status' => 'success', 'message' => 'Document requirements updated successfully']);
-        
+
     } catch (PDOException $e) {
         $conn->rollBack();
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   // Purpose management functions
+   function getPurposes()
+   {
+    include "connection.php";
+
+    try {
+        $sql = "SELECT
+                    p.id,
+                    p.name,
+                    p.documentId,
+                    p.userId,
+                    p.createdAt,
+                    d.name as documentName
+                FROM tblpurpose p
+                INNER JOIN tbldocument d ON p.documentId = d.id
+                ORDER BY d.name, p.name";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0) {
+            $purposes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return json_encode($purposes);
+        }
+        return json_encode([]);
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function addPurpose($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+
+    try {
+        $sql = "INSERT INTO tblpurpose (name, documentId, userId, createdAt) VALUES (:name, :documentId, :userId, NOW())";
+        $stmt = $conn->prepare($sql);
+
+        // Store values in variables to avoid bindParam reference issues
+        $name = $json['name'];
+        $documentId = $json['documentId'];
+        $userId = $json['userId'] ?? null;
+
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':documentId', $documentId);
+        $stmt->bindParam(':userId', $userId);
+
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Purpose added successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to add purpose']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function updatePurpose($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+
+    try {
+        $sql = "UPDATE tblpurpose SET name = :name, documentId = :documentId, userId = :userId WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+
+        // Store values in variables to avoid bindParam reference issues
+        $name = $json['name'];
+        $documentId = $json['documentId'];
+        $userId = $json['userId'] ?? null;
+        $id = $json['id'];
+
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':documentId', $documentId);
+        $stmt->bindParam(':userId', $userId);
+        $stmt->bindParam(':id', $id);
+
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Purpose updated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to update purpose']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function deletePurpose($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+
+    try {
+        // Check if purpose is being used in requests
+        $checkSql = "SELECT COUNT(*) as count FROM tblrequestpurpose WHERE purposeId = :id";
+        $checkStmt = $conn->prepare($checkSql);
+
+        // Store value in variable to avoid bindParam reference issues
+        $id = $json['id'];
+        $checkStmt->bindParam(':id', $id);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'Cannot delete purpose. It is being used in requests.']);
+        }
+
+        $sql = "DELETE FROM tblpurpose WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $id);
+
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Purpose deleted successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to delete purpose']);
+        }
+    } catch (PDOException $e) {
         return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
     }
    }
@@ -1708,6 +1829,18 @@ switch ($operation) {
     break;
   case "updateDocumentRequirements":
     echo $user->updateDocumentRequirements($json);
+    break;
+  case "getPurposes":
+    echo $user->getPurposes();
+    break;
+  case "addPurpose":
+    echo $user->addPurpose($json);
+    break;
+  case "updatePurpose":
+    echo $user->updatePurpose($json);
+    break;
+  case "deletePurpose":
+    echo $user->deletePurpose($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

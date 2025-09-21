@@ -13,12 +13,17 @@ import {
 	addDocumentRequirement,
 	deleteDocumentRequirement,
 	updateDocumentRequirements,
+	getPurposes,
+	addPurpose,
+	updatePurpose,
+	deletePurpose,
 } from "../../../../utils/admin";
 
 export default function useResources() {
 	const [documents, setDocuments] = useState([]);
 	const [requirementTypes, setRequirementTypes] = useState([]);
 	const [documentRequirements, setDocumentRequirements] = useState([]);
+	const [purposes, setPurposes] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
@@ -37,21 +42,25 @@ export default function useResources() {
 	const fetchData = async () => {
 		setLoading(true);
 		try {
-			const [docsData, reqTypesData, docReqsData] = await Promise.all([
-				getDocuments(),
-				getRequirementTypes(),
-				getDocumentRequirements(),
-			]);
+			const [docsData, reqTypesData, docReqsData, purposesData] =
+				await Promise.all([
+					getDocuments(),
+					getRequirementTypes(),
+					getDocumentRequirements(),
+					getPurposes(),
+				]);
 
 			setDocuments(Array.isArray(docsData) ? docsData : []);
 			setRequirementTypes(Array.isArray(reqTypesData) ? reqTypesData : []);
 			setDocumentRequirements(Array.isArray(docReqsData) ? docReqsData : []);
+			setPurposes(Array.isArray(purposesData) ? purposesData : []);
 		} catch (error) {
 			console.error("Error fetching data:", error);
 			toast.error("Failed to load resources");
 			setDocuments([]);
 			setRequirementTypes([]);
 			setDocumentRequirements([]);
+			setPurposes([]);
 		} finally {
 			setLoading(false);
 		}
@@ -66,9 +75,16 @@ export default function useResources() {
 	const handleEdit = (item, type) => {
 		setModalType(type);
 		setEditingItem(item);
-		setFormData({
-			name: type === "document" ? item.name : item.nameType,
-		});
+		if (type === "purpose") {
+			setFormData({
+				name: item.name,
+				documentId: item.documentId,
+			});
+		} else {
+			setFormData({
+				name: type === "document" ? item.name : item.nameType,
+			});
+		}
 		setShowEditModal(true);
 	};
 
@@ -101,6 +117,8 @@ export default function useResources() {
 				result = await deleteRequirementType(deletingItem.id);
 			} else if (deletingItem.type === "documentRequirement") {
 				result = await deleteDocumentRequirement(deletingItem.id);
+			} else if (deletingItem.type === "purpose") {
+				result = await deletePurpose(deletingItem.id);
 			}
 
 			if (result && result.status === "success") {
@@ -110,6 +128,8 @@ export default function useResources() {
 							? "Document"
 							: deletingItem.type === "requirement"
 							? "Requirement type"
+							: deletingItem.type === "purpose"
+							? "Purpose"
 							: "Document requirement"
 					} deleted successfully`
 				);
@@ -129,8 +149,14 @@ export default function useResources() {
 	const handleSubmit = async (e, userId) => {
 		e.preventDefault();
 
-		if (!formData.name.trim()) {
+		if (!formData.name?.trim()) {
 			toast.error("Name is required");
+			return;
+		}
+
+		// For purposes, also check documentId
+		if (modalType === "purpose" && !formData.documentId) {
+			toast.error("Document selection is required");
 			return;
 		}
 
@@ -154,6 +180,9 @@ export default function useResources() {
 				if (modalType === "document") {
 					console.log("Updating document:", editingItem.id, submitData);
 					result = await updateDocument(editingItem.id, submitData);
+				} else if (modalType === "purpose") {
+					console.log("Updating purpose:", editingItem.id, submitData);
+					result = await updatePurpose(editingItem.id, submitData);
 				} else {
 					console.log("Updating requirement type:", editingItem.id, submitData);
 					result = await updateRequirementType(editingItem.id, submitData);
@@ -162,6 +191,9 @@ export default function useResources() {
 				if (modalType === "document") {
 					console.log("Adding document:", submitData);
 					result = await addDocument(submitData);
+				} else if (modalType === "purpose") {
+					console.log("Adding purpose:", submitData);
+					result = await addPurpose(submitData);
 				} else {
 					console.log("Adding requirement type:", submitData);
 					result = await addRequirementType(submitData);
@@ -172,9 +204,13 @@ export default function useResources() {
 
 			if (result && result.status === "success") {
 				toast.success(
-					`${modalType === "document" ? "Document" : "Requirement type"} ${
-						showEditModal ? "updated" : "added"
-					} successfully`
+					`${
+						modalType === "document"
+							? "Document"
+							: modalType === "purpose"
+							? "Purpose"
+							: "Requirement type"
+					} ${showEditModal ? "updated" : "added"} successfully`
 				);
 				setShowAddModal(false);
 				setShowEditModal(false);
@@ -279,7 +315,7 @@ export default function useResources() {
 	};
 
 	const resetForm = () => {
-		setFormData({ name: "" });
+		setFormData({ name: "", documentId: "" });
 		setEditingItem(null);
 		setShowAddModal(false);
 		setShowEditModal(false);
@@ -301,6 +337,7 @@ export default function useResources() {
 		documents,
 		requirementTypes,
 		documentRequirements,
+		purposes,
 		loading,
 		showAddModal,
 		showEditModal,

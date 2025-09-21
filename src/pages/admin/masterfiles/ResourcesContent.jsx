@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import DocumentsTab from "./components/DocumentsTab";
 import RequirementTypesTab from "./components/RequirementTypesTab";
 import DocumentRequirementsTab from "./components/DocumentRequirementsTab";
+import PurposeTab from "./components/PurposeTab";
 import ResourceModal from "./components/ResourceModal";
+import PurposeModal from "./components/PurposeModal";
 import DocumentRequirementModal from "./components/DocumentRequirementModal";
 import DeleteConfirmModal from "./components/DeleteConfirmModal";
 import useResources from "./hooks/useResources";
@@ -14,6 +16,7 @@ export default function ResourcesContent() {
 		documents,
 		requirementTypes,
 		documentRequirements,
+		purposes,
 		loading,
 		showAddModal,
 		showEditModal,
@@ -104,6 +107,16 @@ export default function ResourcesContent() {
 						>
 							Document Requirements
 						</button>
+						<button
+							onClick={() => setActiveTab("purposes")}
+							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "purposes"
+									? "border-blue-500 text-blue-600"
+									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+							}`}
+						>
+							Purposes
+						</button>
 					</nav>
 				</div>
 
@@ -139,14 +152,35 @@ export default function ResourcesContent() {
 							userId={userId}
 						/>
 					)}
+					{activeTab === "purposes" && (
+						<PurposeTab
+							purposes={purposes}
+							documents={documents}
+							loading={loading}
+							onAdd={handleAdd}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+						/>
+					)}
 				</div>
 			</div>
 			{/* Modals */}
 			<ResourceModal
-				showModal={showAddModal || showEditModal}
+				showModal={(showAddModal || showEditModal) && modalType !== "purpose"}
 				modalType={modalType}
 				showEditModal={showEditModal}
 				formData={formData}
+				onFormDataChange={setFormData}
+				onSubmit={handleFormSubmit}
+				onCancel={resetForm}
+			/>
+
+			<PurposeModal
+				showModal={(showAddModal || showEditModal) && modalType === "purpose"}
+				modalType={modalType}
+				showEditModal={showEditModal}
+				formData={formData}
+				documents={documents}
 				onFormDataChange={setFormData}
 				onSubmit={handleFormSubmit}
 				onCancel={resetForm}

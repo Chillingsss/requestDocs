@@ -235,7 +235,7 @@ export default function AdminDashboard() {
 
 	const logout = () => {
 		Cookies.remove("mogchs_user");
-		navigate("/mogchs");
+		navigate("/");
 	};
 
 	const handleAddUserSuccess = () => {
