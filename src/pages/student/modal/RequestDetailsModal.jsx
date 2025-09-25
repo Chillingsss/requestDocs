@@ -308,57 +308,69 @@ export default function RequestDetailsModal({
 										</div>
 									</div>
 
-									{request.releaseDate && (
-										<div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700">
-											<div className="flex gap-3 items-center mb-3">
-												<Calendar className="w-5 h-5 text-green-600" />
-												<span className="text-sm font-medium text-green-700 dark:text-green-300">
-													Release Date
-												</span>
-											</div>
-											<p className="text-lg font-semibold text-green-800 dark:text-green-200">
-												{request.releaseDateFormatted}
-											</p>
-										</div>
-									)}
-
-									{/* Expected Release Date and Countdown */}
-									{request.expectedReleaseDateFormatted &&
-										request.daysRemaining !== null && (
-											<div
-												className={`p-4 rounded-lg border ${
-													request.daysRemaining >= 0
-														? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
-														: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
-												}`}
-											>
+									{/* Release Date - Hide for Completed status since we show actual completion date below */}
+									{request.releaseDate &&
+										request.status?.toLowerCase() !== "completed" && (
+											<div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700">
 												<div className="flex gap-3 items-center mb-3">
-													<Calendar
-														className={`w-5 h-5 ${
-															request.daysRemaining >= 0
-																? "text-blue-600"
-																: "text-red-600"
-														}`}
-													/>
-													<span
-														className={`text-sm font-medium ${
-															request.daysRemaining >= 0
-																? "text-blue-700 dark:text-blue-300"
-																: "text-red-700 dark:text-red-300"
-														}`}
-													>
-														Expected Release Date
+													<Calendar className="w-5 h-5 text-green-600" />
+													<span className="text-sm font-medium text-green-700 dark:text-green-300">
+														Release Date
 													</span>
 												</div>
-												<p
-													className={`text-lg font-semibold ${
-														request.daysRemaining >= 0
-															? "text-blue-800 dark:text-blue-200"
-															: "text-red-800 dark:text-red-200"
+												<p className="text-lg font-semibold text-green-800 dark:text-green-200">
+													{request.releaseDateFormatted}
+												</p>
+											</div>
+										)}
+
+									{/* Expected Release Date and Countdown - Show different wording for Completed status */}
+									{request.expectedReleaseDateFormatted && (
+										<div
+											className={`p-4 rounded-lg border ${
+												request.status?.toLowerCase() === "completed"
+													? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
+													: request.daysRemaining >= 0
+													? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+													: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
+											}`}
+										>
+											<div className="flex gap-3 items-center mb-3">
+												<Calendar
+													className={`w-5 h-5 ${
+														request.status?.toLowerCase() === "completed"
+															? "text-green-600"
+															: request.daysRemaining >= 0
+															? "text-blue-600"
+															: "text-red-600"
+													}`}
+												/>
+												<span
+													className={`text-sm font-medium ${
+														request.status?.toLowerCase() === "completed"
+															? "text-green-700 dark:text-green-300"
+															: request.daysRemaining >= 0
+															? "text-blue-700 dark:text-blue-300"
+															: "text-red-700 dark:text-red-300"
 													}`}
 												>
-													{request.expectedReleaseDateFormatted}
-												</p>
+													{request.status?.toLowerCase() === "completed"
+														? "Released Date"
+														: "Expected Release Date"}
+												</span>
+											</div>
+											<p
+												className={`text-lg font-semibold ${
+													request.status?.toLowerCase() === "completed"
+														? "text-green-800 dark:text-green-200"
+														: request.daysRemaining >= 0
+														? "text-blue-800 dark:text-blue-200"
+														: "text-red-800 dark:text-red-200"
+												}`}
+											>
+												{request.expectedReleaseDateFormatted}
+											</p>
+											{request.status?.toLowerCase() !== "completed" && (
 												<div
 													className={`text-sm mt-2 ${
 														request.daysRemaining >= 0
@@ -389,8 +401,9 @@ export default function RequestDetailsModal({
 														</span>
 													)}
 												</div>
-											</div>
-										)}
+											)}
+										</div>
+									)}
 								</div>
 
 								{/* Purpose */}

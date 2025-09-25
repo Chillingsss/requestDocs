@@ -133,6 +133,21 @@ export default function RegistrarDashboard() {
 				getStudent(),
 			]);
 
+			// Debug: Log the requests data to see what's being returned
+			console.log("Requests data:", requestsData);
+			if (Array.isArray(requestsData)) {
+				requestsData.forEach((req) => {
+					if (req.status === "Completed") {
+						console.log(`Completed request ${req.id}:`, {
+							status: req.status,
+							expectedReleaseDate: req.expectedReleaseDate,
+							expectedReleaseDateFormatted: req.expectedReleaseDateFormatted,
+							daysRemaining: req.daysRemaining,
+						});
+					}
+				});
+			}
+
 			setRecentRequests(Array.isArray(requestsData) ? requestsData : []);
 			setRequestStats(Array.isArray(statsData) ? statsData : []);
 			setStudents(Array.isArray(studentsData) ? studentsData : []);
@@ -650,48 +665,64 @@ export default function RegistrarDashboard() {
 																<div className="truncate max-w-[120px] lg:max-w-none">
 																	{req.document}
 																</div>
-																{/* Expected Release Date and Countdown */}
-																{req.expectedReleaseDateFormatted &&
-																	req.daysRemaining !== null && (
-																		<div className="text-xs mt-1">
-																			{req.daysRemaining === 0 ? (
-																				<span className="text-green-600 dark:text-green-400 font-medium">
-																					📅 Expected release: Today!
+																{/* Expected Release Date and Countdown - Show different wording for Completed status */}
+																{req.expectedReleaseDateFormatted && (
+																	<div className="text-xs mt-1">
+																		{req.status?.toLowerCase() ===
+																		"completed" ? (
+																			<span className="text-green-600 dark:text-green-400 font-medium">
+																				✅ Released Date:{" "}
+																				{req.expectedReleaseDateFormatted}
+																			</span>
+																		) : req.daysRemaining === 0 ? (
+																			<span className="text-green-600 dark:text-green-400 font-medium">
+																				📅 Expected release: Today!
+																			</span>
+																		) : req.daysRemaining > 0 ? (
+																			<span className="text-blue-600 dark:text-blue-400">
+																				📅 Expected release:{" "}
+																				{req.expectedReleaseDateFormatted}
+																				<span className="font-medium text-blue-700 dark:text-blue-300">
+																					({req.daysRemaining}{" "}
+																					{req.daysRemaining === 1
+																						? "day"
+																						: "days"}{" "}
+																					left)
 																				</span>
-																			) : req.daysRemaining > 0 ? (
-																				<span className="text-blue-600 dark:text-blue-400">
-																					📅 Expected release:{" "}
-																					{req.expectedReleaseDateFormatted}
-																					<span className="font-medium text-blue-700 dark:text-blue-300">
-																						({req.daysRemaining}{" "}
-																						{req.daysRemaining === 1
-																							? "day"
-																							: "days"}{" "}
-																						left)
-																					</span>
+																			</span>
+																		) : (
+																			<span className="text-red-600 dark:text-red-400 font-medium">
+																				⚠️ Expected release was:{" "}
+																				{req.expectedReleaseDateFormatted}
+																				<span className="text-red-700 dark:text-red-300">
+																					({Math.abs(req.daysRemaining)}{" "}
+																					{Math.abs(req.daysRemaining) === 1
+																						? "day"
+																						: "days"}{" "}
+																					overdue)
+																				</span>
+																			</span>
+																		)}
+																	</div>
+																)}
+																{/* Release Date (if officially scheduled) - Hide for Completed status since we show actual completion date above */}
+																{req.releaseDate &&
+																	req.status?.toLowerCase() !== "completed" && (
+																		<div className="text-xs text-green-600 dark:text-green-400 mt-1">
+																			{req.status?.toLowerCase() ===
+																			"completed" ? (
+																				<span>
+																					✅ Released Date:{" "}
+																					{req.releaseDateFormatted}
 																				</span>
 																			) : (
-																				<span className="text-red-600 dark:text-red-400 font-medium">
-																					⚠️ Expected release was:{" "}
-																					{req.expectedReleaseDateFormatted}
-																					<span className="text-red-700 dark:text-red-300">
-																						({Math.abs(req.daysRemaining)}{" "}
-																						{Math.abs(req.daysRemaining) === 1
-																							? "day"
-																							: "days"}{" "}
-																						overdue)
-																					</span>
+																				<span>
+																					📅 Releasing Date:{" "}
+																					{req.releaseDateFormatted}
 																				</span>
 																			)}
 																		</div>
 																	)}
-																{/* Release Date (if officially scheduled) */}
-																{req.releaseDate && (
-																	<div className="text-xs text-green-600 dark:text-green-400 mt-1">
-																		📅 Releasing Date:{" "}
-																		{req.releaseDateFormatted}
-																	</div>
-																)}
 															</td>
 															<td className="hidden px-3 py-3 lg:px-4 lg:py-2 sm:table-cell">
 																{formatShortDateTime(req.dateRequested)}

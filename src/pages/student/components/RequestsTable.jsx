@@ -188,44 +188,50 @@ export default function RequestsTable({
 										<div className="text-sm font-medium text-slate-900 dark:text-white">
 											{request.document}
 										</div>
-										{request.releaseDate && (
-											<div className="text-xs text-green-600 dark:text-green-400 mt-1">
-												📅 Releasing Date: {request.releaseDateFormatted}
-											</div>
-										)}
-										{/* Expected Release Date and Countdown */}
-										{request.expectedReleaseDateFormatted &&
-											request.daysRemaining !== null && (
-												<div className="text-xs mt-1">
-													{request.daysRemaining === 0 ? (
-														<span className="text-green-600 dark:text-green-400 font-medium">
-															📅 Expected release: Today!
-														</span>
-													) : request.daysRemaining > 0 ? (
-														<span className="text-blue-600 dark:text-blue-400">
-															📅 Expected release:{" "}
-															{request.expectedReleaseDateFormatted}
-															<span className="font-medium text-blue-700 dark:text-blue-300">
-																({request.daysRemaining}{" "}
-																{request.daysRemaining === 1 ? "day" : "days"}{" "}
-																left)
-															</span>
-														</span>
-													) : (
-														<span className="text-red-600 dark:text-red-400 font-medium">
-															⚠️ Expected release was:{" "}
-															{request.expectedReleaseDateFormatted}
-															<span className="text-red-700 dark:text-red-300">
-																({Math.abs(request.daysRemaining)}{" "}
-																{Math.abs(request.daysRemaining) === 1
-																	? "day"
-																	: "days"}{" "}
-																overdue)
-															</span>
-														</span>
-													)}
+										{/* Release Date (if officially scheduled) - Hide for Completed status since we show actual completion date below */}
+										{request.releaseDate &&
+											request.status?.toLowerCase() !== "completed" && (
+												<div className="text-xs text-green-600 dark:text-green-400 mt-1">
+													📅 Releasing Date: {request.releaseDateFormatted}
 												</div>
 											)}
+										{/* Expected Release Date and Countdown - Show different wording for Completed status */}
+										{request.expectedReleaseDateFormatted && (
+											<div className="text-xs mt-1">
+												{request.status?.toLowerCase() === "completed" ? (
+													<span className="text-green-600 dark:text-green-400 font-medium">
+														✅ Released Date:{" "}
+														{request.expectedReleaseDateFormatted}
+													</span>
+												) : request.daysRemaining === 0 ? (
+													<span className="text-green-600 dark:text-green-400 font-medium">
+														📅 Expected release: Today!
+													</span>
+												) : request.daysRemaining > 0 ? (
+													<span className="text-blue-600 dark:text-blue-400">
+														📅 Expected release:{" "}
+														{request.expectedReleaseDateFormatted}
+														<span className="font-medium text-blue-700 dark:text-blue-300">
+															({request.daysRemaining}{" "}
+															{request.daysRemaining === 1 ? "day" : "days"}{" "}
+															left)
+														</span>
+													</span>
+												) : (
+													<span className="text-red-600 dark:text-red-400 font-medium">
+														⚠️ Expected release was:{" "}
+														{request.expectedReleaseDateFormatted}
+														<span className="text-red-700 dark:text-red-300">
+															({Math.abs(request.daysRemaining)}{" "}
+															{Math.abs(request.daysRemaining) === 1
+																? "day"
+																: "days"}{" "}
+															overdue)
+														</span>
+													</span>
+												)}
+											</div>
+										)}
 										{requirementComments[request.id] &&
 											requirementComments[request.id].length > 0 && (
 												<div className="flex items-center gap-2 mt-2">

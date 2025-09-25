@@ -93,24 +93,31 @@ class User {
                   ELSE 'No purpose specified'
                 END as displayPurpose,
                 -- Calculate expected release date and days remaining
+                -- For completed requests, show actual completion date; otherwise show expected release date
                 CASE 
+                  WHEN s.name = 'Completed' THEN DATE(rs.createdAt)
                   WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
                   ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
                 END as expectedReleaseDate,
                 DATE_FORMAT(
                   CASE 
+                    WHEN s.name = 'Completed' THEN DATE(rs.createdAt)
                     WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
                     ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
                   END, 
                   '%M %d, %Y'
                 ) as expectedReleaseDateFormatted,
-                DATEDIFF(
-                  CASE 
-                    WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
-                    ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
-                  END,
-                  CURDATE()
-                ) as daysRemaining,
+                -- For completed requests, set daysRemaining to null; otherwise calculate normally
+                CASE 
+                  WHEN s.name = 'Completed' THEN NULL
+                  ELSE DATEDIFF(
+                    CASE 
+                      WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
+                      ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
+                    END,
+                    CURDATE()
+                  )
+                END as daysRemaining,
                 (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) as expectedDays,
                 -- Count additional requirements that haven't been viewed
                 (SELECT COUNT(*) 
@@ -183,6 +190,7 @@ class User {
 
     $json = json_decode($json, true);
     $requestId = $json['requestId'];
+    $userId = $json['userId'] ?? null;
     
     // Set Philippine timezone and get current datetime
     date_default_timezone_set('Asia/Manila');
@@ -211,6 +219,44 @@ class User {
       $currentStatus = $currentStatusStmt->fetch(PDO::FETCH_ASSOC);
       $currentStatusId = $currentStatus['statusId'];
       
+      // Check registrar ownership - only allow processing if:
+      // 1. Request is in Pending status (anyone can start processing), OR
+      // 2. Request is already being processed by the same registrar
+      if ($currentStatusId != 1) { // Not Pending status
+        // Get the registrar who first processed this request (first non-null userId)
+        $ownershipSql = "SELECT userId FROM tblrequeststatus 
+                        WHERE requestId = :requestId AND userId IS NOT NULL 
+                        ORDER BY id ASC LIMIT 1";
+        $ownershipStmt = $conn->prepare($ownershipSql);
+        $ownershipStmt->bindParam(':requestId', $requestId);
+        $ownershipStmt->execute();
+        
+        if ($ownershipStmt->rowCount() > 0) {
+          $originalRegistrar = $ownershipStmt->fetch(PDO::FETCH_ASSOC)['userId'];
+          
+          // Check if current user is the same as the original registrar
+          if ($originalRegistrar !== $userId) {
+            // Get the registrar's name for better error message
+            $registrarNameSql = "SELECT firstname, lastname FROM tbluser WHERE id = :registrarId";
+            $registrarNameStmt = $conn->prepare($registrarNameSql);
+            $registrarNameStmt->bindParam(':registrarId', $originalRegistrar);
+            $registrarNameStmt->execute();
+            
+            $registrarName = "Unknown Registrar";
+            if ($registrarNameStmt->rowCount() > 0) {
+              $registrarData = $registrarNameStmt->fetch(PDO::FETCH_ASSOC);
+              $registrarName = $registrarData['firstname'] . ' ' . $registrarData['lastname'];
+            }
+            
+            $conn->rollBack();
+            return json_encode([
+              'error' => 'Access denied: This request is already being processed by another registrar. Only the original processing registrar can continue with this request.',
+              'processedBy' => $registrarName
+            ]);
+          }
+        }
+      }
+      
       // Determine next status based on current status
       $nextStatusId = null;
       $actionMessage = '';
@@ -238,10 +284,11 @@ class User {
       }
 
       // Insert new status record
-      $sql = "INSERT INTO tblrequeststatus (requestId, statusId, createdAt) VALUES (:requestId, :statusId, :datetime)";
+      $sql = "INSERT INTO tblrequeststatus (requestId, statusId, userId, createdAt) VALUES (:requestId, :statusId, :userId, :datetime)";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':requestId', $requestId);
       $stmt->bindParam(':statusId', $nextStatusId);
+      $stmt->bindParam(':userId', $userId);
       $stmt->bindParam(':datetime', $datetime);
 
       if ($stmt->execute()) {
@@ -552,6 +599,7 @@ class User {
     $firstname = $json['firstname'];
     $middlename = $json['middlename'];
     $lastname = $json['lastname'];
+    $userId = $json['userId'] ?? null;
 
     try {
       // First get the student ID from the request
@@ -566,6 +614,38 @@ class User {
       
       $studentData = $getStudentStmt->fetch(PDO::FETCH_ASSOC);
       $studentId = $studentData['studentId'];
+
+      // Check registrar ownership - only the original processing registrar can update student info
+      $ownershipSql = "SELECT userId FROM tblrequeststatus 
+                      WHERE requestId = :requestId AND userId IS NOT NULL 
+                      ORDER BY id ASC LIMIT 1";
+      $ownershipStmt = $conn->prepare($ownershipSql);
+      $ownershipStmt->bindParam(':requestId', $requestId);
+      $ownershipStmt->execute();
+      
+      if ($ownershipStmt->rowCount() > 0) {
+        $originalRegistrar = $ownershipStmt->fetch(PDO::FETCH_ASSOC)['userId'];
+        
+        // Check if current user is the same as the original registrar
+        if ($originalRegistrar !== $userId) {
+          // Get the registrar's name for better error message
+          $registrarNameSql = "SELECT firstname, lastname FROM tbluser WHERE id = :registrarId";
+          $registrarNameStmt = $conn->prepare($registrarNameSql);
+          $registrarNameStmt->bindParam(':registrarId', $originalRegistrar);
+          $registrarNameStmt->execute();
+          
+          $registrarName = "Unknown Registrar";
+          if ($registrarNameStmt->rowCount() > 0) {
+            $registrarData = $registrarNameStmt->fetch(PDO::FETCH_ASSOC);
+            $registrarName = $registrarData['firstname'] . ' ' . $registrarData['lastname'];
+          }
+          
+          return json_encode([
+            'error' => 'Access denied: This request is already being processed by another registrar. Only the original processing registrar can update student information.',
+            'processedBy' => $registrarName
+          ]);
+        }
+      }
 
       // Update student information (firstname, middlename, lastname, lrn, strandId)
       $sql = "UPDATE tblstudent 
@@ -963,6 +1043,7 @@ class User {
     
     $json = json_decode($json, true);
     $requestId = $json['requestId'];
+    $userId = $json['userId'] ?? null;
     
     // Debug logging
     error_log("processRelease called with requestId: " . $requestId);
@@ -1002,12 +1083,46 @@ class User {
         return json_encode(['error' => 'Request must be in Signatory status to be released']);
       }
 
+      // Check registrar ownership - only the original processing registrar can release
+      $ownershipSql = "SELECT userId FROM tblrequeststatus 
+                      WHERE requestId = :requestId AND userId IS NOT NULL 
+                      ORDER BY id ASC LIMIT 1";
+      $ownershipStmt = $conn->prepare($ownershipSql);
+      $ownershipStmt->bindParam(':requestId', $requestId);
+      $ownershipStmt->execute();
+      
+      if ($ownershipStmt->rowCount() > 0) {
+        $originalRegistrar = $ownershipStmt->fetch(PDO::FETCH_ASSOC)['userId'];
+        
+        // Check if current user is the same as the original registrar
+        if ($originalRegistrar !== $userId) {
+          // Get the registrar's name for better error message
+          $registrarNameSql = "SELECT firstname, lastname FROM tblregistrar WHERE id = :registrarId";
+          $registrarNameStmt = $conn->prepare($registrarNameSql);
+          $registrarNameStmt->bindParam(':registrarId', $originalRegistrar);
+          $registrarNameStmt->execute();
+          
+          $registrarName = "Unknown Registrar";
+          if ($registrarNameStmt->rowCount() > 0) {
+            $registrarData = $registrarNameStmt->fetch(PDO::FETCH_ASSOC);
+            $registrarName = $registrarData['firstname'] . ' ' . $registrarData['lastname'];
+          }
+          
+          $conn->rollBack();
+          return json_encode([
+            'error' => 'Access denied: This request is already being processed by another registrar. Only the original processing registrar can release this request.',
+            'processedBy' => $registrarName
+          ]);
+        }
+      }
+
       // Change status to Release (statusId = 4)
-      $sql = "INSERT INTO tblrequeststatus (requestId, statusId, createdAt) VALUES (:requestId, :statusId, :datetime)";
+      $sql = "INSERT INTO tblrequeststatus (requestId, statusId, userId, createdAt) VALUES (:requestId, :statusId, :userId, :datetime)";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':requestId', $requestId);
       $statusId = 4; // Release status
       $stmt->bindParam(':statusId', $statusId);
+      $stmt->bindParam(':userId', $userId);
       $stmt->bindParam(':datetime', $datetime);
 
       if (!$stmt->execute()) {
@@ -1079,6 +1194,39 @@ class User {
       }
       
       $requestData = $requestStmt->fetch(PDO::FETCH_ASSOC);
+      
+      // Check registrar ownership - only the original processing registrar can schedule release
+      $ownershipSql = "SELECT userId FROM tblrequeststatus 
+                      WHERE requestId = :requestId AND userId IS NOT NULL 
+                      ORDER BY id ASC LIMIT 1";
+      $ownershipStmt = $conn->prepare($ownershipSql);
+      $ownershipStmt->bindParam(':requestId', $requestId);
+      $ownershipStmt->execute();
+      
+      if ($ownershipStmt->rowCount() > 0) {
+        $originalRegistrar = $ownershipStmt->fetch(PDO::FETCH_ASSOC)['userId'];
+        
+        // Check if current user is the same as the original registrar
+        if ($originalRegistrar !== $userId) {
+          // Get the registrar's name for better error message
+          $registrarNameSql = "SELECT firstname, lastname FROM tblregistrar WHERE id = :registrarId";
+          $registrarNameStmt = $conn->prepare($registrarNameSql);
+          $registrarNameStmt->bindParam(':registrarId', $originalRegistrar);
+          $registrarNameStmt->execute();
+          
+          $registrarName = "Unknown Registrar";
+          if ($registrarNameStmt->rowCount() > 0) {
+            $registrarData = $registrarNameStmt->fetch(PDO::FETCH_ASSOC);
+            $registrarName = $registrarData['firstname'] . ' ' . $registrarData['lastname'];
+          }
+          
+          $conn->rollBack();
+          return json_encode([
+            'error' => 'Access denied: This request is already being processed by another registrar. Only the original processing registrar can schedule the release.',
+            'processedBy' => $registrarName
+          ]);
+        }
+      }
       
       // Check if release schedule already exists for this request
       $checkSql = "SELECT id FROM tblreleaseschedule WHERE requestId = :requestId";
@@ -1697,6 +1845,59 @@ function sendLrnEmail($requestData)
     }
   }
 
+  // Get request owner information
+  function getRequestOwner($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $requestId = $json['requestId'];
+
+    try {
+      // Get the registrar who first processed this request (first non-null userId)
+      $ownershipSql = "SELECT rs.userId, rs.createdAt as processedAt
+                      FROM tblrequeststatus rs 
+                      WHERE rs.requestId = :requestId AND rs.userId IS NOT NULL 
+                      ORDER BY rs.id ASC LIMIT 1";
+      $ownershipStmt = $conn->prepare($ownershipSql);
+      $ownershipStmt->bindParam(':requestId', $requestId);
+      $ownershipStmt->execute();
+      
+      if ($ownershipStmt->rowCount() > 0) {
+        $ownershipData = $ownershipStmt->fetch(PDO::FETCH_ASSOC);
+        $registrarId = $ownershipData['userId'];
+        $processedAt = $ownershipData['processedAt'];
+        
+        // Get the registrar's name
+        $registrarNameSql = "SELECT firstname, lastname FROM tblregistrar WHERE id = :registrarId";
+        $registrarNameStmt = $conn->prepare($registrarNameSql);
+        $registrarNameStmt->bindParam(':registrarId', $registrarId);
+        $registrarNameStmt->execute();
+        
+        if ($registrarNameStmt->rowCount() > 0) {
+          $registrarData = $registrarNameStmt->fetch(PDO::FETCH_ASSOC);
+          $registrarName = $registrarData['firstname'] . ' ' . $registrarData['lastname'];
+          
+          return json_encode([
+            'success' => true,
+            'owner' => $registrarName,
+            'ownerId' => $registrarId,
+            'processedAt' => $processedAt
+          ]);
+        }
+      }
+      
+      return json_encode([
+        'success' => true,
+        'owner' => null,
+        'ownerId' => null,
+        'processedAt' => null
+      ]);
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
   // Send email notification for requirement comments
   function sendRequirementCommentEmail($studentData, $requirementData, $comment)
   {
@@ -1890,6 +2091,9 @@ switch ($operation) {
     break;
   case "markAdditionalRequirementsViewed":
     echo $user->markAdditionalRequirementsViewed($json);
+    break;
+  case "getRequestOwner":
+    echo $user->getRequestOwner($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

@@ -506,33 +506,61 @@ class User {
         // Calculate expected release date and days remaining for each request
         foreach ($requests as &$request) {
           if ($request['expectedDays']) {
-            // Calculate expected release date (request date + expected days)
-            $requestDate = new DateTime($request['dateRequestedFull']);
-            $expectedReleaseDate = clone $requestDate;
-            $expectedReleaseDate->add(new DateInterval('P' . $request['expectedDays'] . 'D'));
-            
-            $request['expectedReleaseDate'] = $expectedReleaseDate->format('Y-m-d');
-            $request['expectedReleaseDateFormatted'] = $expectedReleaseDate->format('F d, Y');
-            
-            // Calculate days remaining
-            $currentDate = new DateTime();
-            $currentDate->setTime(0, 0, 0); // Set to start of day for accurate calculation
-            $expectedReleaseDate->setTime(0, 0, 0);
-            
-            $interval = $currentDate->diff($expectedReleaseDate);
-            
-            if ($currentDate <= $expectedReleaseDate) {
-              $request['daysRemaining'] = $interval->days;
-              $request['isOverdue'] = false;
-            } else {
-              $request['daysRemaining'] = -$interval->days; // Negative for overdue
-              $request['isOverdue'] = true;
-            }
-            
-            // If request is completed or cancelled, don't show countdown
-            if (in_array(strtolower($request['status']), ['completed', 'cancelled'])) {
+            // For completed requests, show actual completion date from the status record
+            if (strtolower($request['status']) === 'completed') {
+              // Get the actual completion date from the status record
+              $completionDateSql = "SELECT DATE(createdAt) as completionDate FROM tblrequeststatus 
+                                   WHERE requestId = :requestId AND statusId = (SELECT id FROM tblstatus WHERE name = 'Completed')
+                                   ORDER BY createdAt DESC LIMIT 1";
+              $completionStmt = $conn->prepare($completionDateSql);
+              $completionStmt->bindParam(':requestId', $request['id']);
+              $completionStmt->execute();
+              
+              if ($completionStmt->rowCount() > 0) {
+                $completionData = $completionStmt->fetch(PDO::FETCH_ASSOC);
+                $completionDate = new DateTime($completionData['completionDate']);
+                $request['expectedReleaseDate'] = $completionDate->format('Y-m-d');
+                $request['expectedReleaseDateFormatted'] = $completionDate->format('F d, Y');
+              } else {
+                // Fallback to expected date if completion date not found
+                $requestDate = new DateTime($request['dateRequestedFull']);
+                $expectedReleaseDate = clone $requestDate;
+                $expectedReleaseDate->add(new DateInterval('P' . $request['expectedDays'] . 'D'));
+                $request['expectedReleaseDate'] = $expectedReleaseDate->format('Y-m-d');
+                $request['expectedReleaseDateFormatted'] = $expectedReleaseDate->format('F d, Y');
+              }
+              
               $request['daysRemaining'] = null;
               $request['isOverdue'] = false;
+            } else {
+              // For non-completed requests, calculate expected release date normally
+              $requestDate = new DateTime($request['dateRequestedFull']);
+              $expectedReleaseDate = clone $requestDate;
+              $expectedReleaseDate->add(new DateInterval('P' . $request['expectedDays'] . 'D'));
+              
+              $request['expectedReleaseDate'] = $expectedReleaseDate->format('Y-m-d');
+              $request['expectedReleaseDateFormatted'] = $expectedReleaseDate->format('F d, Y');
+              
+              // Calculate days remaining
+              $currentDate = new DateTime();
+              $currentDate->setTime(0, 0, 0); // Set to start of day for accurate calculation
+              $expectedReleaseDate->setTime(0, 0, 0);
+              
+              $interval = $currentDate->diff($expectedReleaseDate);
+              
+              if ($currentDate <= $expectedReleaseDate) {
+                $request['daysRemaining'] = $interval->days;
+                $request['isOverdue'] = false;
+              } else {
+                $request['daysRemaining'] = -$interval->days; // Negative for overdue
+                $request['isOverdue'] = true;
+              }
+              
+              // If request is cancelled, don't show countdown
+              if (strtolower($request['status']) === 'cancelled') {
+                $request['daysRemaining'] = null;
+                $request['isOverdue'] = false;
+              }
             }
           } else {
             $request['expectedReleaseDate'] = null;

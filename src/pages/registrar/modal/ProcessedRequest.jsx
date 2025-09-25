@@ -16,6 +16,7 @@ import {
 	getStudentInfo,
 	updateStudentInfo,
 	getReleaseSchedule,
+	getRequestOwner,
 } from "../../../utils/registrar";
 import { getUserRequests } from "../../../utils/student";
 import toast from "react-hot-toast";
@@ -50,6 +51,7 @@ export default function ProcessedRequest({
 	const [currentRequest, setCurrentRequest] = useState(request);
 	const [releaseSchedule, setReleaseSchedule] = useState(null);
 	const [doubleRequestNote, setDoubleRequestNote] = useState(null);
+	const [requestOwner, setRequestOwner] = useState(null);
 
 	// Requirement comment modal state
 	const [showCommentModal, setShowCommentModal] = useState(false);
@@ -136,6 +138,20 @@ export default function ProcessedRequest({
 		} catch (error) {
 			console.error("Failed to fetch release schedule:", error);
 			setReleaseSchedule(null);
+		}
+	};
+
+	const fetchRequestOwner = async () => {
+		try {
+			const ownerData = await getRequestOwner(currentRequest.id);
+			if (ownerData && ownerData.success) {
+				setRequestOwner(ownerData);
+			} else {
+				setRequestOwner(null);
+			}
+		} catch (error) {
+			console.error("Failed to fetch request owner:", error);
+			setRequestOwner(null);
 		}
 	};
 
@@ -241,6 +257,7 @@ export default function ProcessedRequest({
 			fetchStudentDocuments();
 			fetchStudentInfo();
 			fetchReleaseSchedule();
+			fetchRequestOwner();
 			detectCombinedCavDiploma(); // Call detectCombinedCavDiploma here
 		}
 	}, [isOpen, currentRequest]);
@@ -267,7 +284,7 @@ export default function ProcessedRequest({
 				return;
 			} else {
 				// For other statuses, use the regular processRequest
-				response = await processRequest(currentRequest.id);
+				response = await processRequest(currentRequest.id, userId);
 				if (response.success) {
 					toast.success(response.message);
 
@@ -296,7 +313,16 @@ export default function ProcessedRequest({
 					onSuccess();
 				} else {
 					// Handle error from processRequest
-					toast.error(response.error || "Failed to process request");
+					if (response.processedBy) {
+						toast.error(
+							`${response.error} (Processed by: ${response.processedBy})`
+						);
+						onSuccess();
+						setProcessing(false);
+						onClose(); // Close the modal when access is denied
+					} else {
+						toast.error(response.error || "Failed to process request");
+					}
 				}
 			}
 		} catch (error) {
@@ -315,7 +341,8 @@ export default function ProcessedRequest({
 				diplomaData.strandId,
 				diplomaData.firstname,
 				diplomaData.middlename,
-				diplomaData.lastname
+				diplomaData.lastname,
+				userId
 			);
 
 			if (updateResponse.success) {
@@ -324,9 +351,16 @@ export default function ProcessedRequest({
 				await fetchStudentInfo();
 				onSuccess();
 			} else {
-				toast.error(
-					updateResponse.error || "Failed to save diploma information"
-				);
+				if (updateResponse.processedBy) {
+					toast.error(
+						`${updateResponse.error} (Processed by: ${updateResponse.processedBy})`
+					);
+					onClose(); // Close the modal when access is denied
+				} else {
+					toast.error(
+						updateResponse.error || "Failed to save diploma information"
+					);
+				}
 			}
 		} catch (error) {
 			console.error("Failed to save diploma:", error);
@@ -344,7 +378,8 @@ export default function ProcessedRequest({
 				certificateData.strandId,
 				certificateData.firstname,
 				certificateData.middlename,
-				certificateData.lastname
+				certificateData.lastname,
+				userId
 			);
 
 			if (updateResponse.success) {
@@ -353,9 +388,16 @@ export default function ProcessedRequest({
 				await fetchStudentInfo();
 				onSuccess();
 			} else {
-				toast.error(
-					updateResponse.error || "Failed to save certificate information"
-				);
+				if (updateResponse.processedBy) {
+					toast.error(
+						`${updateResponse.error} (Processed by: ${updateResponse.processedBy})`
+					);
+					onClose(); // Close the modal when access is denied
+				} else {
+					toast.error(
+						updateResponse.error || "Failed to save certificate information"
+					);
+				}
 			}
 		} catch (error) {
 			console.error("Failed to save certificate:", error);
@@ -373,7 +415,8 @@ export default function ProcessedRequest({
 				cavData.strandId,
 				cavData.firstname,
 				cavData.middlename,
-				cavData.lastname
+				cavData.lastname,
+				userId
 			);
 
 			if (updateResponse.success) {
@@ -382,7 +425,14 @@ export default function ProcessedRequest({
 				await fetchStudentInfo();
 				onSuccess();
 			} else {
-				toast.error(updateResponse.error || "Failed to save CAV information");
+				if (updateResponse.processedBy) {
+					toast.error(
+						`${updateResponse.error} (Processed by: ${updateResponse.processedBy})`
+					);
+					onClose(); // Close the modal when access is denied
+				} else {
+					toast.error(updateResponse.error || "Failed to save CAV information");
+				}
 			}
 		} catch (error) {
 			console.error("Failed to save CAV:", error);
@@ -411,7 +461,7 @@ export default function ProcessedRequest({
 	const handleReleaseScheduleSuccess = async () => {
 		try {
 			// First, change the status to Release
-			const response = await processRelease(currentRequest.id);
+			const response = await processRelease(currentRequest.id, userId);
 			if (response.success) {
 				toast.success("Document released successfully!");
 
@@ -430,7 +480,14 @@ export default function ProcessedRequest({
 				// Refresh the parent data
 				onSuccess();
 			} else {
-				toast.error(response.error || "Failed to release document");
+				if (response.processedBy) {
+					toast.error(
+						`${response.error} (Processed by: ${response.processedBy})`
+					);
+					onClose(); // Close the modal when access is denied
+				} else {
+					toast.error(response.error || "Failed to release document");
+				}
 			}
 		} catch (error) {
 			console.error("Failed to release document:", error);
@@ -738,119 +795,169 @@ export default function ProcessedRequest({
 								</div>
 							</div>
 
-							{/* Expected Release Date Information */}
-							{currentRequest?.expectedReleaseDateFormatted &&
-								currentRequest?.daysRemaining !== null && (
+							{/* Request Owner Information */}
+							{requestOwner && requestOwner.owner && (
+								<div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
+									<div className="flex gap-3 items-center mb-3">
+										<User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+										<span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+											Processed by
+										</span>
+									</div>
+									<div className="mb-2 text-sm text-blue-600 dark:text-blue-400">
+										<strong>Registrar:</strong> {requestOwner.owner}
+									</div>
+									{requestOwner.processedAt && (
+										<div className="text-xs text-blue-600 dark:text-blue-400">
+											<strong>Started processing:</strong>{" "}
+											{formatShortDateTime(requestOwner.processedAt)}
+										</div>
+									)}
+								</div>
+							)}
+
+							{/* Expected Release Date Information - Show different wording for Completed status */}
+							{currentRequest?.expectedReleaseDateFormatted && (
+								<div
+									className={`p-4 rounded-lg border-2 ${
+										currentRequest.status?.toLowerCase() === "completed"
+											? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
+											: currentRequest.daysRemaining >= 0
+											? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+											: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
+									}`}
+								>
+									<div className="flex gap-3 items-center mb-3">
+										<Clock
+											className={`w-5 h-5 ${
+												currentRequest.status?.toLowerCase() === "completed"
+													? "text-green-600 dark:text-green-400"
+													: currentRequest.daysRemaining >= 0
+													? "text-blue-600 dark:text-blue-400"
+													: "text-red-600 dark:text-red-400"
+											}`}
+										/>
+										<span
+											className={`text-sm font-medium ${
+												currentRequest.status?.toLowerCase() === "completed"
+													? "text-green-700 dark:text-green-300"
+													: currentRequest.daysRemaining >= 0
+													? "text-blue-700 dark:text-blue-300"
+													: "text-red-700 dark:text-red-300"
+											}`}
+										>
+											{currentRequest.status?.toLowerCase() === "completed"
+												? "Released Date"
+												: "Expected Release Date"}
+										</span>
+									</div>
 									<div
-										className={`p-4 rounded-lg border-2 ${
-											currentRequest.daysRemaining >= 0
-												? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
-												: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
+										className={`mb-3 text-sm ${
+											currentRequest.status?.toLowerCase() === "completed"
+												? "text-green-600 dark:text-green-400"
+												: currentRequest.daysRemaining >= 0
+												? "text-blue-600 dark:text-blue-400"
+												: "text-red-600 dark:text-red-400"
 										}`}
 									>
-										<div className="flex gap-3 items-center mb-3">
-											<Clock
-												className={`w-5 h-5 ${
+										<strong>
+											{currentRequest.status?.toLowerCase() === "completed"
+												? "Released Date:"
+												: "Expected Date:"}{" "}
+										</strong>
+										{currentRequest.expectedReleaseDateFormatted}
+									</div>
+									{currentRequest.status?.toLowerCase() !== "completed" && (
+										<>
+											<div
+												className={`text-sm ${
 													currentRequest.daysRemaining >= 0
 														? "text-blue-600 dark:text-blue-400"
 														: "text-red-600 dark:text-red-400"
 												}`}
-											/>
-											<span
-												className={`text-sm font-medium ${
-													currentRequest.daysRemaining >= 0
-														? "text-blue-700 dark:text-blue-300"
-														: "text-red-700 dark:text-red-300"
-												}`}
 											>
-												Expected Release Date
-											</span>
-										</div>
-										<div
-											className={`mb-3 text-sm ${
-												currentRequest.daysRemaining >= 0
-													? "text-blue-600 dark:text-blue-400"
-													: "text-red-600 dark:text-red-400"
-											}`}
-										>
-											<strong>Expected Date:</strong>{" "}
-											{currentRequest.expectedReleaseDateFormatted}
-										</div>
-										<div
-											className={`text-sm ${
-												currentRequest.daysRemaining >= 0
-													? "text-blue-600 dark:text-blue-400"
-													: "text-red-600 dark:text-red-400"
-											}`}
-										>
-											{currentRequest.daysRemaining === 0 ? (
-												<span className="font-medium">
-													📅 Expected release: Today!
-												</span>
-											) : currentRequest.daysRemaining > 0 ? (
-												<span>
-													⏱️{" "}
+												{currentRequest.daysRemaining === 0 ? (
 													<span className="font-medium">
-														{currentRequest.daysRemaining}{" "}
-														{currentRequest.daysRemaining === 1
+														📅 Expected release: Today!
+													</span>
+												) : currentRequest.daysRemaining > 0 ? (
+													<span>
+														⏱️{" "}
+														<span className="font-medium">
+															{currentRequest.daysRemaining}{" "}
+															{currentRequest.daysRemaining === 1
+																? "day"
+																: "days"}{" "}
+															remaining
+														</span>
+													</span>
+												) : (
+													<span className="font-medium">
+														⚠️ {Math.abs(currentRequest.daysRemaining)}{" "}
+														{Math.abs(currentRequest.daysRemaining) === 1
 															? "day"
 															: "days"}{" "}
-														remaining
+														overdue
 													</span>
-												</span>
-											) : (
-												<span className="font-medium">
-													⚠️ {Math.abs(currentRequest.daysRemaining)}{" "}
-													{Math.abs(currentRequest.daysRemaining) === 1
-														? "day"
-														: "days"}{" "}
-													overdue
-												</span>
-											)}
-										</div>
-										<div
-											className={`mt-3 text-xs ${
-												currentRequest.daysRemaining >= 0
-													? "text-blue-600 dark:text-blue-400"
-													: "text-red-600 dark:text-red-400"
-											}`}
-										>
-											<strong>Note:</strong> Based on{" "}
-											{currentRequest.expectedDays || 7} days processing time
-											from request date.
-											{!releaseSchedule && currentRequest.daysRemaining < 0 && (
-												<span className="block mt-1 font-medium">
-													⚠️ This request is overdue. Please prioritize or
-													schedule release date.
-												</span>
-											)}
-										</div>
-									</div>
-								)}
-
-							{/* Release Schedule Information */}
-							{releaseSchedule && (
-								<div className="p-4 bg-green-50 rounded-lg border-2 border-green-200 dark:bg-green-900/20 dark:border-green-700">
-									<div className="flex gap-3 items-center mb-3">
-										<Clock className="w-5 h-5 text-green-600 dark:text-green-400" />
-										<span className="text-sm font-medium text-green-700 dark:text-green-300">
-											Release Schedule
-										</span>
-									</div>
-									<div className="mb-3 text-sm text-green-600 dark:text-green-400">
-										<strong>Release Date:</strong>{" "}
-										{formatReleaseDate(releaseSchedule.dateSchedule)}
-									</div>
-									<div className="text-xs text-green-600 dark:text-green-400">
-										<strong>Office Hours:</strong> 8:00 AM - 5:00 PM (Monday to
-										Friday)
-									</div>
-									<div className="mt-3 text-xs text-green-600 dark:text-green-400">
-										<strong>Note:</strong> Student has been notified via email
-										about the release schedule.
-									</div>
+												)}
+											</div>
+											<div
+												className={`mt-3 text-xs ${
+													currentRequest.daysRemaining >= 0
+														? "text-blue-600 dark:text-blue-400"
+														: "text-red-600 dark:text-red-400"
+												}`}
+											>
+												<strong>Note:</strong> Based on{" "}
+												{currentRequest.expectedDays || 7} days processing time
+												from request date.
+												{!releaseSchedule &&
+													currentRequest.daysRemaining < 0 && (
+														<span className="block mt-1 font-medium">
+															⚠️ This request is overdue. Please prioritize or
+															schedule release date.
+														</span>
+													)}
+											</div>
+										</>
+									)}
 								</div>
 							)}
+
+							{/* Release Schedule Information - Hide for Completed status since we show actual completion date above */}
+							{releaseSchedule &&
+								currentRequest?.status?.toLowerCase() !== "completed" && (
+									<div className="p-4 bg-green-50 rounded-lg border-2 border-green-200 dark:bg-green-900/20 dark:border-green-700">
+										<div className="flex gap-3 items-center mb-3">
+											<Clock className="w-5 h-5 text-green-600 dark:text-green-400" />
+											<span className="text-sm font-medium text-green-700 dark:text-green-300">
+												{currentRequest?.status?.toLowerCase() === "completed"
+													? "Release Information"
+													: "Release Schedule"}
+											</span>
+										</div>
+										<div className="mb-3 text-sm text-green-600 dark:text-green-400">
+											<strong>
+												{currentRequest?.status?.toLowerCase() === "completed"
+													? "Released Date:"
+													: "Release Date:"}{" "}
+											</strong>
+											{formatReleaseDate(releaseSchedule.dateSchedule)}
+										</div>
+										{currentRequest?.status?.toLowerCase() !== "completed" && (
+											<>
+												<div className="text-xs text-green-600 dark:text-green-400">
+													<strong>Office Hours:</strong> 8:00 AM - 5:00 PM
+													(Monday to Friday)
+												</div>
+												<div className="mt-3 text-xs text-green-600 dark:text-green-400">
+													<strong>Note:</strong> Student has been notified via
+													email about the release schedule.
+												</div>
+											</>
+										)}
+									</div>
+								)}
 
 							{/* Purpose */}
 							{currentRequest?.displayPurpose &&

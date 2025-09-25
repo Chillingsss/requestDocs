@@ -39,6 +39,8 @@ export async function getUserRequests(userId) {
 export async function getAllRequests() {
 	const formData = new FormData();
 	formData.append("operation", "getAllRequests");
+	// Add cache-busting parameter
+	formData.append("timestamp", Date.now());
 
 	// Get the encrypted API URL from session storage
 	const apiUrl = getDecryptedApiUrl();
@@ -70,10 +72,10 @@ export async function getRequestStats() {
 	}
 }
 
-export async function processRequest(requestId) {
+export async function processRequest(requestId, userId) {
 	const formData = new FormData();
 	formData.append("operation", "processRequest");
-	formData.append("json", JSON.stringify({ requestId }));
+	formData.append("json", JSON.stringify({ requestId, userId }));
 
 	// Get the encrypted API URL from session storage
 	const apiUrl = getDecryptedApiUrl();
@@ -148,7 +150,8 @@ export async function updateStudentInfo(
 	strandId,
 	firstname,
 	middlename,
-	lastname
+	lastname,
+	userId
 ) {
 	const formData = new FormData();
 	formData.append("operation", "updateStudentInfo");
@@ -161,6 +164,7 @@ export async function updateStudentInfo(
 			firstname,
 			middlename,
 			lastname,
+			userId,
 		})
 	);
 	const apiUrl = getDecryptedApiUrl();
@@ -319,10 +323,10 @@ export async function getAllStudentDocuments() {
 	}
 }
 
-export async function processRelease(requestId) {
+export async function processRelease(requestId, userId) {
 	const formData = new FormData();
 	formData.append("operation", "processRelease");
-	formData.append("json", JSON.stringify({ requestId }));
+	formData.append("json", JSON.stringify({ requestId, userId }));
 
 	// Get the encrypted API URL from session storage
 	const apiUrl = getDecryptedApiUrl();
@@ -524,6 +528,23 @@ export async function getExpectedDays() {
 export async function markAdditionalRequirementsViewed(requestId) {
 	const formData = new FormData();
 	formData.append("operation", "markAdditionalRequirementsViewed");
+	formData.append("json", JSON.stringify({ requestId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getRequestOwner(requestId) {
+	const formData = new FormData();
+	formData.append("operation", "getRequestOwner");
 	formData.append("json", JSON.stringify({ requestId }));
 
 	const apiUrl = getDecryptedApiUrl();
