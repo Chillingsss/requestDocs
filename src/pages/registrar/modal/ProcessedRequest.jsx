@@ -143,11 +143,15 @@ export default function ProcessedRequest({
 
 	const fetchRequestOwner = async () => {
 		try {
+			console.log("Fetching request owner for request ID:", currentRequest.id);
 			const ownerData = await getRequestOwner(currentRequest.id);
+			console.log("Owner data received:", ownerData);
 			if (ownerData && ownerData.success) {
 				setRequestOwner(ownerData);
+				console.log("Request owner set:", ownerData);
 			} else {
 				setRequestOwner(null);
+				console.log("No owner data, setting to null");
 			}
 		} catch (error) {
 			console.error("Failed to fetch request owner:", error);
@@ -796,7 +800,7 @@ export default function ProcessedRequest({
 							</div>
 
 							{/* Request Owner Information */}
-							{requestOwner && requestOwner.owner && (
+							{requestOwner && requestOwner.owner ? (
 								<div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
 									<div className="flex gap-3 items-center mb-3">
 										<User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -813,8 +817,37 @@ export default function ProcessedRequest({
 											{formatShortDateTime(requestOwner.processedAt)}
 										</div>
 									)}
+									{/* Show if current user is the owner or not */}
+									<div className="mt-2 text-xs">
+										{requestOwner.ownerId === userId ? (
+											<span className="inline-flex items-center gap-1 px-2 py-1 text-green-800 bg-green-100 rounded-full dark:text-green-400 dark:bg-green-900/20">
+												✅ You are processing this request
+											</span>
+										) : (
+											<span className="inline-flex items-center gap-1 px-2 py-1 text-orange-800 bg-orange-100 rounded-full dark:text-orange-400 dark:bg-orange-900/20">
+												⚠️ This request is being processed by another registrar
+											</span>
+										)}
+									</div>
 								</div>
-							)}
+							) : currentRequest?.status?.toLowerCase() === "pending" ? (
+								<div className="p-4 bg-green-50 rounded-lg border-2 border-green-200 dark:bg-green-900/20 dark:border-green-700">
+									<div className="flex gap-3 items-center mb-3">
+										<User className="w-5 h-5 text-green-600 dark:text-green-400" />
+										<span className="text-sm font-medium text-green-700 dark:text-green-300">
+											Available for Processing
+										</span>
+									</div>
+									<div className="mb-2 text-sm text-green-600 dark:text-green-400">
+										This request is available for any registrar to process.
+									</div>
+									<div className="text-xs">
+										<span className="inline-flex items-center gap-1 px-2 py-1 text-green-800 bg-green-100 rounded-full dark:text-green-400 dark:bg-green-900/20">
+											🆕 Ready to be processed
+										</span>
+									</div>
+								</div>
+							) : null}
 
 							{/* Expected Release Date Information - Show different wording for Completed status */}
 							{currentRequest?.expectedReleaseDateFormatted && (

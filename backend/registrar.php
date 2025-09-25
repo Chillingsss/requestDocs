@@ -122,7 +122,13 @@ class User {
                 -- Count additional requirements that haven't been viewed
                 (SELECT COUNT(*) 
                  FROM tblrequirements req 
-                 WHERE req.requestId = r.id AND req.isAdditional = 1) as hasAdditionalRequirements
+                 WHERE req.requestId = r.id AND req.isAdditional = 1) as hasAdditionalRequirements,
+                -- Get the registrar who first processed this request (first non-null userId)
+                (SELECT CONCAT(reg.firstname, ' ', reg.lastname) 
+                 FROM tblrequeststatus rs_owner 
+                 INNER JOIN tbluser reg ON rs_owner.userId = reg.id
+                 WHERE rs_owner.requestId = r.id AND rs_owner.userId IS NOT NULL 
+                 ORDER BY rs_owner.id ASC LIMIT 1) as processedBy
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
@@ -1853,6 +1859,9 @@ function sendLrnEmail($requestData)
     $json = json_decode($json, true);
     $requestId = $json['requestId'];
 
+    // Debug logging
+    error_log("getRequestOwner called with requestId: " . $requestId);
+
     try {
       // Get the registrar who first processed this request (first non-null userId)
       $ownershipSql = "SELECT rs.userId, rs.createdAt as processedAt
@@ -1863,13 +1872,30 @@ function sendLrnEmail($requestData)
       $ownershipStmt->bindParam(':requestId', $requestId);
       $ownershipStmt->execute();
       
+      error_log("Ownership query row count: " . $ownershipStmt->rowCount());
+      
+      // Also check all status records for this request for debugging
+      $debugSql = "SELECT rs.id, rs.userId, rs.createdAt, s.name as statusName 
+                   FROM tblrequeststatus rs 
+                   LEFT JOIN tblstatus s ON rs.statusId = s.id
+                   WHERE rs.requestId = :requestId 
+                   ORDER BY rs.id ASC";
+      $debugStmt = $conn->prepare($debugSql);
+      $debugStmt->bindParam(':requestId', $requestId);
+      $debugStmt->execute();
+      
+      $allStatuses = $debugStmt->fetchAll(PDO::FETCH_ASSOC);
+      error_log("All status records for request " . $requestId . ": " . json_encode($allStatuses));
+      
       if ($ownershipStmt->rowCount() > 0) {
         $ownershipData = $ownershipStmt->fetch(PDO::FETCH_ASSOC);
         $registrarId = $ownershipData['userId'];
         $processedAt = $ownershipData['processedAt'];
         
+        error_log("Found owner: " . $registrarId . " at " . $processedAt);
+        
         // Get the registrar's name
-        $registrarNameSql = "SELECT firstname, lastname FROM tblregistrar WHERE id = :registrarId";
+        $registrarNameSql = "SELECT firstname, lastname FROM tbluser WHERE id = :registrarId";
         $registrarNameStmt = $conn->prepare($registrarNameSql);
         $registrarNameStmt->bindParam(':registrarId', $registrarId);
         $registrarNameStmt->execute();
@@ -1891,7 +1917,8 @@ function sendLrnEmail($requestData)
         'success' => true,
         'owner' => null,
         'ownerId' => null,
-        'processedAt' => null
+        'processedAt' => null,
+        'debug' => $allStatuses
       ]);
     } catch (PDOException $e) {
       return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);

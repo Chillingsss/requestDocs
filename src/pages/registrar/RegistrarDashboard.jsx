@@ -728,41 +728,17 @@ export default function RegistrarDashboard() {
 																{formatShortDateTime(req.dateRequested)}
 															</td>
 															<td className="px-3 py-3 lg:px-4 lg:py-2">
-																{req.status === "Pending" && (
-																	<span className="inline-flex px-2 py-1 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full dark:text-yellow-400 dark:bg-yellow-900/20">
-																		Pending
+																<div className="flex flex-col gap-1">
+																	<span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+																		{req.status}
 																	</span>
-																)}
-																{req.status === "Processed" && (
-																	<span className="inline-flex px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:text-green-400 dark:bg-green-900/20">
-																		Processed
-																	</span>
-																)}
-																{req.status === "Signatory" && (
-																	<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-400 dark:bg-blue-900/20">
-																		Signatory
-																	</span>
-																)}
-																{req.status === "Release" && (
-																	<span className="inline-flex px-2 py-1 text-xs font-medium text-orange-800 bg-orange-100 rounded-full dark:text-orange-400 dark:bg-orange-900/20">
-																		Release
-																	</span>
-																)}
-																{req.status === "Completed" && (
-																	<span className="inline-flex px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:text-green-400 dark:bg-green-900/20">
-																		Completed
-																	</span>
-																)}
-																{req.status === "Rejected" && (
-																	<span className="inline-flex px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full dark:text-red-400 dark:bg-red-900/20">
-																		Rejected
-																	</span>
-																)}
-																{req.status === "Cancelled" && (
-																	<span className="inline-flex px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full dark:text-red-400 dark:bg-red-900/20">
-																		Cancelled
-																	</span>
-																)}
+																	{/* Show processed by information below the status */}
+																	{req.processedBy && (
+																		<span className="text-xs text-slate-500 dark:text-slate-400">
+																			Processed by: {req.processedBy}
+																		</span>
+																	)}
+																</div>
 															</td>
 														</tr>
 													))}

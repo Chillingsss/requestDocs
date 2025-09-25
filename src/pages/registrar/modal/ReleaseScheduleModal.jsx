@@ -221,7 +221,7 @@ export default function ReleaseScheduleModal({
 								type="button"
 								onClick={onClose}
 								variant="outline"
-								className="flex-1 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+								className="flex-1 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-slate-700"
 							>
 								Cancel
 							</Button>
