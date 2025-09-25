@@ -280,6 +280,23 @@ export default function ProcessedRequest({
 			let response;
 			let newStatus;
 
+			// Check ownership before proceeding
+			const isOwner =
+				!requestOwner || !requestOwner.owner || requestOwner.ownerId === userId;
+			const isPending = currentStatus === "pending";
+
+			// If not the owner and not pending, show access denied
+			if (!isOwner && !isPending) {
+				toast.error(
+					`Access denied. This request is being processed by ${
+						requestOwner?.owner || "another registrar"
+					}`
+				);
+				setProcessing(false);
+				onClose();
+				return;
+			}
+
 			if (currentStatus === "signatory") {
 				// For Signatory status, directly show release schedule modal
 				// Don't change status yet - wait for user to set release date
@@ -547,6 +564,11 @@ export default function ProcessedRequest({
 
 		const statusName = currentRequest.status.toLowerCase();
 
+		// Check ownership - if request has an owner and current user is not the owner, disable button
+		const isOwner =
+			!requestOwner || !requestOwner.owner || requestOwner.ownerId === userId;
+		const isPending = statusName === "pending";
+
 		// Check if student documents are required and available for pending status
 		// For diploma, certificate, and CAV requests, we don't need existing documents since we generate a template
 		const hasRequiredDocuments =
@@ -555,6 +577,15 @@ export default function ProcessedRequest({
 			isDiplomaRequest() ||
 			isCertificateRequest() ||
 			isCavRequest();
+
+		// If not the owner and not pending, show access denied
+		if (!isOwner && !isPending) {
+			return {
+				text: "Access Denied",
+				bgColor: "bg-red-600 hover:bg-red-700",
+				disabled: true,
+			};
+		}
 
 		switch (statusName) {
 			case "cancelled":
