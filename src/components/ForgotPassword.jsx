@@ -6,8 +6,8 @@ import { Input } from "./ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import {
 	checkEmailExists,
-	sendPasswordResetOTP,
 	resetPassword,
+	sendPasswordResetOtpMail,
 } from "../utils/admin";
 import toast from "react-hot-toast";
 
@@ -41,10 +41,10 @@ export default function ForgotPassword({ onBackToLogin }) {
 				setUserData(result);
 				toast.success("Email verified! Sending OTP to your email...");
 
-				// Automatically send OTP after email verification
-				const otpResult = await sendPasswordResetOTP(
-					result.userId,
-					result.userType
+				// Automatically send OTP using Nodemailer mail server
+				const otpResult = await sendPasswordResetOtpMail(
+					result.email,
+					`${result.firstname} ${result.lastname}`
 				);
 
 				if (otpResult.status === "success") {
@@ -78,9 +78,9 @@ export default function ForgotPassword({ onBackToLogin }) {
 		setError("");
 
 		try {
-			const result = await sendPasswordResetOTP(
-				userData.userId,
-				userData.userType
+			const result = await sendPasswordResetOtpMail(
+				userData.email,
+				`${userData.firstname} ${userData.lastname}`
 			);
 
 			if (result.status === "success") {

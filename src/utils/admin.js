@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getDecryptedApiUrl } from "./apiConfig";
+import { getDecryptedApiUrl, getMailApiUrl } from "./apiConfig";
 
 export async function getUserLevel() {
 	const formData = new FormData();
@@ -94,7 +94,6 @@ export async function sendPasswordResetOTP(userId, userType) {
 	formData.append("operation", "sendPasswordResetOTP");
 	formData.append("json", JSON.stringify({ userId, userType }));
 
-	// Get the encrypted API URL from session storage
 	const apiUrl = getDecryptedApiUrl();
 
 	try {
@@ -102,6 +101,20 @@ export async function sendPasswordResetOTP(userId, userType) {
 			headers: { "Content-Type": "multipart/form-data" },
 		});
 		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+// New Nodemailer-based OTP sender hitting Node mail server directly
+export async function sendPasswordResetOtpMail(email, fullName) {
+	const mailApi = getMailApiUrl();
+	try {
+		const { data } = await axios.post(`${mailApi}/send-password-reset-otp`, {
+			email,
+			fullName,
+		});
+		return data;
 	} catch (error) {
 		throw error;
 	}

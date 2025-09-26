@@ -3,7 +3,8 @@ import CryptoJS from "crypto-js";
 // Secret key for encryption - in production, this should be more secure
 const SECRET_KEY = "mogchs_api_secret_key";
 const SESSION_KEY = "mogchs_encrypted_api_url";
-const FALLBACK_API_URL = "http://localhost/mogchs-main/backend";
+const FALLBACK_API_URL = "http://localhost/request_docs/backend";
+const MAIL_API_FALLBACK_URL = "http://localhost:4001";
 
 /**
  * Set the encrypted API URL in session storage
@@ -55,6 +56,29 @@ export const getDecryptedApiUrl = () => {
 	} catch (error) {
 		console.error("Error decrypting API URL, using fallback:", error);
 		return FALLBACK_API_URL;
+	}
+};
+
+// Mail API URL handling (not encrypted; separate small Node server)
+const MAIL_SESSION_KEY = "mogchs_mail_api_url";
+
+export const setMailApiUrl = (mailApiUrl) => {
+	try {
+		if (typeof sessionStorage !== "undefined") {
+			sessionStorage.setItem(MAIL_SESSION_KEY, mailApiUrl);
+		}
+	} catch (error) {
+		console.error("Error setting Mail API URL:", error);
+	}
+};
+
+export const getMailApiUrl = () => {
+	try {
+		if (typeof sessionStorage === "undefined") return MAIL_API_FALLBACK_URL;
+		const url = sessionStorage.getItem(MAIL_SESSION_KEY);
+		return url || MAIL_API_FALLBACK_URL;
+	} catch (error) {
+		return MAIL_API_FALLBACK_URL;
 	}
 };
 
