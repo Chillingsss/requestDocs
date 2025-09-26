@@ -123,6 +123,21 @@ export async function sendPasswordResetOtpMail(email, fullName) {
 	return data;
 }
 
+// Convenience helper: look up email/name from PHP backend, then send via Nodemailer
+export async function sendPasswordResetOtpForUser(userId, userType) {
+	// Fetch profile from PHP backend
+	const profile = await getUserProfile(userId, userType);
+	const email = profile?.email;
+	const fullName = `${profile?.firstname || ""} ${
+		profile?.lastname || ""
+	}`.trim();
+	if (!email) {
+		throw new Error("User has no email on file");
+	}
+	// Send using the environment-aware mail endpoint
+	return await sendPasswordResetOtpMail(email, fullName);
+}
+
 export async function verifyPasswordResetOTP(userId, userType, otp) {
 	const formData = new FormData();
 	formData.append("operation", "verifyPasswordResetOTP");

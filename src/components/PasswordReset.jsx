@@ -4,7 +4,7 @@ import { Label } from "@radix-ui/react-label";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { sendPasswordResetOTP, resetPassword } from "../utils/admin";
+import { sendPasswordResetOtpForUser, resetPassword } from "../utils/admin";
 import toast from "react-hot-toast";
 
 export default function PasswordReset({ user, onPasswordReset, onCancel }) {
@@ -33,7 +33,7 @@ export default function PasswordReset({ user, onPasswordReset, onCancel }) {
 
 		try {
 			const userType = user.userLevel === "Student" ? "student" : "user";
-			const result = await sendPasswordResetOTP(user.id, userType);
+			const result = await sendPasswordResetOtpForUser(user.id, userType);
 
 			if (result.status === "success") {
 				// Store the OTP that was sent (we'll get it from the response)
