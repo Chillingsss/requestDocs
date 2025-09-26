@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getDecryptedApiUrl, getMailApiUrl } from "./apiConfig";
+import { getDecryptedApiUrl } from "./apiConfig";
 
 export async function getUserLevel() {
 	const formData = new FormData();
@@ -108,16 +108,19 @@ export async function sendPasswordResetOTP(userId, userType) {
 
 // New Nodemailer-based OTP sender hitting Node mail server directly
 export async function sendPasswordResetOtpMail(email, fullName) {
-	const mailApi = getMailApiUrl();
-	try {
-		const { data } = await axios.post(`${mailApi}/send-password-reset-otp`, {
-			email,
-			fullName,
-		});
-		return data;
-	} catch (error) {
-		throw error;
-	}
+	const hostname =
+		typeof window !== "undefined" ? window.location.hostname : "";
+	const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(hostname);
+	const baseOverride = process.env.REACT_APP_MAIL_API_BASE;
+	console.log("baseOverride", baseOverride);
+	const endpoint = baseOverride
+		? `${baseOverride.replace(/\/$/, "")}/api/send-password-reset-otp`
+		: isLocal
+		? "http://localhost:4001/send-password-reset-otp"
+		: "/api/send-password-reset-otp";
+
+	const { data } = await axios.post(endpoint, { email, fullName });
+	return data;
 }
 
 export async function verifyPasswordResetOTP(userId, userType, otp) {
