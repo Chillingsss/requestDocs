@@ -4,7 +4,7 @@ import CryptoJS from "crypto-js";
 const SECRET_KEY = "mogchs_api_secret_key";
 const SESSION_KEY = "mogchs_encrypted_api_url";
 const FALLBACK_API_URL = "http://localhost/request_docs/backend";
-const MAIL_API_FALLBACK_URL = "http://localhost:4001";
+const MAIL_API_FALLBACK_URL = "https://request-docs.vercel.app/";
 
 /**
  * Set the encrypted API URL in session storage
