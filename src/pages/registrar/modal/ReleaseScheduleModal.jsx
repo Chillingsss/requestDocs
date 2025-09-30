@@ -40,6 +40,41 @@ export default function ReleaseScheduleModal({
 		}
 	};
 
+	const sendReleaseScheduleEmail = async (requestData, releaseDate) => {
+		try {
+			const hostname =
+				typeof window !== "undefined" ? window.location.hostname : "";
+			const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(hostname);
+			const baseOverride = process.env.REACT_APP_MAIL_API_BASE;
+			const endpoint = baseOverride
+				? `${baseOverride.replace(/\/$/, "")}/api/send-release-schedule-email`
+				: isLocal
+				? "http://localhost:4001/send-release-schedule-email"
+				: "/api/send-release-schedule-email";
+
+			const response = await fetch(endpoint, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					email: requestData.email,
+					firstName: requestData.firstname,
+					lastName: requestData.lastname,
+					documentName: requestData.documentName,
+					displayPurpose: requestData.displayPurpose,
+					releaseDate: releaseDate,
+				}),
+			});
+
+			const result = await response.json();
+			return result.status === "success";
+		} catch (error) {
+			console.error("Failed to send email:", error);
+			return false;
+		}
+	};
+
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
@@ -68,11 +103,25 @@ export default function ReleaseScheduleModal({
 
 		setProcessing(true);
 		try {
+			// First, schedule the release in the database
 			const response = await scheduleRelease(request.id, releaseDate, userId);
 			console.log("scheduleRelease response:", response);
 
 			if (response.success) {
-				toast.success(response.message);
+				// If database operation succeeded, send email
+				const emailSent = await sendReleaseScheduleEmail(
+					response.requestData,
+					releaseDate
+				);
+
+				if (emailSent) {
+					toast.success(response.message + " Email notification sent.");
+				} else {
+					toast.success(
+						response.message + " (Email notification failed to send)"
+					);
+				}
+
 				onSuccess();
 				onClose();
 			} else {

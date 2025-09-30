@@ -1152,7 +1152,6 @@ class User {
   function scheduleRelease($json)
   {
     include "connection.php";
-    include "vendor/autoload.php";
 
     $json = json_decode($json, true);
     $requestId = $json['requestId'];
@@ -1215,7 +1214,7 @@ class User {
         // Check if current user is the same as the original registrar
         if ($originalRegistrar !== $userId) {
           // Get the registrar's name for better error message
-          $registrarNameSql = "SELECT firstname, lastname FROM tblregistrar WHERE id = :registrarId";
+          $registrarNameSql = "SELECT firstname, lastname FROM tbluser WHERE id = :registrarId";
           $registrarNameStmt = $conn->prepare($registrarNameSql);
           $registrarNameStmt->bindParam(':registrarId', $originalRegistrar);
           $registrarNameStmt->execute();
@@ -1270,19 +1269,12 @@ class User {
         }
       }
 
-      // Send email notification
-      $emailSent = $this->sendReleaseScheduleEmail($requestData, $releaseDate);
-      
-      if (!$emailSent) {
-        // Log email failure but don't rollback the transaction
-        error_log("Failed to send release schedule email for request ID: " . $requestId);
-      }
-
       $conn->commit();
+      
       return json_encode([
         'success' => true, 
         'message' => 'Release schedule set successfully for ' . date('F j, Y', strtotime($releaseDate)),
-        'emailSent' => $emailSent
+        'requestData' => $requestData
       ]);
 
     } catch (PDOException $e) {
@@ -1291,119 +1283,6 @@ class User {
     }
   }
 
-  function sendReleaseScheduleEmail($requestData, $releaseDate)
-  {
-    try {
-      // Include email configuration
-      include_once "email_config.php";
-      
-      // Create PHPMailer instance
-      $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-      
-      // Server settings
-      $mail->isSMTP();
-      $mail->Host = SMTP_HOST;
-      $mail->SMTPAuth = true;
-      $mail->Username = SMTP_USERNAME;
-      $mail->Password = SMTP_PASSWORD;
-      $mail->SMTPSecure = SMTP_SECURE === 'tls' ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-      $mail->Port = SMTP_PORT;
-      
-      // Debug mode
-      if (EMAIL_DEBUG) {
-        $mail->SMTPDebug = 2;
-      }
-      
-      // Recipients
-      $mail->setFrom(FROM_EMAIL, FROM_NAME);
-      $mail->addAddress($requestData['email'], $requestData['firstname'] . ' ' . $requestData['lastname']);
-      
-      // Content
-      $mail->isHTML(true);
-      $mail->Subject = EMAIL_SUBJECT_PREFIX . $requestData['documentName'];
-      
-      // Format the release date
-      $formattedDate = date('F j, Y', strtotime($releaseDate));
-      $formattedTime = OFFICE_HOURS;
-      
-      // Email body
-      $mail->Body = "
-        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-          <div style='background-color: #5409DA; color: white; padding: 20px; text-align: center;'>
-            <h1 style='margin: 0;'>MOGCHS Registrar Office</h1>
-          </div>
-          
-          <div style='padding: 30px; background-color: #f9f9f9;'>
-            <h2 style='color: #333; margin-bottom: 20px;'>Document Release Schedule</h2>
-            
-            <p>Dear <strong>{$requestData['firstname']} {$requestData['lastname']}</strong>,</p>
-            
-            <p>Your document request has been processed and is ready for release.</p>
-            
-            <div style='background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #5409DA; margin: 20px 0;'>
-              <h3 style='color: #5409DA; margin-top: 0;'>Request Details:</h3>
-              <p><strong>Document:</strong> {$requestData['documentName']}</p>
-              <p><strong>Purpose:</strong> {$requestData['displayPurpose']}</p>
-              <p><strong>Release Date:</strong> {$formattedDate}</p>
-              <p><strong>Office Hours:</strong> {$formattedTime}</p>
-            </div>
-            
-                         <div style='background-color: #e8f4fd; padding: 15px; border-radius: 5px; border: 1px solid #bee5eb;'>
-               <h4 style='color: #0c5460; margin-top: 0;'>Important Notes:</h4>
-               <ul style='color: #0c5460; margin: 10px 0; padding-left: 20px;'>
-                 <li>Please bring a valid ID for verification</li>
-                 <li>If you cannot claim on the scheduled date, please contact the registrar office</li>
-                 <li>Documents not claimed within " . RETENTION_DAYS . " days may be disposed of</li>
-               </ul>
-             </div>
-            
-            <p>If you have any questions, please contact the registrar office.</p>
-            
-            <p>Best regards,<br>
-            <strong>MOGCHS Registrar Office</strong></p>
-          </div>
-          
-          <div style='background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;'>
-            <p style='margin: 0;'>This is an automated message. Please do not reply to this email.</p>
-          </div>
-        </div>
-      ";
-      
-      // Plain text version
-      $mail->AltBody = "
-        MOGCHS Registrar Office
-        
-        Document Release Schedule
-        
-        Dear {$requestData['firstname']} {$requestData['lastname']},
-        
-        Your document request has been processed and is ready for release.
-        
-        Request Details:
-        - Document: {$requestData['documentName']}
-        - Purpose: {$requestData['displayPurpose']}
-        - Release Date: {$formattedDate}
-        - Office Hours: {$formattedTime}
-        
-                 Important Notes:
-         - Please bring a valid ID for verification
-         - If you cannot claim on the scheduled date, please contact the registrar office
-         - Documents not claimed within " . RETENTION_DAYS . " days may be disposed of
-        
-        If you have any questions, please contact the registrar office.
-        
-        Best regards,
-        MOGCHS Registrar Office
-      ";
-      
-      $mail->send();
-      return true;
-      
-    } catch (Exception $e) {
-      error_log("Email sending failed: " . $e->getMessage());
-      return false;
-    }
-  }
 
   function getReleaseSchedule($json)
   {
