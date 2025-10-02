@@ -109,7 +109,9 @@ export default async function handler(req, res) {
 		`;
 
 		await transporter.sendMail({
-			from: process.env.MAIL_FROM || "noreply@mogchs.com",
+			from: `"MOGCHS Registrar Office" <${
+				process.env.MAIL_FROM || "noreply@mogchs.com"
+			}>`,
 			to: email,
 			subject: `Your LRN Information - ${lrn}`,
 			html,

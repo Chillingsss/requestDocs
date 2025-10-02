@@ -59,10 +59,10 @@ export default function ProcessLrnModal({
 	if (!isOpen) return null;
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center">
+		<div className="flex fixed inset-0 z-50 justify-center items-center">
 			{/* Backdrop */}
 			<div
-				className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+				className="fixed inset-0 backdrop-blur-sm bg-black/50"
 				onClick={onClose}
 			/>
 
@@ -71,7 +71,7 @@ export default function ProcessLrnModal({
 				{/* Close button */}
 				<button
 					onClick={onClose}
-					className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+					className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
 				>
 					<X className="w-5 h-5" />
 				</button>
@@ -108,7 +108,7 @@ export default function ProcessLrnModal({
 
 					{/* Search Section */}
 					<div className="mb-6">
-						<div className="flex items-center gap-2 mb-4">
+						<div className="flex gap-2 items-center mb-4">
 							<Input
 								placeholder="Search student by name..."
 								value={searchTerm}
@@ -128,29 +128,29 @@ export default function ProcessLrnModal({
 						</div>
 
 						{loadingType === "searching" ? (
-							<div className="text-center py-4 text-slate-600 dark:text-slate-400">
+							<div className="py-4 text-center text-slate-600 dark:text-slate-400">
 								Searching...
 							</div>
 						) : loadingType === "processing" ? (
-							<div className="text-center py-4 text-slate-600 dark:text-slate-400">
+							<div className="py-4 text-center text-slate-600 dark:text-slate-400">
 								Processing request...
 							</div>
 						) : searchResults.length === 0 ? (
-							<div className="text-center py-4 text-slate-500 dark:text-slate-400">
+							<div className="py-4 text-center text-slate-500 dark:text-slate-400">
 								No matching students found
 							</div>
 						) : (
 							<div className="max-h-[300px] overflow-y-auto border rounded-lg dark:border-slate-700">
 								<table className="w-full">
-									<thead className="bg-slate-50 dark:bg-slate-800 sticky top-0">
+									<thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
 										<tr>
-											<th className="py-2 px-4 text-left font-semibold text-slate-900 dark:text-white">
+											<th className="px-4 py-2 font-semibold text-left text-slate-900 dark:text-white">
 												Name
 											</th>
-											<th className="py-2 px-4 text-left font-semibold text-slate-900 dark:text-white">
+											<th className="px-4 py-2 font-semibold text-left text-slate-900 dark:text-white">
 												LRN
 											</th>
-											<th className="py-2 px-4 text-left font-semibold text-slate-900 dark:text-white">
+											<th className="px-4 py-2 font-semibold text-left text-slate-900 dark:text-white">
 												Action
 											</th>
 										</tr>
@@ -161,11 +161,11 @@ export default function ProcessLrnModal({
 												key={student.id}
 												className="border-t dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
 											>
-												<td className="py-2 px-4">
+												<td className="px-4 py-2">
 													{student.firstname} {student.lastname}
 												</td>
-												<td className="py-2 px-4">{student.lrn}</td>
-												<td className="py-2 px-4">
+												<td className="px-4 py-2">{student.lrn}</td>
+												<td className="px-4 py-2">
 													<Button
 														size="sm"
 														onClick={() =>
@@ -184,7 +184,7 @@ export default function ProcessLrnModal({
 					</div>
 
 					{/* Footer */}
-					<div className="flex justify-end gap-2 pt-4 border-t dark:border-slate-700">
+					<div className="flex gap-2 justify-end pt-4 border-t dark:border-slate-700">
 						<Button variant="outline" onClick={onClose}>
 							Cancel
 						</Button>
