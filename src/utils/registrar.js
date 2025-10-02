@@ -558,3 +558,27 @@ export async function getRequestOwner(requestId) {
 		throw error;
 	}
 }
+
+export async function sendLrnEmail({ email, firstName, lastName, lrn }) {
+	const hostname =
+		typeof window !== "undefined" ? window.location.hostname : "";
+	const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(hostname);
+	const baseOverride = process.env.REACT_APP_MAIL_API_BASE;
+	const endpoint = baseOverride
+		? `${baseOverride.replace(/\/$/, "")}/api/send-lrn-email`
+		: isLocal
+		? "http://localhost:4001/send-lrn-email"
+		: "/api/send-lrn-email";
+
+	try {
+		const response = await axios.post(endpoint, {
+			email,
+			firstName,
+			lastName,
+			lrn,
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

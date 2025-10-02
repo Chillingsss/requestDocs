@@ -3,6 +3,7 @@ import { Card, CardContent } from "../../../components/ui/card";
 import {
 	getForgotLrnRequests,
 	processLrnRequest,
+	sendLrnEmail,
 } from "../../../utils/registrar";
 import toast from "react-hot-toast";
 import ProcessLrnModal from "./ProcessLrnModal";
@@ -40,7 +41,21 @@ export default function LrnRequestsTab({ userId, students }) {
 				lrn
 			);
 			if (response.success) {
-				toast.success("LRN request processed successfully");
+				// Send LRN email using the new API
+				try {
+					await sendLrnEmail({
+						email: response.requestData.email,
+						firstName: response.requestData.firstname,
+						lastName: response.requestData.lastname,
+						lrn: response.lrn,
+					});
+					toast.success("LRN request processed and email sent successfully");
+				} catch (emailError) {
+					console.error("Failed to send LRN email:", emailError);
+					toast.success(
+						"LRN request processed successfully, but email failed to send"
+					);
+				}
 				fetchRequests(); // Refresh the list
 			} else {
 				toast.error(response.error || "Failed to process request");
@@ -69,18 +84,18 @@ export default function LrnRequestsTab({ userId, students }) {
 				</div>
 
 				{loading ? (
-					<div className="text-center py-4">Loading requests...</div>
+					<div className="py-4 text-center">Loading requests...</div>
 				) : requests.length === 0 ? (
-					<div className="text-center py-4">No pending LRN requests</div>
+					<div className="py-4 text-center">No pending LRN requests</div>
 				) : (
 					<div className="overflow-x-auto">
 						<table className="w-full">
 							<thead>
 								<tr className="border-b dark:border-slate-700">
-									<th className="text-left py-2 px-4">Name</th>
-									<th className="text-left py-2 px-4">Email</th>
-									<th className="text-left py-2 px-4">Status</th>
-									<th className="text-left py-2 px-4">Requested</th>
+									<th className="px-4 py-2 text-left">Name</th>
+									<th className="px-4 py-2 text-left">Email</th>
+									<th className="px-4 py-2 text-left">Status</th>
+									<th className="px-4 py-2 text-left">Requested</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -96,22 +111,22 @@ export default function LrnRequestsTab({ userId, students }) {
 												: ""
 										}`}
 									>
-										<td className="py-2 px-4">
+										<td className="px-4 py-2">
 											{request.firstname} {request.lastname}
 										</td>
-										<td className="py-2 px-4">{request.email}</td>
-										<td className="py-2 px-4">
+										<td className="px-4 py-2">{request.email}</td>
+										<td className="px-4 py-2">
 											{request.is_processed ? (
-												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+												<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900/20 dark:text-green-400">
 													Processed
 												</span>
 											) : (
-												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+												<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
 													Pending
 												</span>
 											)}
 										</td>
-										<td className="py-2 px-4">
+										<td className="px-4 py-2">
 											{new Date(request.created_at).toLocaleDateString()}
 										</td>
 									</tr>

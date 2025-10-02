@@ -1375,7 +1375,6 @@ function getForgotLrnRequests()
 function processLrnRequest($json)
 {
   include "connection.php";
-  include "vendor/autoload.php";
   
   $json = json_decode($json, true);
   $requestId = $json['requestId'];
@@ -1401,7 +1400,6 @@ function processLrnRequest($json)
     }
     
     $requestData = $stmt->fetch(PDO::FETCH_ASSOC);
-    $requestData['lrn'] = $lrn; // Add the selected LRN to the request data
     
     // Update request status
     $updateSql = "UPDATE tblforgotlrn 
@@ -1419,18 +1417,12 @@ function processLrnRequest($json)
       return json_encode(['error' => 'Failed to update request status']);
     }
     
-    // Send email with LRN
-    $emailSent = $this->sendLrnEmail($requestData);
-    
-    if (!$emailSent) {
-      error_log("Failed to send LRN email for request ID: " . $requestId);
-    }
-    
     $conn->commit();
     return json_encode([
       'success' => true,
       'message' => 'Request processed successfully',
-      'emailSent' => $emailSent
+      'requestData' => $requestData,
+      'lrn' => $lrn
     ]);
     
   } catch (PDOException $e) {
@@ -1439,84 +1431,6 @@ function processLrnRequest($json)
   }
 }
 
-function sendLrnEmail($requestData)
-{
-  try {
-    include_once "email_config.php";
-    
-    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-    
-    // Server settings
-    $mail->isSMTP();
-    $mail->Host = SMTP_HOST;
-    $mail->SMTPAuth = true;
-    $mail->Username = SMTP_USERNAME;
-    $mail->Password = SMTP_PASSWORD;
-    $mail->SMTPSecure = SMTP_SECURE === 'tls' ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-    $mail->Port = SMTP_PORT;
-    
-    // Recipients
-    $mail->setFrom(FROM_EMAIL, FROM_NAME);
-    $mail->addAddress($requestData['email']);
-    
-    // Content
-    $mail->isHTML(true);
-    $mail->Subject = EMAIL_SUBJECT_PREFIX . 'Your LRN Information';
-    
-    $mail->Body = "
-      <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-        <div style='background-color: #5409DA; color: white; padding: 20px; text-align: center;'>
-          <h1 style='margin: 0;'>MOGCHS Registrar Office</h1>
-        </div>
-        
-        <div style='padding: 30px; background-color: #f9f9f9;'>
-          <h2 style='color: #333; margin-bottom: 20px;'>LRN Information</h2>
-          
-          <p>Dear <strong>{$requestData['firstname']} {$requestData['lastname']}</strong>,</p>
-          
-          <p>As per your request, here is your Learner Reference Number (LRN):</p>
-          
-          <div style='background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #5409DA; margin: 20px 0;'>
-            <h3 style='color: #5409DA; margin: 0;'>Your LRN: {$requestData['lrn']}</h3>
-          </div>
-          
-          <p>Please keep this information secure and use it for future reference.</p>
-          
-          <p>Best regards,<br>
-          <strong>MOGCHS Registrar Office</strong></p>
-        </div>
-        
-        <div style='background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;'>
-          <p style='margin: 0;'>This is an automated message. Please do not reply to this email.</p>
-        </div>
-      </div>
-    ";
-    
-    $mail->AltBody = "
-      MOGCHS Registrar Office
-      
-      LRN Information
-      
-      Dear {$requestData['firstname']} {$requestData['lastname']},
-      
-      As per your request, here is your Learner Reference Number (LRN):
-      
-      Your LRN: {$requestData['lrn']}
-      
-      Please keep this information secure and use it for future reference.
-      
-      Best regards,
-      MOGCHS Registrar Office
-    ";
-    
-    $mail->send();
-    return true;
-    
-  } catch (Exception $e) {
-    error_log("Email sending failed: " . $e->getMessage());
-    return false;
-  }
-}
 
   // Add requirement comment
   function addRequirementComment($json)
