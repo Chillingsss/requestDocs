@@ -45,8 +45,6 @@ export default function StudentModal({
 	// Section update state
 	const [sectionUpdateMode, setSectionUpdateMode] = useState(false);
 	const [availableSections, setAvailableSections] = useState([]);
-	const [selectedNewSection, setSelectedNewSection] = useState("");
-	const [updatingSection, setUpdatingSection] = useState(false);
 	const [targetGradeLevel, setTargetGradeLevel] = useState("2"); // Default to Grade 12 (ID: 2)
 
 	// Auto-set upload mode based on number of students
@@ -142,38 +140,19 @@ export default function StudentModal({
 			// Get the encrypted API URL from session storage
 			const apiUrl = getDecryptedApiUrl();
 
-			console.log("🚀 Starting upload process...");
-			console.log("📁 File details:", {
-				name: selectedExcelFile.name,
-				size: selectedExcelFile.size,
-				type: selectedExcelFile.type,
-			});
-			console.log("🔗 API URL:", apiUrl);
-			console.log("👤 Student ID:", student.id);
-			console.log("📊 Grade Level ID:", teacherGradeLevelId);
-			console.log("👨‍🏫 Teacher User ID:", teacherUserId);
-
 			const response = await fetch(`${apiUrl}/teacher.php`, {
 				method: "POST",
 				body: formData,
 			});
 
-			console.log("📡 Response status:", response.status);
-			console.log("📡 Response headers:", response.headers);
-
 			// Get the raw response text first
 			const responseText = await response.text();
-			console.log("📄 Raw response text:", responseText);
 
 			// Try to parse as JSON
 			let result;
 			try {
 				result = JSON.parse(responseText);
-				console.log("✅ Parsed JSON result:", result);
 			} catch (parseError) {
-				console.error("❌ JSON parse error:", parseError);
-				console.error("❌ Raw response that couldn't be parsed:", responseText);
-
 				// Show the raw response in the error
 				toast.error(
 					`Server returned invalid response: ${responseText.substring(
@@ -302,33 +281,15 @@ export default function StudentModal({
 				formData.append(`excelFile_${studentId}`, bulkExcelFiles[studentId]);
 			});
 
-			console.log("🚀 Starting bulk upload process...");
-			console.log("👥 Selected students:", selectedIds);
-			console.log(
-				"📁 Files to upload:",
-				Object.keys(bulkExcelFiles).map((id) => ({
-					studentId: id,
-					fileName: bulkExcelFiles[id].name,
-					fileSize: bulkExcelFiles[id].size,
-				}))
-			);
-			console.log("📊 Grade Level ID:", teacherGradeLevelId);
-			console.log("👨‍🏫 Teacher User ID:", teacherUserId);
-
 			const apiUrl = getDecryptedApiUrl();
-			console.log("🔗 API URL:", apiUrl);
 
 			const response = await fetch(`${apiUrl}/teacher.php`, {
 				method: "POST",
 				body: formData,
 			});
 
-			console.log("📡 Response status:", response.status);
-			console.log("📡 Response headers:", response.headers);
-
 			// Get the raw response text first
 			const responseText = await response.text();
-			console.log("📄 Raw response text:", responseText);
 
 			// Try to parse as JSON
 			let result;
@@ -387,74 +348,6 @@ export default function StudentModal({
 			setUploading(false);
 		}
 	};
-
-	const clearBulkSelection = () => {
-		setSelectedStudents(new Set());
-		setSelectedNewSection("");
-		setBulkExcelFiles({});
-		setSectionUpdateMode(false);
-	};
-
-	// Section update functions
-	const handleSectionUpdateMode = async () => {
-		setSectionUpdateMode(!sectionUpdateMode);
-		if (!sectionUpdateMode) {
-			// Load available sections for the selected grade level
-			await handleLoadSections();
-		}
-	};
-
-	const handleUpdateSection = async () => {
-		if (!selectedNewSection) {
-			toast.error("Please select a new section");
-			return;
-		}
-
-		setUpdatingSection(true);
-
-		try {
-			if (allStudents.length === 1) {
-				// Single student update
-				const result = await updateStudentSection(
-					student.id,
-					selectedNewSection
-				);
-				if (result.success) {
-					toast.success("Student section updated successfully");
-					onFileUpdate(); // Refresh the parent component
-					onClose(); // Close the modal
-				} else {
-					toast.error(result.error || "Failed to update student section");
-				}
-			} else {
-				// Multiple students update
-				const selectedIds = Array.from(selectedStudents);
-				if (selectedIds.length === 0) {
-					toast.error("Please select at least one student");
-					return;
-				}
-
-				const result = await updateMultipleStudentSections(
-					selectedIds,
-					selectedNewSection
-				);
-				if (result.success) {
-					toast.success(`Successfully updated ${result.successCount} students`);
-					onFileUpdate(); // Refresh the parent component
-					onClose(); // Close the modal
-				} else {
-					toast.error(result.error || "Failed to update student sections");
-				}
-			}
-		} catch (error) {
-			console.error("Section update error:", error);
-			toast.error("Failed to update student section(s)");
-		} finally {
-			setUpdatingSection(false);
-		}
-	};
-
-	// Generate page numbers for pagination
 
 	return (
 		<div className="flex fixed inset-0 z-50 justify-center items-center">

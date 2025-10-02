@@ -372,13 +372,7 @@ class User {
         mkdir($documentsDir, 0777, true);
         error_log("Created documents directory: " . $documentsDir);
       }
-      
-      error_log("Starting Excel to PDF conversion using ConvertAPI for: " . $excelFileName);
-      error_log("Excel file path: " . $excelFilePath);
-      error_log("PDF file path: " . $pdfFilePath);
-      error_log("Documents directory: " . $documentsDir);
-      error_log("Documents directory exists: " . (is_dir($documentsDir) ? 'Yes' : 'No'));
-      error_log("Documents directory writable: " . (is_writable($documentsDir) ? 'Yes' : 'No'));
+     
       
       // Use ConvertAPI for reliable Excel to PDF conversion
       $result = $this->convertExcelToPdfWithConvertAPI($excelFilePath, $excelFileName, $pdfFilePath);
@@ -408,7 +402,7 @@ class User {
       ob_end_clean();
       
       // Set ConvertAPI credentials
-      \ConvertApi\ConvertApi::setApiCredentials('vBc0J7vFKBovvKNtTxC1rEyiG1ap3eTu');
+      \ConvertApi\ConvertApi::setApiCredentials('GZ8XosCxC8jXlTHUduBCRuuX2Jdg1mne');
       
       // Determine the source format based on file extension
       $fileExtension = strtolower(pathinfo($excelFileName, PATHINFO_EXTENSION));
@@ -502,11 +496,6 @@ class User {
           // Use the original filename
           $excelFileName = $excelFile['name'];
           $excelFilePath = $uploadDir . $excelFileName;
-
-          error_log("Upload directory: " . $uploadDir);
-          error_log("Excel file path: " . $excelFilePath);
-          error_log("Upload directory exists: " . (is_dir($uploadDir) ? 'Yes' : 'No'));
-          error_log("Upload directory writable: " . (is_writable($uploadDir) ? 'Yes' : 'No'));
 
           // Check if a file with the same name already exists and delete it
           if (file_exists($excelFilePath)) {
