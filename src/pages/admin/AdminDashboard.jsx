@@ -20,6 +20,8 @@ import {
 	getRecentActivity,
 	getTotalUsers,
 	getStudentsWithFilters,
+	activateUser,
+	deactivateUser,
 } from "../../utils/admin";
 import AddUserModal from "./modal/AddUserModal";
 import toast, { Toaster } from "react-hot-toast";
@@ -258,6 +260,46 @@ export default function AdminDashboard() {
 		toast.success("Profile updated successfully");
 	};
 
+	const handleActivateUser = async (userId, userType) => {
+		try {
+			const response = await activateUser(userId, userType);
+			if (response.status === "success") {
+				toast.success(response.message);
+				// Refresh the appropriate list
+				if (userType === "user") {
+					fetchUsers();
+				} else {
+					fetchStudents();
+				}
+			} else {
+				toast.error(response.message || "Failed to activate user");
+			}
+		} catch (error) {
+			console.error("Error activating user:", error);
+			toast.error("Failed to activate user");
+		}
+	};
+
+	const handleDeactivateUser = async (userId, userType) => {
+		try {
+			const response = await deactivateUser(userId, userType);
+			if (response.status === "success") {
+				toast.success(response.message);
+				// Refresh the appropriate list
+				if (userType === "user") {
+					fetchUsers();
+				} else {
+					fetchStudents();
+				}
+			} else {
+				toast.error(response.message || "Failed to deactivate user");
+			}
+		} catch (error) {
+			console.error("Error deactivating user:", error);
+			toast.error("Failed to deactivate user");
+		}
+	};
+
 	// Chart data for request status
 	const requestStatusChartData = {
 		labels: dashboardData.requestStats.map((stat) => stat.status),
@@ -334,6 +376,8 @@ export default function AdminDashboard() {
 						loading={loading}
 						onAddUser={() => setShowAddUserModal(true)}
 						onViewProfile={handleViewProfile}
+						onActivateUser={handleActivateUser}
+						onDeactivateUser={handleDeactivateUser}
 					/>
 				);
 			case "Students":
@@ -353,6 +397,8 @@ export default function AdminDashboard() {
 						}
 						onAddStudent={() => setShowAddStudentModal(true)}
 						onViewProfile={handleViewProfile}
+						onActivateUser={handleActivateUser}
+						onDeactivateUser={handleDeactivateUser}
 					/>
 				);
 			case "Reports":

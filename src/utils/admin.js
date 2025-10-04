@@ -137,6 +137,36 @@ export async function sendPasswordResetOtpForUser(userId, userType) {
 	return await sendPasswordResetOtpMail(email, fullName);
 }
 
+export async function activateUser(userId, userType) {
+	const formData = new FormData();
+	formData.append("operation", "activateUser");
+	formData.append("json", JSON.stringify({ userId, userType }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData);
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deactivateUser(userId, userType) {
+	const formData = new FormData();
+	formData.append("operation", "deactivateUser");
+	formData.append("json", JSON.stringify({ userId, userType }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData);
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 export async function verifyPasswordResetOTP(userId, userType, otp) {
 	const formData = new FormData();
 	formData.append("operation", "verifyPasswordResetOTP");

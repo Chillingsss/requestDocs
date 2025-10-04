@@ -4,7 +4,8 @@ import CryptoJS from "crypto-js";
 const SECRET_KEY = "mogchs_api_secret_key";
 const SESSION_KEY = "mogchs_encrypted_api_url";
 // const FALLBACK_API_URL = "http://localhost/request_docs/backend";
-const FALLBACK_API_URL = "https://peachpuff-alligator-715719.hostingersite.com/api";
+const FALLBACK_API_URL =
+	"https://peachpuff-alligator-715719.hostingersite.com/api";
 // Local dev mail server default; in production we use Vercel serverless route
 const MAIL_API_FALLBACK_URL = "http://localhost:4001";
 

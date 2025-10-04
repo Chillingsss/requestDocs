@@ -2,14 +2,13 @@
 include "headers.php";
 
 class User {
-  function login($json)
-{
+  function login($json) {
     include "connection.php";
 
     $json = json_decode($json, true);
 
     // Check in tbluser
-    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.pinCode, a.gradeLevelId, a.sectionId, b.name AS userLevel FROM tbluser a
+    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.pinCode, a.gradeLevelId, a.sectionId, a.isActive, b.name AS userLevel FROM tbluser a
             INNER JOIN tbluserlevel b ON a.userLevel = b.id
             WHERE BINARY a.id = :username";
     $stmt = $conn->prepare($sql);
@@ -18,6 +17,12 @@ class User {
 
     if ($stmt->rowCount() > 0) {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Check if account is active
+        if (!$user['isActive']) {
+            return json_encode(['error' => 'Account has been deactivated. Please contact administrator.']);
+        }
+        
         if (password_verify($json['password'], $user['password'])) {
             // Check if password is still the default (lastname)
             $lastnameLower = strtolower($user['lastname']);
@@ -64,7 +69,7 @@ class User {
 
 
     // Check in tblstudent
-    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, b.name AS userLevel FROM tblstudent a
+    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.isActive, b.name AS userLevel FROM tblstudent a
             INNER JOIN tbluserlevel b ON a.userLevel = b.id
             WHERE BINARY a.id = :username";
     $stmt = $conn->prepare($sql);
@@ -73,6 +78,12 @@ class User {
 
     if ($stmt->rowCount() > 0) {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Check if account is active
+        if (!$user['isActive']) {
+            return json_encode(['error' => 'Account has been deactivated. Please contact administrator.']);
+        }
+        
         if (password_verify($json['password'], $user['password'])) {
             // Debug logging
             error_log("Student login attempt - User: " . $user['id'] . ", Lastname: " . $user['lastname'] . ", Input password: " . $json['password']);
@@ -666,7 +677,7 @@ class User {
    {
     include "connection.php";
 
-    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, b.name AS userLevel 
+    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.isActive, b.name AS userLevel 
             FROM tbluser a
             INNER JOIN tbluserlevel b ON a.userLevel = b.id
             ORDER BY a.firstname, a.lastname";
@@ -937,6 +948,7 @@ class User {
                 s.lastname,
                 s.lrn,
                 s.email,
+                s.isActive,
                 s.birthDate,
                 s.age,
                 s.religion,
@@ -1239,6 +1251,54 @@ class User {
 
     } catch (PDOException $e) {
         return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function activateUser($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $userId = $json['userId'];
+    $userType = $json['userType']; // 'user' or 'student'
+    
+    try {
+        $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+        $sql = "UPDATE $table SET isActive = 1 WHERE id = :userId";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':userId', $userId);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'User activated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to activate user']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function deactivateUser($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $userId = $json['userId'];
+    $userType = $json['userType']; // 'user' or 'student'
+    
+    try {
+        $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+        $sql = "UPDATE $table SET isActive = 0 WHERE id = :userId";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':userId', $userId);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'User deactivated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to deactivate user']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
     }
    }
 
@@ -1842,10 +1902,15 @@ switch ($operation) {
   case "deletePurpose":
     echo $user->deletePurpose($json);
     break;
+  case "activateUser":
+    echo $user->activateUser($json);
+    break;
+  case "deactivateUser":
+    echo $user->deactivateUser($json);
+    break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");
     http_response_code(400); // Bad Request
     break;
 }
-
 ?>

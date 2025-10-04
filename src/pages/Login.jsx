@@ -254,6 +254,18 @@ export default function LoginPage() {
 			console.log("needsEmailSetup:", user?.needsEmailSetup);
 			console.log("userLevel:", user?.userLevel);
 
+			// Check for account deactivation error
+			if (user && user.error && user.error.includes('deactivated')) {
+				console.log("Account deactivated");
+				setError("Your account has been deactivated. Please contact your administrator.");
+				toast.error("Account Deactivated", {
+					description: "Your account has been deactivated. Please contact your administrator.",
+					duration: 5000,
+				});
+				setIsLoading(false);
+				return;
+			}
+
 			if (user && user.needsEmailSetup) {
 				// Student needs to set up email first
 				console.log("Student needs email setup");
