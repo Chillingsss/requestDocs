@@ -22,6 +22,7 @@ import {
 	getStudentsWithFilters,
 	activateUser,
 	deactivateUser,
+	getRequestAnalytics,
 } from "../../utils/admin";
 import AddUserModal from "./modal/AddUserModal";
 import toast, { Toaster } from "react-hot-toast";
@@ -46,6 +47,7 @@ import StudentsContent from "./components/StudentsContent";
 import ResourcesContent from "./masterfiles/ResourcesContent";
 import Sidebar from "../../components/shared/Sidebar";
 import UserProfileModal from "./modal/UserProfileModal";
+import ReportsPage from "./ReportsPage";
 
 const SECRET_KEY = "mogchs_secret_key";
 
@@ -402,15 +404,7 @@ export default function AdminDashboard() {
 					/>
 				);
 			case "Reports":
-				return (
-					<Card className="dark:bg-slate-800 dark:border-slate-700">
-						<CardContent className="p-4 lg:p-6">
-							<div className="py-8 text-center text-slate-500 dark:text-slate-400">
-								Reports section coming soon...
-							</div>
-						</CardContent>
-					</Card>
-				);
+				return <ReportsPage />;
 			case "Settings":
 				return (
 					<Card className="dark:bg-slate-800 dark:border-slate-700">

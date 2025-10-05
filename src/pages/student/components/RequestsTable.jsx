@@ -2,7 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Button } from "../../../components/ui/button";
 import { FileText, Plus, MessageSquare } from "lucide-react";
 import RequestDetailsModal from "../modal/RequestDetailsModal";
-import { getRequirementComments } from "../../../utils/student";
+import {
+	getRequirementComments,
+	getRequestTracking,
+} from "../../../utils/student";
 
 export default function RequestsTable({
 	userRequests,
@@ -15,6 +18,7 @@ export default function RequestsTable({
 	const [showDetailsModal, setShowDetailsModal] = useState(false);
 	const [expandedTimeline, setExpandedTimeline] = useState(null);
 	const [requirementComments, setRequirementComments] = useState({});
+	const [requestTracking, setRequestTracking] = useState({});
 
 	const handleRowClick = (request) => {
 		setSelectedRequest(request);
@@ -26,8 +30,57 @@ export default function RequestsTable({
 		setSelectedRequest(null);
 	};
 
-	const toggleTimeline = (requestId) => {
-		setExpandedTimeline(expandedTimeline === requestId ? null : requestId);
+	const toggleTimeline = async (requestId) => {
+		if (expandedTimeline === requestId) {
+			setExpandedTimeline(null);
+		} else {
+			setExpandedTimeline(requestId);
+			// Fetch tracking data if not already fetched
+			if (!requestTracking[requestId]) {
+				try {
+					const data = await getRequestTracking(requestId);
+					setRequestTracking((prev) => ({ ...prev, [requestId]: data }));
+				} catch (error) {
+					console.error(
+						"Failed to fetch tracking for request",
+						requestId,
+						error
+					);
+				}
+			}
+		}
+	};
+
+	const STATUS_STEPS = [
+		{ key: "Pending", label: "Pending", shortLabel: "P", color: "yellow" },
+		{ key: "Processed", label: "Processed", shortLabel: "Pr", color: "blue" },
+		{ key: "Signatory", label: "Signatory", shortLabel: "S", color: "purple" },
+		{ key: "Release", label: "Release", shortLabel: "R", color: "orange" },
+		{ key: "Completed", label: "Completed", shortLabel: "✓", color: "green" },
+	];
+
+	const getStepIndex = (status) => {
+		const normalizedStatus = status?.toLowerCase();
+		return STATUS_STEPS.findIndex(
+			(step) =>
+				step.key.toLowerCase() === normalizedStatus ||
+				(normalizedStatus === "processing" && step.key === "Processed") ||
+				(normalizedStatus === "signatories" && step.key === "Signatory")
+		);
+	};
+
+	const formatDate = (dateString) => {
+		if (!dateString) return null;
+		try {
+			const date = new Date(dateString);
+			return date.toLocaleDateString("en-US", {
+				month: "long",
+				day: "numeric",
+				year: "numeric",
+			});
+		} catch {
+			return dateString;
+		}
 	};
 
 	const getTimelineDetails = (status) => {
@@ -62,47 +115,6 @@ export default function RequestsTable({
 		}
 	};
 
-	const getStatusDate = (request, stepIndex) => {
-		// This is a simplified version - you might want to fetch actual status change dates from the backend
-		const statusOrder = [
-			"pending",
-			"processed",
-			"signatory",
-			"release",
-			"completed",
-		];
-		const currentIndex = statusOrder.indexOf(request.status.toLowerCase());
-
-		if (stepIndex <= currentIndex) {
-			// For completed or current status, show the request date or a placeholder
-			if (stepIndex === 0) {
-				// Pending status - show when request was submitted
-				return new Date(request.dateRequested).toLocaleDateString("en-US", {
-					month: "long",
-					day: "numeric",
-					year: "numeric",
-				});
-			} else if (stepIndex === currentIndex) {
-				// Current status - show when it was reached (use request date as approximation)
-				return new Date(request.dateRequested).toLocaleDateString("en-US", {
-					month: "long",
-					day: "numeric",
-					year: "numeric",
-				});
-			} else {
-				// Completed status - show estimated date (you can enhance this with actual status change dates)
-				const estimatedDate = new Date(request.dateRequested);
-				estimatedDate.setDate(estimatedDate.getDate() + stepIndex * 2); // Add 2 days per step
-				return estimatedDate.toLocaleDateString("en-US", {
-					month: "long",
-					day: "numeric",
-					year: "numeric",
-				});
-			}
-		}
-		return null; // Future status
-	};
-
 	// Refresh requirement comments when userRequests changes
 	useEffect(() => {
 		const fetchComments = async () => {
@@ -128,12 +140,12 @@ export default function RequestsTable({
 
 	if (userRequests.length === 0) {
 		return (
-			<div className="text-center py-12">
-				<FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-				<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+			<div className="py-12 text-center">
+				<FileText className="mx-auto mb-4 w-16 h-16 text-gray-400" />
+				<h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
 					No document requests yet
 				</h3>
-				<p className="text-gray-500 dark:text-gray-400 mb-6">
+				<p className="mb-6 text-gray-500 dark:text-gray-400">
 					Start by requesting your first document
 				</p>
 			</div>
@@ -142,14 +154,14 @@ export default function RequestsTable({
 
 	return (
 		<>
-			<div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+			<div className="bg-white rounded-lg border shadow-sm dark:bg-slate-800 border-slate-200 dark:border-slate-700">
 				<div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
 					<h2 className="text-lg font-semibold text-slate-900 dark:text-white">
 						My Document Requests
 					</h2>
 
 					{/* Tip for users - moved here for immediate visibility */}
-					<div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-700">
+					<div className="p-3 mt-3 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/10 dark:border-blue-700">
 						<p className="text-xs text-blue-600 dark:text-blue-400">
 							💡 <strong>Tip:</strong> Click on any request row to view full
 							details, progress timeline, and registrar comments.
@@ -161,18 +173,18 @@ export default function RequestsTable({
 					<table className="w-full">
 						<thead className="bg-slate-50 dark:bg-slate-700">
 							<tr>
-								<th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+								<th className="px-6 py-3 text-xs font-medium tracking-wider text-left uppercase text-slate-500 dark:text-slate-300">
 									Document
 								</th>
-								<th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+								<th className="px-6 py-3 text-xs font-medium tracking-wider text-left uppercase text-slate-500 dark:text-slate-300">
 									Progress
 								</th>
-								<th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+								<th className="px-6 py-3 text-xs font-medium tracking-wider text-left uppercase text-slate-500 dark:text-slate-300">
 									Status
 								</th>
 							</tr>
 						</thead>
-						<tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+						<tbody className="bg-white divide-y dark:bg-slate-800 divide-slate-200 dark:divide-slate-700">
 							{userRequests.map((request) => (
 								<tr
 									key={request.id}
@@ -191,20 +203,20 @@ export default function RequestsTable({
 										{/* Release Date (if officially scheduled) - Hide for Completed status since we show actual completion date below */}
 										{request.releaseDate &&
 											request.status?.toLowerCase() !== "completed" && (
-												<div className="text-xs text-green-600 dark:text-green-400 mt-1">
+												<div className="mt-1 text-xs text-green-600 dark:text-green-400">
 													📅 Releasing Date: {request.releaseDateFormatted}
 												</div>
 											)}
 										{/* Expected Release Date and Countdown - Show different wording for Completed status */}
 										{request.expectedReleaseDateFormatted && (
-											<div className="text-xs mt-1">
+											<div className="mt-1 text-xs">
 												{request.status?.toLowerCase() === "completed" ? (
-													<span className="text-green-600 dark:text-green-400 font-medium">
+													<span className="font-medium text-green-600 dark:text-green-400">
 														✅ Released Date:{" "}
 														{request.expectedReleaseDateFormatted}
 													</span>
 												) : request.daysRemaining === 0 ? (
-													<span className="text-green-600 dark:text-green-400 font-medium">
+													<span className="font-medium text-green-600 dark:text-green-400">
 														📅 Expected release: Today!
 													</span>
 												) : request.daysRemaining > 0 ? (
@@ -218,7 +230,7 @@ export default function RequestsTable({
 														</span>
 													</span>
 												) : (
-													<span className="text-red-600 dark:text-red-400 font-medium">
+													<span className="font-medium text-red-600 dark:text-red-400">
 														⚠️ Expected release was:{" "}
 														{request.expectedReleaseDateFormatted}
 														<span className="text-red-700 dark:text-red-300">
@@ -234,17 +246,17 @@ export default function RequestsTable({
 										)}
 										{requirementComments[request.id] &&
 											requirementComments[request.id].length > 0 && (
-												<div className="flex items-center gap-2 mt-2">
+												<div className="flex gap-2 items-center mt-2">
 													<div className="relative">
 														<MessageSquare className="w-4 h-4 text-amber-600" />
-														<div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-															<span className="text-xs text-white font-bold">
+														<div className="flex absolute -top-1 -right-1 justify-center items-center w-3 h-3 bg-red-500 rounded-full">
+															<span className="text-xs font-bold text-white">
 																{requirementComments[request.id].length}
 															</span>
 														</div>
 													</div>
 													<div className="flex flex-col">
-														<span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+														<span className="text-xs font-medium text-amber-700 dark:text-amber-300">
 															Registrar Comment
 														</span>
 														<span className="text-xs text-amber-600 dark:text-amber-400">
@@ -266,7 +278,7 @@ export default function RequestsTable({
 														key={index}
 														className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
 															isCompleted
-																? "bg-blue-600 text-white"
+																? "text-white bg-blue-600"
 																: "bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-400"
 														}`}
 													>
@@ -280,7 +292,7 @@ export default function RequestsTable({
 												e.stopPropagation();
 												toggleTimeline(request.id);
 											}}
-											className="text-xs text-blue-600 dark:text-blue-400 mt-2 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer transition-colors"
+											className="mt-2 text-xs text-blue-600 transition-colors cursor-pointer dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
 										>
 											{expandedTimeline === request.id
 												? "Hide Timeline"
@@ -289,36 +301,37 @@ export default function RequestsTable({
 
 										{/* Inline Timeline Details */}
 										{expandedTimeline === request.id && (
-											<div className="mt-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
+											<div className="p-3 mt-3 rounded-lg border bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600">
 												<div className="space-y-2">
-													{[
-														"Pending",
-														"Processed",
-														"Signatory",
-														"Release",
-														"Completed",
-													].map((step, index) => {
+													{STATUS_STEPS.map((step, index) => {
 														const isCompleted = getStepStatus(
 															request.status,
 															index
 														);
 														const isCurrent =
 															request.status.toLowerCase() ===
-															step.toLowerCase();
-														const timelineDetails = getTimelineDetails(step);
-														const statusDate = getStatusDate(request, index);
+															step.key.toLowerCase();
+														const timelineDetails = getTimelineDetails(
+															step.key
+														);
+														const stepTracking = requestTracking[
+															request.id
+														]?.find((t) => getStepIndex(t.status) === index);
+														const statusDate =
+															stepTracking?.createdAt ||
+															stepTracking?.dateFormatted;
 
 														return (
 															<div
-																key={step}
-																className="flex items-start gap-3"
+																key={step.key}
+																className="flex gap-3 items-start"
 															>
 																<div
 																	className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
 																		isCompleted
-																			? "bg-blue-600 text-white"
+																			? "text-white bg-blue-600"
 																			: isCurrent
-																			? "bg-blue-500 text-white animate-pulse"
+																			? "text-white bg-blue-500 animate-pulse"
 																			: "bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-400"
 																	}`}
 																>
@@ -334,23 +347,23 @@ export default function RequestsTable({
 																				: "text-slate-600 dark:text-slate-400"
 																		}`}
 																	>
-																		{step}
+																		{step.label}
 																	</div>
 																	<div
 																		className={`text-xs ${timelineDetails.color}`}
 																	>
 																		{isCompleted || isCurrent
 																			? timelineDetails.description
-																			: "Pending"}
+																			: "Not yet reached"}
 																	</div>
 																	{isCurrent && (
-																		<div className="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
+																		<div className="mt-1 text-xs font-medium text-blue-600 dark:text-blue-400">
 																			← Current Status
 																		</div>
 																	)}
 																	{statusDate && (isCompleted || isCurrent) && (
-																		<div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-																			Date: {statusDate}
+																		<div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+																			Date: {formatDate(statusDate)}
 																		</div>
 																	)}
 																</div>
@@ -369,8 +382,8 @@ export default function RequestsTable({
 										>
 											{request.status}
 										</span>
-										<div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-											{new Date(request.dateRequested).toLocaleDateString(
+										<div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+											{new Date(request.currentStatusDate).toLocaleDateString(
 												"en-US",
 												{
 													month: "long",

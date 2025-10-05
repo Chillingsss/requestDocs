@@ -767,33 +767,33 @@ class User {
                 r.id,
                 CONCAT(s.firstname, ' ', s.lastname) as student,
                 d.name as document,
-                r.purpose,
+                r.purpose as freeTextPurpose,
+                GROUP_CONCAT(DISTINCT p.name) as predefinedPurposes,
                 DATE(r.createdAt) as dateRequested,
                 DATE(rs.createdAt) as dateCompleted,
-                s.id as studentId
+                st.name as status
               FROM tblrequest r
               INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
-              INNER JOIN tblstudent s ON r.studentId = s.id
               INNER JOIN tblstatus st ON rs.statusId = st.id
-              WHERE st.name = 'Completed'
-              AND rs.id = (
+              INNER JOIN tblstudent s ON r.studentId = s.id
+              LEFT JOIN tblrequestpurpose rp ON r.id = rp.requestId
+              LEFT JOIN tblpurpose p ON rp.purposeId = p.id
+              WHERE rs.id = (
                 SELECT MAX(rs2.id) 
                 FROM tblrequeststatus rs2 
                 WHERE rs2.requestId = r.id
               )
+              AND st.name = 'Completed'
+              GROUP BY r.id, s.firstname, s.lastname, d.name, r.purpose, r.createdAt, rs.createdAt, st.name
               ORDER BY rs.createdAt DESC
-              LIMIT 10";
+              LIMIT 50";
 
       $stmt = $conn->prepare($sql);
       $stmt->execute();
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-      if ($stmt->rowCount() > 0) {
-        $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return json_encode($requests);
-      }
-      return json_encode([]);
-
+      return json_encode($rows);
     } catch (PDOException $e) {
       return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
@@ -833,6 +833,141 @@ class User {
       }
       return json_encode([]);
 
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+  function getRequestAnalytics($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    $dateFrom = isset($json['dateFrom']) && !empty($json['dateFrom']) ? $json['dateFrom'] : null;
+    $dateTo = isset($json['dateTo']) && !empty($json['dateTo']) ? $json['dateTo'] : null;
+    $granularity = isset($json['granularity']) && !empty($json['granularity']) ? strtolower($json['granularity']) : 'day';
+
+    try {
+      // Status distribution within optional date range (based on latest status timestamp per request)
+      $statusSql = "SELECT 
+                s.name as status,
+                COUNT(DISTINCT r.id) as count
+              FROM tblrequest r
+              INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
+              INNER JOIN tblstatus s ON rs.statusId = s.id
+              WHERE rs.id = (
+                SELECT MAX(rs2.id) 
+                FROM tblrequeststatus rs2 
+                WHERE rs2.requestId = r.id
+              )";
+      if ($dateFrom) {
+        $statusSql .= " AND DATE(rs.createdAt) >= :dateFrom";
+      }
+      if ($dateTo) {
+        $statusSql .= " AND DATE(rs.createdAt) <= :dateTo";
+      }
+      $statusSql .= " GROUP BY s.id, s.name";
+      $statusStmt = $conn->prepare($statusSql);
+      if ($dateFrom) {
+        $statusStmt->bindParam(':dateFrom', $dateFrom);
+      }
+      if ($dateTo) {
+        $statusStmt->bindParam(':dateTo', $dateTo);
+      }
+      $statusStmt->execute();
+      $statusRows = $statusStmt->fetchAll(PDO::FETCH_ASSOC);
+
+      // Completed counts in range (based on completed status timestamp)
+      $completedSql = "SELECT COUNT(*) as completedCount
+              FROM tblrequest r
+              INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
+              INNER JOIN tblstatus st ON rs.statusId = st.id
+              WHERE st.name = 'Completed'";
+      if ($dateFrom) {
+        $completedSql .= " AND DATE(rs.createdAt) >= :cDateFrom";
+      }
+      if ($dateTo) {
+        $completedSql .= " AND DATE(rs.createdAt) <= :cDateTo";
+      }
+      $completedStmt = $conn->prepare($completedSql);
+      if ($dateFrom) {
+        $completedStmt->bindParam(':cDateFrom', $dateFrom);
+      }
+      if ($dateTo) {
+        $completedStmt->bindParam(':cDateTo', $dateTo);
+      }
+      $completedStmt->execute();
+      $completedRow = $completedStmt->fetch(PDO::FETCH_ASSOC);
+      $completedInRange = $completedRow ? intval($completedRow['completedCount']) : 0;
+
+      // Today vs Yesterday completed
+      $todayStmt = $conn->prepare("SELECT COUNT(*) as cnt FROM tblrequeststatus rs INNER JOIN tblstatus st ON rs.statusId = st.id WHERE st.name='Completed' AND DATE(rs.createdAt) = CURDATE()");
+      $todayStmt->execute();
+      $todayCount = intval(($todayStmt->fetch(PDO::FETCH_ASSOC))['cnt'] ?? 0);
+
+      $yesterdayStmt = $conn->prepare("SELECT COUNT(*) as cnt FROM tblrequeststatus rs INNER JOIN tblstatus st ON rs.statusId = st.id WHERE st.name='Completed' AND DATE(rs.createdAt) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)");
+      $yesterdayStmt->execute();
+      $yesterdayCount = intval(($yesterdayStmt->fetch(PDO::FETCH_ASSOC))['cnt'] ?? 0);
+
+      $percentChange = $yesterdayCount > 0 ? (($todayCount - $yesterdayCount) / $yesterdayCount) * 100 : ($todayCount > 0 ? 100 : 0);
+
+      // Time series completed counts by granularity
+      $timeSql = '';
+      switch ($granularity) {
+        case 'year':
+          $timeSql = "SELECT DATE_FORMAT(rs.createdAt, '%Y') as label, COUNT(*) as cnt
+                      FROM tblrequeststatus rs
+                      INNER JOIN tblstatus st ON rs.statusId = st.id
+                      WHERE st.name = 'Completed'";
+          if ($dateFrom) { $timeSql .= " AND DATE(rs.createdAt) >= :tFrom"; }
+          if ($dateTo) { $timeSql .= " AND DATE(rs.createdAt) <= :tTo"; }
+          $timeSql .= " GROUP BY DATE_FORMAT(rs.createdAt, '%Y') ORDER BY DATE_FORMAT(rs.createdAt, '%Y')";
+          break;
+        case 'month':
+          $timeSql = "SELECT DATE_FORMAT(rs.createdAt, '%Y-%m') as label, COUNT(*) as cnt
+                      FROM tblrequeststatus rs
+                      INNER JOIN tblstatus st ON rs.statusId = st.id
+                      WHERE st.name = 'Completed'";
+          if ($dateFrom) { $timeSql .= " AND DATE(rs.createdAt) >= :tFrom"; }
+          if ($dateTo) { $timeSql .= " AND DATE(rs.createdAt) <= :tTo"; }
+          $timeSql .= " GROUP BY DATE_FORMAT(rs.createdAt, '%Y-%m') ORDER BY DATE_FORMAT(rs.createdAt, '%Y-%m')";
+          break;
+        case 'week':
+          $timeSql = "SELECT DATE_FORMAT(rs.createdAt, '%x-W%v') as label, COUNT(*) as cnt
+                      FROM tblrequeststatus rs
+                      INNER JOIN tblstatus st ON rs.statusId = st.id
+                      WHERE st.name = 'Completed'";
+          if ($dateFrom) { $timeSql .= " AND DATE(rs.createdAt) >= :tFrom"; }
+          if ($dateTo) { $timeSql .= " AND DATE(rs.createdAt) <= :tTo"; }
+          $timeSql .= " GROUP BY DATE_FORMAT(rs.createdAt, '%x-W%v') ORDER BY MIN(DATE(rs.createdAt))";
+          break;
+        case 'day':
+        default:
+          $timeSql = "SELECT DATE(rs.createdAt) as label, COUNT(*) as cnt
+                      FROM tblrequeststatus rs
+                      INNER JOIN tblstatus st ON rs.statusId = st.id
+                      WHERE st.name = 'Completed'";
+          if ($dateFrom) { $timeSql .= " AND DATE(rs.createdAt) >= :tFrom"; }
+          if ($dateTo) { $timeSql .= " AND DATE(rs.createdAt) <= :tTo"; }
+          if (!$dateFrom && !$dateTo) { $timeSql .= " AND rs.createdAt >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)"; }
+          $timeSql .= " GROUP BY DATE(rs.createdAt) ORDER BY DATE(rs.createdAt)";
+          break;
+      }
+
+      $timeStmt = $conn->prepare($timeSql);
+      if ($dateFrom) { $timeStmt->bindParam(':tFrom', $dateFrom); }
+      if ($dateTo) { $timeStmt->bindParam(':tTo', $dateTo); }
+      $timeStmt->execute();
+      $timeRows = $timeStmt->fetchAll(PDO::FETCH_ASSOC);
+
+      return json_encode([
+        'statusCounts' => $statusRows,
+        'completedInRange' => $completedInRange,
+        'todayCompleted' => $todayCount,
+        'yesterdayCompleted' => $yesterdayCount,
+        'percentChange' => $percentChange,
+        'timeSeries' => $timeRows,
+        'granularity' => $granularity
+      ]);
     } catch (PDOException $e) {
       return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
@@ -2122,6 +2257,126 @@ class User {
     }
    }
 
+   function exportRequestAnalytics($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    $dateFrom = isset($json['dateFrom']) && !empty($json['dateFrom']) ? $json['dateFrom'] : null;
+    $dateTo = isset($json['dateTo']) && !empty($json['dateTo']) ? $json['dateTo'] : null;
+
+    try {
+      // Fetch request status distribution
+      $statusSql = "SELECT 
+                s.name as status,
+                COUNT(DISTINCT r.id) as count
+              FROM tblrequest r
+              INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
+              INNER JOIN tblstatus s ON rs.statusId = s.id
+              WHERE rs.id = (
+                SELECT MAX(rs2.id) 
+                FROM tblrequeststatus rs2 
+                WHERE rs2.requestId = r.id
+              )";
+      if ($dateFrom) {
+        $statusSql .= " AND DATE(rs.createdAt) >= :dateFrom";
+      }
+      if ($dateTo) {
+        $statusSql .= " AND DATE(rs.createdAt) <= :dateTo";
+      }
+      $statusSql .= " GROUP BY s.id, s.name";
+      $statusStmt = $conn->prepare($statusSql);
+      if ($dateFrom) {
+        $statusStmt->bindParam(':dateFrom', $dateFrom);
+      }
+      if ($dateTo) {
+        $statusStmt->bindParam(':dateTo', $dateTo);
+      }
+      $statusStmt->execute();
+      $statusRows = $statusStmt->fetchAll(PDO::FETCH_ASSOC);
+
+      // Fetch completed requests details
+      $completedSql = "SELECT 
+                r.id,
+                CONCAT(s.firstname, ' ', s.lastname) as student,
+                d.name as document,
+                r.purpose as freeTextPurpose,
+                GROUP_CONCAT(DISTINCT p.name) as predefinedPurposes,
+                DATE(r.createdAt) as dateRequested,
+                DATE(rs.createdAt) as dateCompleted,
+                st.name as status
+              FROM tblrequest r
+              INNER JOIN tbldocument d ON r.documentId = d.id
+              INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
+              INNER JOIN tblstatus st ON rs.statusId = st.id
+              INNER JOIN tblstudent s ON r.studentId = s.id
+              LEFT JOIN tblrequestpurpose rp ON r.id = rp.requestId
+              LEFT JOIN tblpurpose p ON rp.purposeId = p.id
+              WHERE rs.id = (
+                SELECT MAX(rs2.id) 
+                FROM tblrequeststatus rs2 
+                WHERE rs2.requestId = r.id
+              )";
+      if ($dateFrom) {
+        $completedSql .= " AND DATE(rs.createdAt) >= :cDateFrom";
+      }
+      if ($dateTo) {
+        $completedSql .= " AND DATE(rs.createdAt) <= :cDateTo";
+      }
+      $completedSql .= " GROUP BY r.id, s.firstname, s.lastname, d.name, r.purpose, r.createdAt, rs.createdAt, st.name";
+      $completedSql .= " ORDER BY rs.createdAt DESC";
+      
+      $completedStmt = $conn->prepare($completedSql);
+      if ($dateFrom) {
+        $completedStmt->bindParam(':cDateFrom', $dateFrom);
+      }
+      if ($dateTo) {
+        $completedStmt->bindParam(':cDateTo', $dateTo);
+      }
+      $completedStmt->execute();
+      $completedRows = $completedStmt->fetchAll(PDO::FETCH_ASSOC);
+
+      // Prepare CSV output
+      $csvData = [];
+
+      // Status Distribution Header
+      $csvData[] = ["Request Status Distribution"];
+      $csvData[] = ["Status", "Total Requests"];
+      foreach ($statusRows as $stat) {
+        $csvData[] = [$stat['status'], $stat['count']];
+      }
+
+      // Blank line between sections
+      $csvData[] = [];
+
+      // Completed Requests Header
+      $csvData[] = ["Completed Requests"];
+      $csvData[] = ["Student", "Document", "Purpose", "Requested Date", "Completed Date", "Status"];
+      foreach ($completedRows as $request) {
+        $csvData[] = [
+          $request['student'], 
+          $request['document'], 
+          $request['freeTextPurpose'] . ' (' . $request['predefinedPurposes'] . ')', 
+          $request['dateRequested'], 
+          $request['dateCompleted'],
+          $request['status']
+        ];
+      }
+
+      // Output CSV
+      header('Content-Type: text/csv');
+      header('Content-Disposition: attachment; filename="request_analytics_' . date('Y-m-d') . '.csv"');
+      
+      $output = fopen('php://output', 'w');
+      foreach ($csvData as $row) {
+        fputcsv($output, $row);
+      }
+      fclose($output);
+      exit;
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -2187,6 +2442,9 @@ switch ($operation) {
     break;
   case "getTotalUsers":
     echo $user->getTotalUsers();
+    break;
+  case "getRequestAnalytics":
+    echo $user->getRequestAnalytics($json);
     break;
   case "addStudent":
     echo $user->addStudent($json);
@@ -2298,6 +2556,9 @@ switch ($operation) {
     break;
   case "deactivateUser":
     echo $user->deactivateUser($json);
+    break;
+  case "exportRequestAnalytics":
+    echo $user->exportRequestAnalytics($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

@@ -292,6 +292,67 @@ export async function getTotalUsers() {
 	}
 }
 
+export async function getRequestAnalytics(
+	dateFrom = null,
+	dateTo = null,
+	granularity = "day"
+) {
+	const formData = new FormData();
+	formData.append("operation", "getRequestAnalytics");
+	const payload = {};
+	if (dateFrom) payload.dateFrom = dateFrom;
+	if (dateTo) payload.dateTo = dateTo;
+	if (granularity) payload.granularity = granularity;
+	formData.append("json", JSON.stringify(payload));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function exportRequestAnalytics(dateFrom = null, dateTo = null) {
+	const formData = new FormData();
+	formData.append("operation", "exportRequestAnalytics");
+	const payload = {};
+	if (dateFrom) payload.dateFrom = dateFrom;
+	if (dateTo) payload.dateTo = dateTo;
+	formData.append("json", JSON.stringify(payload));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+			responseType: "blob", // Important for file downloads
+		});
+
+		// Create a link element to trigger the download
+		const url = window.URL.createObjectURL(new Blob([response.data]));
+		const link = document.createElement("a");
+		link.href = url;
+		link.setAttribute(
+			"download",
+			`request_analytics_${new Date().toISOString().split("T")[0]}.csv`
+		);
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		window.URL.revokeObjectURL(url);
+
+		return true;
+	} catch (error) {
+		console.error("Failed to export request analytics:", error);
+		throw error;
+	}
+}
+
 export async function addStudent(studentData) {
 	const formData = new FormData();
 	formData.append("operation", "addStudent");

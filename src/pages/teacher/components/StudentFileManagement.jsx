@@ -532,7 +532,7 @@ export default function StudentFileManagement({
 								className="flex gap-2 items-center text-white bg-purple-600 hover:bg-purple-700"
 							>
 								<Users2 className="w-4 h-4" />
-								Update Section or SF10 ({selectedStudents.size})
+								Update SF10 ({selectedStudents.size})
 							</Button>
 						)}
 					</div>

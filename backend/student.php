@@ -479,6 +479,7 @@ class User {
                 r.createdAt as dateRequestedFull,
                 s.name as status,
                 s.id as statusId,
+                rs.createdAt as currentStatusDate,
                 rs_schedule.dateSchedule as releaseDate,
                 DATE_FORMAT(rs_schedule.dateSchedule, '%M %d, %Y') as releaseDateFormatted,
                 ed.days as expectedDays
