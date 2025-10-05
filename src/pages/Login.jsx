@@ -255,11 +255,14 @@ export default function LoginPage() {
 			console.log("userLevel:", user?.userLevel);
 
 			// Check for account deactivation error
-			if (user && user.error && user.error.includes('deactivated')) {
+			if (user && user.error && user.error.includes("deactivated")) {
 				console.log("Account deactivated");
-				setError("Your account has been deactivated. Please contact your administrator.");
+				setError(
+					"Your account has been deactivated. Please contact your administrator."
+				);
 				toast.error("Account Deactivated", {
-					description: "Your account has been deactivated. Please contact your administrator.",
+					description:
+						"Your account has been deactivated. Please contact your administrator.",
 					duration: 5000,
 				});
 				setIsLoading(false);
@@ -464,7 +467,7 @@ export default function LoginPage() {
 						{/* Error Message Display */}
 						{error && (
 							<div className="flex items-start p-3 mb-4 space-x-2 bg-red-50 rounded-md border border-red-200 dark:bg-red-900/20 dark:border-red-800">
-								<AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+								<AlertCircle className="flex-shrink-0 mt-0.5 w-5 h-5 text-red-500" />
 								<div>
 									<p className="text-sm font-medium text-red-700 dark:text-red-300">
 										Login Failed
@@ -482,7 +485,7 @@ export default function LoginPage() {
 									htmlFor="username"
 									className="text-sm font-medium text-gray-700 dark:text-gray-300"
 								>
-									Username (Employee ID or School ID)
+									Username (Employee ID or Student ID)
 								</Label>
 								<Input
 									id="username"
@@ -492,7 +495,7 @@ export default function LoginPage() {
 										setUsername(e.target.value);
 										setError(""); // Clear error when user starts typing
 									}}
-									placeholder="Enter your Employee ID or School ID"
+									placeholder="Enter your Employee ID or Student ID"
 									className="px-3 py-2 w-full rounded-md border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:text-white"
 									required
 								/>

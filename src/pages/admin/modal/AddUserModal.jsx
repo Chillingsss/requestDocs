@@ -70,7 +70,13 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 		try {
 			setLoadingLevels(true);
 			const data = await getUserLevel();
-			setUserLevels(Array.isArray(data) ? data : []);
+			// Exclude Student from selectable user levels
+			const filteredLevels = Array.isArray(data)
+				? data.filter(
+						(level) => String(level?.name || "").toLowerCase() !== "student"
+				  )
+				: [];
+			setUserLevels(filteredLevels);
 		} catch (error) {
 			console.error("Failed to fetch user levels:", error);
 			toast.error("Failed to load user levels");
@@ -577,7 +583,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 						{/* Password and PIN Info */}
 						<div className="p-4 bg-blue-50 rounded-xl border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
 							<div className="flex items-start space-x-3">
-								<div className="flex justify-center items-center w-6 h-6 bg-blue-100 dark:bg-blue-800 rounded-full flex-shrink-0 mt-0.5">
+								<div className="flex flex-shrink-0 justify-center items-center mt-0.5 w-6 h-6 bg-blue-100 rounded-full dark:bg-blue-800">
 									<Lock className="w-3 h-3 text-blue-600 dark:text-blue-400" />
 								</div>
 								<div>
