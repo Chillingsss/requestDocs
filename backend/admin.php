@@ -1884,7 +1884,8 @@ class User {
                     s.gradeLevelId,
                     s.userId,
                     s.createdAt,
-                    gl.name as gradeLevelName
+                    gl.name as gradeLevelName,
+                    gl.id as gradeLevelId
                 FROM tblsection s
                 INNER JOIN tblgradelevel gl ON s.gradeLevelId = gl.id
                 ORDER BY gl.name, s.name";

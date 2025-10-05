@@ -197,6 +197,7 @@ export default function ResourcesContent() {
 					{activeTab === "sections" && (
 						<SectionsTab
 							sections={sections}
+							gradeLevels={gradeLevels}
 							loading={loading}
 							onAdd={handleAdd}
 							onEdit={handleEdit}

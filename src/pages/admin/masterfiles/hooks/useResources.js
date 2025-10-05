@@ -52,15 +52,21 @@ export default function useResources() {
 	const fetchData = async () => {
 		setLoading(true);
 		try {
-			const [docsData, reqTypesData, docReqsData, purposesData, gradeLevelsData, sectionsData] =
-				await Promise.all([
-					getDocuments(),
-					getRequirementTypes(),
-					getDocumentRequirements(),
-					getPurposes(),
-					getGradeLevels(),
-					getSections(),
-				]);
+			const [
+				docsData,
+				reqTypesData,
+				docReqsData,
+				purposesData,
+				gradeLevelsData,
+				sectionsData,
+			] = await Promise.all([
+				getDocuments(),
+				getRequirementTypes(),
+				getDocumentRequirements(),
+				getPurposes(),
+				getGradeLevels(),
+				getSections(),
+			]);
 
 			setDocuments(Array.isArray(docsData) ? docsData : []);
 			setRequirementTypes(Array.isArray(reqTypesData) ? reqTypesData : []);
@@ -84,7 +90,14 @@ export default function useResources() {
 
 	const handleAdd = (type) => {
 		setModalType(type);
-		setFormData({ name: "" });
+		if (type === "section") {
+			setFormData({
+				name: "",
+				gradeLevelId: gradeLevels.length > 0 ? gradeLevels[0].id : "",
+			});
+		} else {
+			setFormData({ name: "" });
+		}
 		setShowAddModal(true);
 	};
 
@@ -99,7 +112,7 @@ export default function useResources() {
 		} else if (type === "section") {
 			setFormData({
 				name: item.name,
-				gradeLevelId: item.gradeLevelId,
+				gradeLevelId: item.grade_level_id,
 			});
 		} else {
 			setFormData({

@@ -762,7 +762,10 @@ export async function addGradeLevel(gradeLevelData) {
 export async function updateGradeLevel(gradeLevelId, gradeLevelData) {
 	const formData = new FormData();
 	formData.append("operation", "updateGradeLevel");
-	formData.append("json", JSON.stringify({ id: gradeLevelId, ...gradeLevelData }));
+	formData.append(
+		"json",
+		JSON.stringify({ id: gradeLevelId, ...gradeLevelData })
+	);
 
 	const apiUrl = getDecryptedApiUrl();
 
@@ -804,6 +807,7 @@ export async function getSections() {
 		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
 			headers: { "Content-Type": "multipart/form-data" },
 		});
+		console.log("response", response.data);
 		return response.data;
 	} catch (error) {
 		throw error;
