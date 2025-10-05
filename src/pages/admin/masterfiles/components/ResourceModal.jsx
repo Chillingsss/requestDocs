@@ -5,14 +5,15 @@ import { Label } from "../../../../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select";
 
 export default function ResourceModal({
-	showModal,
-	modalType,
-	showEditModal,
-	formData,
-	gradeLevels,
-	onFormDataChange,
-	onSubmit,
-	onCancel,
+  showModal,
+  modalType,
+  showEditModal,
+  formData,
+  gradeLevels = [],
+  academicTypes = [],
+  onFormDataChange,
+  onSubmit,
+  onCancel,
 }) {
 	if (!showModal) return null;
 
@@ -27,6 +28,8 @@ export default function ResourceModal({
 				return `${action} Grade Level`;
 			case "section":
 				return `${action} Section`;
+			case "academicType":
+				return `${action} Academic Type`;
 			default:
 				return `${action} Item`;
 		}
@@ -42,6 +45,8 @@ export default function ResourceModal({
 				return "Grade Level Name";
 			case "section":
 				return "Section Name";
+			case "academicType":
+				return "Academic Type Name";
 			default:
 				return "Name";
 		}
@@ -57,6 +62,8 @@ export default function ResourceModal({
 				return "Enter grade level name";
 			case "section":
 				return "Enter section name";
+			case "academicType":
+				return "Enter academic type name";
 			default:
 				return "Enter name";
 		}
@@ -83,21 +90,44 @@ export default function ResourceModal({
 							required
 						/>
 					</div>
+					{modalType === "gradeLevel" && academicTypes && (
+            <div>
+              <Label htmlFor="academicType">Academic Type</Label>
+              <Select
+                value={formData.academicTId || ""}
+                onValueChange={(value) =>
+                  onFormDataChange({ ...formData, academicTId: value })
+                }
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an academic type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicTypes.map((academicType) => (
+										<SelectItem key={academicType.id} value={academicType.id}>
+											{academicType.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					)}
 					{modalType === "section" && gradeLevels && (
-						<div>
-							<Label htmlFor="gradeLevel">Grade Level</Label>
-							<Select
-								value={formData.gradeLevelId || ""}
-								onValueChange={(value) =>
-									onFormDataChange({ ...formData, gradeLevelId: value })
-								}
-								required
-							>
-								<SelectTrigger>
-									<SelectValue placeholder="Select a grade level" />
-								</SelectTrigger>
-								<SelectContent>
-									{gradeLevels.map((gradeLevel) => (
+            <div>
+              <Label htmlFor="gradeLevel">Grade Level</Label>
+              <Select
+                value={formData.gradeLevelId || ""}
+                onValueChange={(value) =>
+                  onFormDataChange({ ...formData, gradeLevelId: value })
+                }
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a grade level" />
+                </SelectTrigger>
+                <SelectContent>
+                  {gradeLevels.map((gradeLevel) => (
 										<SelectItem key={gradeLevel.id} value={gradeLevel.id}>
 											{gradeLevel.name}
 										</SelectItem>

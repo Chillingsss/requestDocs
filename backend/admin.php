@@ -10,8 +10,8 @@ class User {
     // Check in tbluser
     $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.pinCode, a.gradeLevelId, a.sectionId, a.isActive, b.name AS userLevel, d.id AS academicTypeId FROM tbluser a
             INNER JOIN tbluserlevel b ON a.userLevel = b.id
-            INNER JOIN tblgradelevel c ON a.gradeLevelId = c.id
-            INNER JOIN tblacademictype d ON c.academicTId = d.id
+            LEFT JOIN tblgradelevel c ON a.gradeLevelId = c.id
+            LEFT JOIN tblacademictype d ON c.academicTId = d.id
             WHERE BINARY a.id = :username";
     $stmt = $conn->prepare($sql);
     $stmt->bindParam(':username', $json['username']);
@@ -136,8 +136,8 @@ class User {
         }
     }
 
-    return json_encode(null);
-}
+    return json_encode(['error' => 'Invalid credentials']);
+  }
 
    function checkEmailExists($json)
    {
@@ -1380,7 +1380,8 @@ class User {
         $sql = "INSERT INTO tblrequirementstype (nameType, userId, createdAt) VALUES (:nameType, :userId, NOW())";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':nameType', $json['name']);
-        $stmt->bindParam(':userId', $json['userId'] ?? null);
+        $userId = $json['userId'] ?? null;
+        $stmt->bindParam(':userId', $userId);
         
         if ($stmt->execute()) {
             return json_encode(['status' => 'success', 'message' => 'Requirement type added successfully']);
@@ -1777,13 +1778,36 @@ class User {
     include "connection.php";
 
     try {
-        $sql = "SELECT * FROM tblgradelevel ORDER BY name";
+        $sql = "SELECT 
+                    gl.id,
+                    gl.name,
+                    gl.academicTId,
+                    gl.userId,
+                    gl.createdAt,
+                    at.name as academicTypeName
+                FROM tblgradelevel gl
+                LEFT JOIN tblacademictype at ON gl.academicTId = at.id
+                ORDER BY gl.name";
         $stmt = $conn->prepare($sql);
         $stmt->execute();
         
         if ($stmt->rowCount() > 0) {
             $gradeLevels = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            return json_encode($gradeLevels);
+            // Format the response to include academicType as an object
+            $formattedGradeLevels = array_map(function($gl) {
+                return [
+                    'id' => $gl['id'],
+                    'name' => $gl['name'],
+                    'academicTId' => $gl['academicTId'],
+                    'userId' => $gl['userId'],
+                    'createdAt' => $gl['createdAt'],
+                    'academicType' => $gl['academicTId'] ? [
+                        'id' => $gl['academicTId'],
+                        'name' => $gl['academicTypeName'],
+                    ] : null
+                ];
+            }, $gradeLevels);
+            return json_encode($formattedGradeLevels);
         }
         return json_encode([]);
     } catch (PDOException $e) {
@@ -1797,14 +1821,16 @@ class User {
     $json = json_decode($json, true);
     
     try {
-        $sql = "INSERT INTO tblgradelevel (name, userId, createdAt) VALUES (:name, :userId, NOW())";
+        $sql = "INSERT INTO tblgradelevel (name, academicTId, userId, createdAt) VALUES (:name, :academicTId, :userId, NOW())";
         $stmt = $conn->prepare($sql);
         
         // Store values in variables to avoid bindParam reference issues
         $name = $json['name'];
+        $academicTId = $json['academicTId'] ?? null;
         $userId = $json['userId'] ?? null;
         
         $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':academicTId', $academicTId);
         $stmt->bindParam(':userId', $userId);
         
         if ($stmt->execute()) {
@@ -1823,15 +1849,17 @@ class User {
     $json = json_decode($json, true);
     
     try {
-        $sql = "UPDATE tblgradelevel SET name = :name, userId = :userId WHERE id = :id";
+        $sql = "UPDATE tblgradelevel SET name = :name, academicTId = :academicTId, userId = :userId WHERE id = :id";
         $stmt = $conn->prepare($sql);
         
         // Store values in variables to avoid bindParam reference issues
         $name = $json['name'];
+        $academicTId = $json['academicTId'] ?? null;
         $userId = $json['userId'] ?? null;
         $id = $json['id'];
         
         $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':academicTId', $academicTId);
         $stmt->bindParam(':userId', $userId);
         $stmt->bindParam(':id', $id);
         
@@ -1870,6 +1898,105 @@ class User {
             return json_encode(['status' => 'success', 'message' => 'Grade level deleted successfully']);
         } else {
             return json_encode(['status' => 'error', 'message' => 'Failed to delete grade level']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   // Academic Type management functions
+   function getAcademicTypes()
+   {
+    include "connection.php";
+
+    try {
+        $sql = "SELECT * FROM tblacademictype ORDER BY name";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $academicTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return json_encode($academicTypes);
+        }
+        return json_encode([]);
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function addAcademicType($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "INSERT INTO tblacademictype (name) VALUES (:name)";
+        $stmt = $conn->prepare($sql);
+        
+        $name = $json['name'];
+        
+        $stmt->bindParam(':name', $name);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Academic type added successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to add academic type']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function updateAcademicType($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "UPDATE tblacademictype SET name = :name WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        
+        $name = $json['name'];
+        $id = $json['id'];
+        
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':id', $id);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Academic type updated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to update academic type']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function deleteAcademicType($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        // Check if academic type is being used in grade levels
+        $checkSql = "SELECT COUNT(*) as count FROM tblgradelevel WHERE academicTId = :id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':id', $json['id']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'Cannot delete academic type. It is being used in grade levels.']);
+        }
+        
+        $sql = "DELETE FROM tblacademictype WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $json['id']);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Academic type deleted successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to delete academic type']);
         }
     } catch (PDOException $e) {
         return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
@@ -2141,6 +2268,18 @@ switch ($operation) {
     break;
   case "deleteGradeLevel":
     echo $user->deleteGradeLevel($json);
+    break;
+  case "getAcademicTypes":
+    echo $user->getAcademicTypes();
+    break;
+  case "addAcademicType":
+    echo $user->addAcademicType($json);
+    break;
+  case "updateAcademicType":
+    echo $user->updateAcademicType($json);
+    break;
+  case "deleteAcademicType":
+    echo $user->deleteAcademicType($json);
     break;
   case "getSections":
     echo $user->getSections();

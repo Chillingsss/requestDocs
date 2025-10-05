@@ -11,6 +11,8 @@ import DocumentRequirementModal from "./components/DocumentRequirementModal";
 import DeleteConfirmModal from "./components/DeleteConfirmModal";
 import useResources from "./hooks/useResources";
 import { getUserIdFromCookie } from "./utils/cookieUtils";
+import AcademicTypesTab from "./components/AcademicTypesTab";
+import AcademicTypeModal from "./components/AcademicTypeModal";
 
 export default function ResourcesContent() {
 	const [activeTab, setActiveTab] = useState("documents");
@@ -21,6 +23,7 @@ export default function ResourcesContent() {
 		purposes,
 		gradeLevels,
 		sections,
+		academicTypes,
 		loading,
 		showAddModal,
 		showEditModal,
@@ -45,6 +48,8 @@ export default function ResourcesContent() {
 		setShowDeleteModal,
 		setDeletingItem,
 		setShowDocumentRequirementModal,
+		setShowAddModal,
+		setShowEditModal,
 	} = useResources();
 
 	// Get userId from cookie
@@ -54,7 +59,7 @@ export default function ResourcesContent() {
 	console.log("ResourcesContent - userId from cookie:", userId);
 
 	const handleFormSubmit = (e) => {
-		console.log("handleFormSubmit called with userId:", userId);
+		e.preventDefault();
 		handleSubmit(e, userId);
 	};
 
@@ -73,7 +78,8 @@ export default function ResourcesContent() {
 				<div className="flex flex-col gap-4">
 					<h2 className="text-2xl font-bold">Resources Management</h2>
 					<p className="text-slate-600 dark:text-slate-400">
-						Manage documents, requirement types, document requirements, purposes, grade levels, and sections used in the system
+						Manage documents, requirement types, document requirements,
+						purposes, grade levels, and sections used in the system
 					</p>
 				</div>
 
@@ -119,6 +125,16 @@ export default function ResourcesContent() {
 							}`}
 						>
 							Purposes
+						</button>
+						<button
+							onClick={() => setActiveTab("academic-types")}
+							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "academic-types"
+									? "border-blue-500 text-blue-600"
+									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+							}`}
+						>
+							Academic Types
 						</button>
 						<button
 							onClick={() => setActiveTab("grade-levels")}
@@ -192,6 +208,7 @@ export default function ResourcesContent() {
 							onAdd={handleAdd}
 							onEdit={handleEdit}
 							onDelete={handleDelete}
+							academicTypes={academicTypes}
 						/>
 					)}
 					{activeTab === "sections" && (
@@ -204,11 +221,23 @@ export default function ResourcesContent() {
 							onDelete={handleDelete}
 						/>
 					)}
+					{activeTab === "academic-types" && (
+						<AcademicTypesTab
+							academicTypes={academicTypes}
+							loading={loading}
+							onAdd={handleAdd}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+						/>
+					)}
 				</div>
 			</div>
 			{/* Modals */}
 			<ResourceModal
-				showModal={(showAddModal || showEditModal) && modalType !== "purpose"}
+				showModal={
+					(showAddModal || showEditModal) &&
+					!["purpose", "academicType"].includes(modalType)
+				}
 				modalType={modalType}
 				showEditModal={showEditModal}
 				formData={formData}
@@ -216,6 +245,18 @@ export default function ResourcesContent() {
 				onFormDataChange={setFormData}
 				onSubmit={handleFormSubmit}
 				onCancel={resetForm}
+				academicTypes={academicTypes}
+			/>
+
+			{/* Academic Type Modal */}
+			<AcademicTypeModal
+				showModal={(showAddModal || showEditModal) && modalType === "academicType"}
+				onClose={resetForm}
+				onSubmit={handleFormSubmit}
+				formData={formData}
+				onFormDataChange={setFormData}
+				showEditModal={showEditModal}
+				loading={loading}
 			/>
 
 			<PurposeModal

@@ -796,6 +796,77 @@ export async function deleteGradeLevel(gradeLevelId) {
 	}
 }
 
+// Academic Type functions
+export async function getAcademicTypes() {
+	const formData = new FormData();
+	formData.append("operation", "getAcademicTypes");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addAcademicType(academicTypeData) {
+	const formData = new FormData();
+	formData.append("operation", "addAcademicType");
+	formData.append("json", JSON.stringify(academicTypeData));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateAcademicType(academicTypeId, academicTypeData) {
+	const formData = new FormData();
+	formData.append("operation", "updateAcademicType");
+	formData.append(
+		"json",
+		JSON.stringify({ id: academicTypeId, ...academicTypeData })
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deleteAcademicType(academicTypeId) {
+	const formData = new FormData();
+	formData.append("operation", "deleteAcademicType");
+	formData.append("json", JSON.stringify({ id: academicTypeId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 // Section functions
 export async function getSections() {
 	const formData = new FormData();
@@ -807,7 +878,6 @@ export async function getSections() {
 		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
 			headers: { "Content-Type": "multipart/form-data" },
 		});
-		console.log("response", response.data);
 		return response.data;
 	} catch (error) {
 		throw error;

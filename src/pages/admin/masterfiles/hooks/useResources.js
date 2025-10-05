@@ -21,6 +21,10 @@ import {
 	addGradeLevel,
 	updateGradeLevel,
 	deleteGradeLevel,
+	getAcademicTypes,
+	addAcademicType,
+	updateAcademicType,
+	deleteAcademicType,
 	getSections,
 	addSection,
 	updateSection,
@@ -33,6 +37,7 @@ export default function useResources() {
 	const [documentRequirements, setDocumentRequirements] = useState([]);
 	const [purposes, setPurposes] = useState([]);
 	const [gradeLevels, setGradeLevels] = useState([]);
+	const [academicTypes, setAcademicTypes] = useState([]);
 	const [sections, setSections] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [showAddModal, setShowAddModal] = useState(false);
@@ -58,6 +63,7 @@ export default function useResources() {
 				docReqsData,
 				purposesData,
 				gradeLevelsData,
+				academicTypesData,
 				sectionsData,
 			] = await Promise.all([
 				getDocuments(),
@@ -65,15 +71,17 @@ export default function useResources() {
 				getDocumentRequirements(),
 				getPurposes(),
 				getGradeLevels(),
+				getAcademicTypes(),
 				getSections(),
 			]);
 
-			setDocuments(Array.isArray(docsData) ? docsData : []);
-			setRequirementTypes(Array.isArray(reqTypesData) ? reqTypesData : []);
-			setDocumentRequirements(Array.isArray(docReqsData) ? docReqsData : []);
-			setPurposes(Array.isArray(purposesData) ? purposesData : []);
+			setDocuments(docsData || []);
+			setRequirementTypes(reqTypesData || []);
+			setDocumentRequirements(docReqsData || []);
+			setPurposes(purposesData || []);
 			setGradeLevels(Array.isArray(gradeLevelsData) ? gradeLevelsData : []);
-			setSections(Array.isArray(sectionsData) ? sectionsData : []);
+			setAcademicTypes(academicTypesData || []);
+			setSections(sectionsData || []);
 		} catch (error) {
 			console.error("Error fetching data:", error);
 			toast.error("Failed to load resources");
@@ -82,12 +90,12 @@ export default function useResources() {
 			setDocumentRequirements([]);
 			setPurposes([]);
 			setGradeLevels([]);
+			setAcademicTypes([]);
 			setSections([]);
 		} finally {
 			setLoading(false);
 		}
 	};
-
 	const handleAdd = (type) => {
 		setModalType(type);
 		if (type === "section") {
@@ -95,6 +103,13 @@ export default function useResources() {
 				name: "",
 				gradeLevelId: gradeLevels.length > 0 ? gradeLevels[0].id : "",
 			});
+		} else if (type === "gradeLevel") {
+			setFormData({
+				name: "",
+				academicTId: academicTypes.length > 0 ? academicTypes[0].id : "",
+			});
+		} else if (type === "academicType") {
+			setFormData({ name: "", description: "" });
 		} else {
 			setFormData({ name: "" });
 		}
@@ -113,6 +128,16 @@ export default function useResources() {
 			setFormData({
 				name: item.name,
 				gradeLevelId: item.grade_level_id,
+			});
+		} else if (type === "gradeLevel") {
+			setFormData({
+				name: item.name,
+				academicTId: item.academicTId || "",
+			});
+		} else if (type === "academicType") {
+			setFormData({
+				name: item.name,
+				description: item.description || "",
 			});
 		} else {
 			setFormData({
@@ -155,6 +180,8 @@ export default function useResources() {
 				result = await deletePurpose(deletingItem.id);
 			} else if (deletingItem.type === "gradeLevel") {
 				result = await deleteGradeLevel(deletingItem.id);
+			} else if (deletingItem.type === "academicType") {
+				result = await deleteAcademicType(deletingItem.id);
 			} else if (deletingItem.type === "section") {
 				result = await deleteSection(deletingItem.id);
 			}
@@ -170,6 +197,8 @@ export default function useResources() {
 							? "Purpose"
 							: deletingItem.type === "gradeLevel"
 							? "Grade level"
+							: deletingItem.type === "academicType"
+							? "Academic type"
 							: deletingItem.type === "section"
 							? "Section"
 							: "Document requirement"
@@ -208,6 +237,12 @@ export default function useResources() {
 			return;
 		}
 
+		// For grade levels, also check academicTId
+		if (modalType === "gradeLevel" && !formData.academicTId) {
+			toast.error("Academic type selection is required");
+			return;
+		}
+
 		const submitData = {
 			...formData,
 			userId: userId || null,
@@ -234,6 +269,9 @@ export default function useResources() {
 				} else if (modalType === "gradeLevel") {
 					console.log("Updating grade level:", editingItem.id, submitData);
 					result = await updateGradeLevel(editingItem.id, submitData);
+				} else if (modalType === "academicType") {
+					console.log("Updating academic type:", editingItem.id, submitData);
+					result = await updateAcademicType(editingItem.id, submitData);
 				} else if (modalType === "section") {
 					console.log("Updating section:", editingItem.id, submitData);
 					result = await updateSection(editingItem.id, submitData);
@@ -251,6 +289,9 @@ export default function useResources() {
 				} else if (modalType === "gradeLevel") {
 					console.log("Adding grade level:", submitData);
 					result = await addGradeLevel(submitData);
+				} else if (modalType === "academicType") {
+					console.log("Adding academic type:", submitData);
+					result = await addAcademicType(submitData);
 				} else if (modalType === "section") {
 					console.log("Adding section:", submitData);
 					result = await addSection(submitData);
@@ -271,6 +312,8 @@ export default function useResources() {
 							? "Purpose"
 							: modalType === "gradeLevel"
 							? "Grade level"
+							: modalType === "academicType"
+							? "Academic type"
 							: modalType === "section"
 							? "Section"
 							: "Requirement type"
@@ -379,7 +422,13 @@ export default function useResources() {
 	};
 
 	const resetForm = () => {
-		setFormData({ name: "", documentId: "", gradeLevelId: "" });
+		setFormData({
+			name: "",
+			documentId: "",
+			gradeLevelId: "",
+			academicTId: "",
+			description: "",
+		});
 		setEditingItem(null);
 		setShowAddModal(false);
 		setShowEditModal(false);
@@ -403,6 +452,7 @@ export default function useResources() {
 		documentRequirements,
 		purposes,
 		gradeLevels,
+		academicTypes,
 		sections,
 		loading,
 		showAddModal,
@@ -431,5 +481,7 @@ export default function useResources() {
 		setShowDeleteModal,
 		setDeletingItem,
 		setShowDocumentRequirementModal,
+		setShowAddModal,
+		setShowEditModal,
 	};
 }

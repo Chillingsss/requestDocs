@@ -11,14 +11,25 @@ export default function GradeLevelsTab({
 	onDelete,
 }) {
 	if (loading) {
-		return <div className="text-center py-8">Loading...</div>;
+		return <div className="py-8 text-center">Loading...</div>;
+	}
+
+	if (!Array.isArray(gradeLevels)) {
+		return (
+			<Card>
+				<CardContent className="p-8 text-center text-slate-500">
+					<GraduationCap className="mx-auto mb-4 w-12 h-12 text-slate-300" />
+					<p>Grade levels data is invalid</p>
+				</CardContent>
+			</Card>
+		);
 	}
 
 	if (gradeLevels.length === 0) {
 		return (
 			<Card>
 				<CardContent className="p-8 text-center text-slate-500">
-					<GraduationCap className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+					<GraduationCap className="mx-auto mb-4 w-12 h-12 text-slate-300" />
 					<p>No grade levels found</p>
 				</CardContent>
 			</Card>
@@ -40,7 +51,10 @@ export default function GradeLevelsTab({
 
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 				{gradeLevels.map((gradeLevel) => (
-					<Card key={gradeLevel.id} className="hover:shadow-md transition-shadow">
+					<Card
+						key={gradeLevel.id}
+						className="transition-shadow hover:shadow-md"
+					>
 						<CardContent className="p-4">
 							<div className="flex justify-between items-start mb-3">
 								<GraduationCap className="w-8 h-8 text-green-500" />
@@ -62,8 +76,11 @@ export default function GradeLevelsTab({
 									</Button>
 								</div>
 							</div>
-							<h4 className="font-semibold mb-2">{gradeLevel.name}</h4>
-							<p className="text-sm text-slate-600">
+							<h4 className="mb-1 font-semibold">{gradeLevel.name}</h4>
+							<p className="mb-1 text-sm text-slate-600">
+								Academic Type: {gradeLevel.academicType?.name || "N/A"}
+							</p>
+							<p className="text-xs text-slate-500">
 								Created: {new Date(gradeLevel.createdAt).toLocaleDateString()}
 							</p>
 						</CardContent>
