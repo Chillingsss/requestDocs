@@ -166,9 +166,10 @@ export default function StudentModal({
 
 			if (result.success) {
 				const gradeLevelName =
-					teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
+					student?.teacherGradeLevel ||
+					(teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
 						? "Grade 11"
-						: "Grade 12";
+						: "Grade 12");
 				toast.success(
 					`${gradeLevelName} SF10 Excel file uploaded and converted to PDF successfully`
 				);
@@ -313,9 +314,10 @@ export default function StudentModal({
 
 			if (result.success) {
 				const gradeLevelName =
-					teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
+					student?.teacherGradeLevel ||
+					(teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
 						? "Grade 11"
-						: "Grade 12";
+						: "Grade 12");
 				toast.success(
 					`Successfully uploaded ${result.successCount} ${gradeLevelName} SF10 Excel files and converted to PDF`
 				);
@@ -494,44 +496,49 @@ export default function StudentModal({
 							{student.files && student.files.length > 0 ? (
 								<div className="space-y-2">
 									{student.files
-										.filter((file) => !academicTypeId || file.academicTypeId == academicTypeId)
+										.filter(
+											(file) =>
+												!academicTypeId || file.academicTypeId == academicTypeId
+										)
 										.map((file, index) => (
-										<div
-											key={index}
-											className="flex justify-between items-center p-3 rounded-lg bg-slate-50 dark:bg-slate-700"
-										>
-											<div className="flex-1">
-												<div className="text-sm font-medium text-slate-900 dark:text-white">
-													{file.sfType}
-												</div>
-												<div className="text-xs text-slate-500 dark:text-slate-400">
-													{file.fileName || "No file uploaded"}
-												</div>
-												{!file.fileName && file.gradeLevelId == 2 && (
-													<div className="mt-1 text-xs font-medium text-orange-600 dark:text-orange-400">
-														⚠️ Please upload Grade 12 SF10 file
-													</div>
-												)}
-											</div>
-											<Button
-												size="sm"
-												variant="outline"
-												onClick={() => handleDownload(file.fileName)}
-												disabled={!file.fileName}
-												className={`flex gap-1 items-center ${
-													!file.fileName ? "opacity-50 cursor-not-allowed" : ""
-												}`}
-												title={
-													!file.fileName
-														? "No file available to download"
-														: "Download file"
-												}
+											<div
+												key={index}
+												className="flex justify-between items-center p-3 rounded-lg bg-slate-50 dark:bg-slate-700"
 											>
-												<Download className="w-3 h-3" />
-												Download
-											</Button>
-										</div>
-									))}
+												<div className="flex-1">
+													<div className="text-sm font-medium text-slate-900 dark:text-white">
+														{file.sfType}
+													</div>
+													<div className="text-xs text-slate-500 dark:text-slate-400">
+														{file.fileName || "No file uploaded"}
+													</div>
+													{!file.fileName && file.gradeLevelId == 2 && (
+														<div className="mt-1 text-xs font-medium text-orange-600 dark:text-orange-400">
+															⚠️ Please upload Grade 12 SF10 file
+														</div>
+													)}
+												</div>
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() => handleDownload(file.fileName)}
+													disabled={!file.fileName}
+													className={`flex gap-1 items-center ${
+														!file.fileName
+															? "opacity-50 cursor-not-allowed"
+															: ""
+													}`}
+													title={
+														!file.fileName
+															? "No file available to download"
+															: "Download file"
+													}
+												>
+													<Download className="w-3 h-3" />
+													Download
+												</Button>
+											</div>
+										))}
 								</div>
 							) : (
 								<div className="text-sm italic text-slate-500 dark:text-slate-400">
@@ -548,9 +555,10 @@ export default function StudentModal({
 								Update SF10 File
 							</Label>
 							<span className="inline-flex px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-200 dark:bg-blue-900">
-								{teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
-									? "Grade 11"
-									: "Grade 12"}{" "}
+								{student?.teacherGradeLevel ||
+									(teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
+										? "Grade 11"
+										: "Grade 12")}{" "}
 								Only
 							</span>
 							{/* Show dual storage indicator for Grade 12 */}
@@ -561,13 +569,15 @@ export default function StudentModal({
 							)}
 						</div>
 						<div className="text-xs text-slate-500 dark:text-slate-400">
-							{teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
-								? "Grade 11"
-								: "Grade 12"}{" "}
+							{student?.teacherGradeLevel ||
+								(teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
+									? "Grade 11"
+									: "Grade 12")}{" "}
 							teachers can only update{" "}
-							{teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
-								? "Grade 11"
-								: "Grade 12"}{" "}
+							{student?.teacherGradeLevel ||
+								(teacherGradeLevelId == 1 || teacherGradeLevelId === "1"
+									? "Grade 11"
+									: "Grade 12")}{" "}
 							SF10 Excel files
 							{(teacherGradeLevelId == 2 || teacherGradeLevelId === "2") && (
 								<span className="block mt-1 text-green-600 dark:text-green-400">
