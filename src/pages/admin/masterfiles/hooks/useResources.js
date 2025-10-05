@@ -17,6 +17,14 @@ import {
 	addPurpose,
 	updatePurpose,
 	deletePurpose,
+	getGradeLevels,
+	addGradeLevel,
+	updateGradeLevel,
+	deleteGradeLevel,
+	getSections,
+	addSection,
+	updateSection,
+	deleteSection,
 } from "../../../../utils/admin";
 
 export default function useResources() {
@@ -24,6 +32,8 @@ export default function useResources() {
 	const [requirementTypes, setRequirementTypes] = useState([]);
 	const [documentRequirements, setDocumentRequirements] = useState([]);
 	const [purposes, setPurposes] = useState([]);
+	const [gradeLevels, setGradeLevels] = useState([]);
+	const [sections, setSections] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
@@ -42,18 +52,22 @@ export default function useResources() {
 	const fetchData = async () => {
 		setLoading(true);
 		try {
-			const [docsData, reqTypesData, docReqsData, purposesData] =
+			const [docsData, reqTypesData, docReqsData, purposesData, gradeLevelsData, sectionsData] =
 				await Promise.all([
 					getDocuments(),
 					getRequirementTypes(),
 					getDocumentRequirements(),
 					getPurposes(),
+					getGradeLevels(),
+					getSections(),
 				]);
 
 			setDocuments(Array.isArray(docsData) ? docsData : []);
 			setRequirementTypes(Array.isArray(reqTypesData) ? reqTypesData : []);
 			setDocumentRequirements(Array.isArray(docReqsData) ? docReqsData : []);
 			setPurposes(Array.isArray(purposesData) ? purposesData : []);
+			setGradeLevels(Array.isArray(gradeLevelsData) ? gradeLevelsData : []);
+			setSections(Array.isArray(sectionsData) ? sectionsData : []);
 		} catch (error) {
 			console.error("Error fetching data:", error);
 			toast.error("Failed to load resources");
@@ -61,6 +75,8 @@ export default function useResources() {
 			setRequirementTypes([]);
 			setDocumentRequirements([]);
 			setPurposes([]);
+			setGradeLevels([]);
+			setSections([]);
 		} finally {
 			setLoading(false);
 		}
@@ -79,6 +95,11 @@ export default function useResources() {
 			setFormData({
 				name: item.name,
 				documentId: item.documentId,
+			});
+		} else if (type === "section") {
+			setFormData({
+				name: item.name,
+				gradeLevelId: item.gradeLevelId,
 			});
 		} else {
 			setFormData({
@@ -119,6 +140,10 @@ export default function useResources() {
 				result = await deleteDocumentRequirement(deletingItem.id);
 			} else if (deletingItem.type === "purpose") {
 				result = await deletePurpose(deletingItem.id);
+			} else if (deletingItem.type === "gradeLevel") {
+				result = await deleteGradeLevel(deletingItem.id);
+			} else if (deletingItem.type === "section") {
+				result = await deleteSection(deletingItem.id);
 			}
 
 			if (result && result.status === "success") {
@@ -130,6 +155,10 @@ export default function useResources() {
 							? "Requirement type"
 							: deletingItem.type === "purpose"
 							? "Purpose"
+							: deletingItem.type === "gradeLevel"
+							? "Grade level"
+							: deletingItem.type === "section"
+							? "Section"
 							: "Document requirement"
 					} deleted successfully`
 				);
@@ -160,6 +189,12 @@ export default function useResources() {
 			return;
 		}
 
+		// For sections, also check gradeLevelId
+		if (modalType === "section" && !formData.gradeLevelId) {
+			toast.error("Grade level selection is required");
+			return;
+		}
+
 		const submitData = {
 			...formData,
 			userId: userId || null,
@@ -183,6 +218,12 @@ export default function useResources() {
 				} else if (modalType === "purpose") {
 					console.log("Updating purpose:", editingItem.id, submitData);
 					result = await updatePurpose(editingItem.id, submitData);
+				} else if (modalType === "gradeLevel") {
+					console.log("Updating grade level:", editingItem.id, submitData);
+					result = await updateGradeLevel(editingItem.id, submitData);
+				} else if (modalType === "section") {
+					console.log("Updating section:", editingItem.id, submitData);
+					result = await updateSection(editingItem.id, submitData);
 				} else {
 					console.log("Updating requirement type:", editingItem.id, submitData);
 					result = await updateRequirementType(editingItem.id, submitData);
@@ -194,6 +235,12 @@ export default function useResources() {
 				} else if (modalType === "purpose") {
 					console.log("Adding purpose:", submitData);
 					result = await addPurpose(submitData);
+				} else if (modalType === "gradeLevel") {
+					console.log("Adding grade level:", submitData);
+					result = await addGradeLevel(submitData);
+				} else if (modalType === "section") {
+					console.log("Adding section:", submitData);
+					result = await addSection(submitData);
 				} else {
 					console.log("Adding requirement type:", submitData);
 					result = await addRequirementType(submitData);
@@ -209,6 +256,10 @@ export default function useResources() {
 							? "Document"
 							: modalType === "purpose"
 							? "Purpose"
+							: modalType === "gradeLevel"
+							? "Grade level"
+							: modalType === "section"
+							? "Section"
 							: "Requirement type"
 					} ${showEditModal ? "updated" : "added"} successfully`
 				);
@@ -315,7 +366,7 @@ export default function useResources() {
 	};
 
 	const resetForm = () => {
-		setFormData({ name: "", documentId: "" });
+		setFormData({ name: "", documentId: "", gradeLevelId: "" });
 		setEditingItem(null);
 		setShowAddModal(false);
 		setShowEditModal(false);
@@ -338,6 +389,8 @@ export default function useResources() {
 		requirementTypes,
 		documentRequirements,
 		purposes,
+		gradeLevels,
+		sections,
 		loading,
 		showAddModal,
 		showEditModal,

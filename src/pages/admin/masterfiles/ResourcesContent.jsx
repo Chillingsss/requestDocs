@@ -3,6 +3,8 @@ import DocumentsTab from "./components/DocumentsTab";
 import RequirementTypesTab from "./components/RequirementTypesTab";
 import DocumentRequirementsTab from "./components/DocumentRequirementsTab";
 import PurposeTab from "./components/PurposeTab";
+import GradeLevelsTab from "./components/GradeLevelsTab";
+import SectionsTab from "./components/SectionsTab";
 import ResourceModal from "./components/ResourceModal";
 import PurposeModal from "./components/PurposeModal";
 import DocumentRequirementModal from "./components/DocumentRequirementModal";
@@ -17,6 +19,8 @@ export default function ResourcesContent() {
 		requirementTypes,
 		documentRequirements,
 		purposes,
+		gradeLevels,
+		sections,
 		loading,
 		showAddModal,
 		showEditModal,
@@ -69,8 +73,7 @@ export default function ResourcesContent() {
 				<div className="flex flex-col gap-4">
 					<h2 className="text-2xl font-bold">Resources Management</h2>
 					<p className="text-slate-600 dark:text-slate-400">
-						Manage documents, requirement types, and document requirements used
-						in the system
+						Manage documents, requirement types, document requirements, purposes, grade levels, and sections used in the system
 					</p>
 				</div>
 
@@ -117,6 +120,26 @@ export default function ResourcesContent() {
 						>
 							Purposes
 						</button>
+						<button
+							onClick={() => setActiveTab("grade-levels")}
+							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "grade-levels"
+									? "border-blue-500 text-blue-600"
+									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+							}`}
+						>
+							Grade Levels
+						</button>
+						<button
+							onClick={() => setActiveTab("sections")}
+							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "sections"
+									? "border-blue-500 text-blue-600"
+									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+							}`}
+						>
+							Sections
+						</button>
 					</nav>
 				</div>
 
@@ -162,6 +185,24 @@ export default function ResourcesContent() {
 							onDelete={handleDelete}
 						/>
 					)}
+					{activeTab === "grade-levels" && (
+						<GradeLevelsTab
+							gradeLevels={gradeLevels}
+							loading={loading}
+							onAdd={handleAdd}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+						/>
+					)}
+					{activeTab === "sections" && (
+						<SectionsTab
+							sections={sections}
+							loading={loading}
+							onAdd={handleAdd}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+						/>
+					)}
 				</div>
 			</div>
 			{/* Modals */}
@@ -170,6 +211,7 @@ export default function ResourcesContent() {
 				modalType={modalType}
 				showEditModal={showEditModal}
 				formData={formData}
+				gradeLevels={gradeLevels}
 				onFormDataChange={setFormData}
 				onSubmit={handleFormSubmit}
 				onCancel={resetForm}

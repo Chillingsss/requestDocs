@@ -1767,6 +1767,229 @@ class User {
     }
    }
 
+   // Grade Level management functions
+   function getGradeLevels()
+   {
+    include "connection.php";
+
+    try {
+        $sql = "SELECT * FROM tblgradelevel ORDER BY name";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $gradeLevels = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return json_encode($gradeLevels);
+        }
+        return json_encode([]);
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function addGradeLevel($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "INSERT INTO tblgradelevel (name, userId, createdAt) VALUES (:name, :userId, NOW())";
+        $stmt = $conn->prepare($sql);
+        
+        // Store values in variables to avoid bindParam reference issues
+        $name = $json['name'];
+        $userId = $json['userId'] ?? null;
+        
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':userId', $userId);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Grade level added successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to add grade level']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function updateGradeLevel($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "UPDATE tblgradelevel SET name = :name, userId = :userId WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        
+        // Store values in variables to avoid bindParam reference issues
+        $name = $json['name'];
+        $userId = $json['userId'] ?? null;
+        $id = $json['id'];
+        
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':userId', $userId);
+        $stmt->bindParam(':id', $id);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Grade level updated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to update grade level']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function deleteGradeLevel($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        // Check if grade level is being used in sections
+        $checkSql = "SELECT COUNT(*) as count FROM tblsection WHERE gradeLevelId = :id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':id', $json['id']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'Cannot delete grade level. It is being used in sections.']);
+        }
+        
+        $sql = "DELETE FROM tblgradelevel WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $json['id']);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Grade level deleted successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to delete grade level']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   // Section management functions
+   function getSections()
+   {
+    include "connection.php";
+
+    try {
+        $sql = "SELECT 
+                    s.id,
+                    s.name,
+                    s.gradeLevelId,
+                    s.userId,
+                    s.createdAt,
+                    gl.name as gradeLevelName
+                FROM tblsection s
+                INNER JOIN tblgradelevel gl ON s.gradeLevelId = gl.id
+                ORDER BY gl.name, s.name";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return json_encode($sections);
+        }
+        return json_encode([]);
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function addSection($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "INSERT INTO tblsection (name, gradeLevelId, userId, createdAt) VALUES (:name, :gradeLevelId, :userId, NOW())";
+        $stmt = $conn->prepare($sql);
+        
+        // Store values in variables to avoid bindParam reference issues
+        $name = $json['name'];
+        $gradeLevelId = $json['gradeLevelId'];
+        $userId = $json['userId'] ?? null;
+        
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':gradeLevelId', $gradeLevelId);
+        $stmt->bindParam(':userId', $userId);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Section added successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to add section']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function updateSection($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "UPDATE tblsection SET name = :name, gradeLevelId = :gradeLevelId, userId = :userId WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        
+        // Store values in variables to avoid bindParam reference issues
+        $name = $json['name'];
+        $gradeLevelId = $json['gradeLevelId'];
+        $userId = $json['userId'] ?? null;
+        $id = $json['id'];
+        
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':gradeLevelId', $gradeLevelId);
+        $stmt->bindParam(':userId', $userId);
+        $stmt->bindParam(':id', $id);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Section updated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to update section']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function deleteSection($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        // Check if section is being used in students
+        $checkSql = "SELECT COUNT(*) as count FROM tblstudent WHERE sectionId = :id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':id', $json['id']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'Cannot delete section. It is being used by students.']);
+        }
+        
+        $sql = "DELETE FROM tblsection WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $json['id']);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Section deleted successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to delete section']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -1901,6 +2124,30 @@ switch ($operation) {
     break;
   case "deletePurpose":
     echo $user->deletePurpose($json);
+    break;
+  case "getGradeLevels":
+    echo $user->getGradeLevels();
+    break;
+  case "addGradeLevel":
+    echo $user->addGradeLevel($json);
+    break;
+  case "updateGradeLevel":
+    echo $user->updateGradeLevel($json);
+    break;
+  case "deleteGradeLevel":
+    echo $user->deleteGradeLevel($json);
+    break;
+  case "getSections":
+    echo $user->getSections();
+    break;
+  case "addSection":
+    echo $user->addSection($json);
+    break;
+  case "updateSection":
+    echo $user->updateSection($json);
+    break;
+  case "deleteSection":
+    echo $user->deleteSection($json);
     break;
   case "activateUser":
     echo $user->activateUser($json);

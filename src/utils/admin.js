@@ -724,3 +724,139 @@ export async function deletePurpose(purposeId) {
 		throw error;
 	}
 }
+
+// Grade Level functions
+export async function getGradeLevels() {
+	const formData = new FormData();
+	formData.append("operation", "getGradeLevels");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addGradeLevel(gradeLevelData) {
+	const formData = new FormData();
+	formData.append("operation", "addGradeLevel");
+	formData.append("json", JSON.stringify(gradeLevelData));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateGradeLevel(gradeLevelId, gradeLevelData) {
+	const formData = new FormData();
+	formData.append("operation", "updateGradeLevel");
+	formData.append("json", JSON.stringify({ id: gradeLevelId, ...gradeLevelData }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deleteGradeLevel(gradeLevelId) {
+	const formData = new FormData();
+	formData.append("operation", "deleteGradeLevel");
+	formData.append("json", JSON.stringify({ id: gradeLevelId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+// Section functions
+export async function getSections() {
+	const formData = new FormData();
+	formData.append("operation", "getSections");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addSection(sectionData) {
+	const formData = new FormData();
+	formData.append("operation", "addSection");
+	formData.append("json", JSON.stringify(sectionData));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateSection(sectionId, sectionData) {
+	const formData = new FormData();
+	formData.append("operation", "updateSection");
+	formData.append("json", JSON.stringify({ id: sectionId, ...sectionData }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deleteSection(sectionId) {
+	const formData = new FormData();
+	formData.append("operation", "deleteSection");
+	formData.append("json", JSON.stringify({ id: sectionId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
