@@ -25,6 +25,7 @@ export default function StudentFileManagement({
 	teacherGradeLevelId,
 	teacherSectionId,
 	teacherUserId, // Add teacher user ID prop
+	academicTypeId, // Teacher's academic type ID
 	refreshTrigger,
 }) {
 	const [students, setStudents] = useState([]);
@@ -305,45 +306,62 @@ export default function StudentFileManagement({
 		}
 
 		// Handle file records based on grade level
+		// Only include files that match the teacher's academicTypeId
 		if (record.fileName && record.fileName.trim() !== "") {
 			// This is a file record
-			const fileInfo = {
-				fileName: record.fileName,
-				sfType:
-					record.sfGradeLevelName ||
-					record.actualTeacherGradeLevel ||
-					record.teacherGradeLevel,
-				gradeLevelId: record.sfGradeLevelId,
-				gradeLevelName: record.sfGradeLevelName,
-			};
+			// Filter by academicTypeId - only show files matching teacher's academic type
+			if (
+				academicTypeId &&
+				record.sfAcademicTypeId &&
+				record.sfAcademicTypeId == academicTypeId
+			) {
+				const fileInfo = {
+					fileName: record.fileName,
+					sfType:
+						record.sfGradeLevelName ||
+						record.actualTeacherGradeLevel ||
+						record.teacherGradeLevel,
+					gradeLevelId: record.sfGradeLevelId,
+					gradeLevelName: record.sfGradeLevelName,
+					academicTypeId: record.sfAcademicTypeId,
+				};
 
-			// Add to files array
-			acc[id].files.push(fileInfo);
+				// Add to files array
+				acc[id].files.push(fileInfo);
 
-			// Also store separately for easy access
-			if (record.sfGradeLevelId == 1) {
-				acc[id].grade11File = fileInfo;
-			} else if (record.sfGradeLevelId == 2) {
-				acc[id].grade12File = fileInfo;
+				// Also store separately for easy access
+				if (record.sfGradeLevelId == 1) {
+					acc[id].grade11File = fileInfo;
+				} else if (record.sfGradeLevelId == 2) {
+					acc[id].grade12File = fileInfo;
+				}
 			}
 		} else if (record.sfGradeLevelId) {
 			// This is a NULL file record (enrollment record)
-			const fileInfo = {
-				fileName: null,
-				sfType: record.sfGradeLevelName,
-				gradeLevelId: record.sfGradeLevelId,
-				gradeLevelName: record.sfGradeLevelName,
-				isNullRecord: true,
-			};
+			// Filter by academicTypeId - only show records matching teacher's academic type
+			if (
+				academicTypeId &&
+				record.sfAcademicTypeId &&
+				record.sfAcademicTypeId == academicTypeId
+			) {
+				const fileInfo = {
+					fileName: null,
+					sfType: record.sfGradeLevelName,
+					gradeLevelId: record.sfGradeLevelId,
+					gradeLevelName: record.sfGradeLevelName,
+					academicTypeId: record.sfAcademicTypeId,
+					isNullRecord: true,
+				};
 
-			// Add to files array
-			acc[id].files.push(fileInfo);
+				// Add to files array
+				acc[id].files.push(fileInfo);
 
-			// Also store separately for easy access
-			if (record.sfGradeLevelId == 1) {
-				acc[id].grade11File = fileInfo;
-			} else if (record.sfGradeLevelId == 2) {
-				acc[id].grade12File = fileInfo;
+				// Also store separately for easy access
+				if (record.sfGradeLevelId == 1) {
+					acc[id].grade11File = fileInfo;
+				} else if (record.sfGradeLevelId == 2) {
+					acc[id].grade12File = fileInfo;
+				}
 			}
 		}
 
@@ -806,86 +824,53 @@ export default function StudentFileManagement({
 												<div className="max-w-xs">
 													{student.files && student.files.length > 0 ? (
 														<div className="space-y-2">
-															{/* Grade 11 File */}
-															{student.grade11File && (
-																<div className="p-2 bg-gray-50 rounded-md dark:bg-gray-800">
-																	<div className="mb-1 text-xs font-medium text-green-600 dark:text-green-400">
-																		{student.grade11File.sfType}
+															{/* Dynamically render all files */}
+															{student.files.map((file, fileIndex) => (
+																<div
+																	key={fileIndex}
+																	className={`p-2 rounded-md ${
+																		file.fileName
+																			? "bg-gray-50 dark:bg-gray-800"
+																			: "bg-yellow-50 dark:bg-yellow-900/20"
+																	}`}
+																>
+																	<div
+																		className={`mb-1 text-xs font-medium ${
+																			file.fileName
+																				? "text-blue-600 dark:text-blue-400"
+																				: "text-orange-600 dark:text-orange-400"
+																		}`}
+																	>
+																		{file.sfType || file.gradeLevelName}
 																	</div>
-																	{student.grade11File.fileName ? (
-																		<div className="text-xs text-gray-700 truncate dark:text-slate-400">
-																			{student.grade11File.fileName}
-																		</div>
-																	) : (
-																		<div className="text-xs italic text-gray-500">
-																			No file uploaded
-																		</div>
-																	)}
-																	{student.grade11File.fileName && (
-																		<div className="flex gap-1 mt-1">
-																			<Button
-																				size="sm"
-																				variant="outline"
-																				className="p-1 w-6 h-6"
-																				onClick={(e) => {
-																					e.stopPropagation();
-																					handleFileDownload(
-																						student.grade11File.fileName
-																					);
-																				}}
-																				title="Download file"
-																			>
-																				<Download className="w-3 h-3" />
-																			</Button>
-																		</div>
-																	)}
-																</div>
-															)}
-
-															{/* Grade 12 File */}
-															{student.grade12File && (
-																<div className="p-2 bg-blue-50 rounded-md dark:bg-blue-900/20">
-																	<div className="mb-1 text-xs font-medium text-blue-600 dark:text-blue-400">
-																		{student.grade12File.sfType}
-																	</div>
-																	{student.grade12File.fileName ? (
-																		<div className="text-xs text-gray-700 truncate dark:text-slate-400">
-																			{student.grade12File.fileName}
-																		</div>
+																	{file.fileName ? (
+																		<>
+																			<div className="text-xs text-gray-700 truncate dark:text-slate-400">
+																				{file.fileName}
+																			</div>
+																			<div className="flex gap-1 mt-1">
+																				<Button
+																					size="sm"
+																					variant="outline"
+																					className="p-1 w-6 h-6"
+																					onClick={(e) => {
+																						e.stopPropagation();
+																						handleFileDownload(file.fileName);
+																					}}
+																					title="Download file"
+																				>
+																					<Download className="w-3 h-3" />
+																				</Button>
+																			</div>
+																		</>
 																	) : (
 																		<div className="text-xs font-medium text-orange-600 dark:text-orange-400">
-																			⚠️ Please upload Grade 12 file
-																		</div>
-																	)}
-																	{student.grade12File.fileName && (
-																		<div className="flex gap-1 mt-1">
-																			<Button
-																				size="sm"
-																				variant="outline"
-																				className="p-1 w-6 h-6"
-																				onClick={(e) => {
-																					e.stopPropagation();
-																					handleFileDownload(
-																						student.grade12File.fileName
-																					);
-																				}}
-																				title="Download file"
-																			>
-																				<Download className="w-3 h-3" />
-																			</Button>
+																			⚠️ Please upload {file.gradeLevelName}{" "}
+																			file
 																		</div>
 																	)}
 																</div>
-															)}
-
-															{/* Show note if no Grade 12 file exists */}
-															{!student.grade12File && student.grade11File && (
-																<div className="p-2 bg-yellow-50 rounded-md dark:bg-yellow-900/20">
-																	<div className="text-xs font-medium text-yellow-700 dark:text-yellow-300">
-																		📝 Enroll to Grade 12 to upload SF10 file
-																	</div>
-																</div>
-															)}
+															))}
 														</div>
 													) : (
 														<span className="text-xs italic text-gray-500">
@@ -906,7 +891,6 @@ export default function StudentFileManagement({
 								<div className="text-sm text-slate-600 dark:text-slate-400">
 									Page {currentPage} of {totalPages}
 								</div>
-
 								<div className="flex gap-2 items-center">
 									{/* Previous Button */}
 									<Button
@@ -950,7 +934,6 @@ export default function StudentFileManagement({
 										size="sm"
 										onClick={handleNextPage}
 										disabled={currentPage === totalPages}
-										className="flex gap-1 items-center"
 									>
 										Next
 										<ChevronRight className="w-4 h-4" />
@@ -960,7 +943,6 @@ export default function StudentFileManagement({
 						)}
 					</>
 				)}
-
 				{/* Student Modal */}
 				<StudentModal
 					isOpen={isModalOpen}
@@ -970,7 +952,8 @@ export default function StudentFileManagement({
 					allStudents={modalSelectedStudents}
 					teacherGradeLevelId={teacherGradeLevelId}
 					teacherSectionId={teacherSectionId}
-					teacherUserId={teacherUserId} // Pass teacherUserId to StudentModal
+					teacherUserId={teacherUserId}
+					academicTypeId={academicTypeId}
 				/>
 			</CardContent>
 		</Card>

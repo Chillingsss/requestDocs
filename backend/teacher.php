@@ -97,7 +97,8 @@ class User {
               e.name as sectionGradeLevel,
               f.name as actualTeacherGradeLevel,
               b.gradeLevelId as sfGradeLevelId,
-              g.name as sfGradeLevelName
+              g.name as sfGradeLevelName,
+              g.academicTId as sfAcademicTypeId
             FROM tblstudent a 
             LEFT JOIN tblsfrecord b ON a.id = b.studentId
             LEFT JOIN tblgradelevel c ON b.gradeLevelId = c.id

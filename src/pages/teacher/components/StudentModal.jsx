@@ -34,6 +34,7 @@ export default function StudentModal({
 	allStudents = [], // Pass selected students for bulk operations
 	teacherGradeLevelId, // Teacher's grade level ID
 	teacherUserId, // Add teacher user ID prop
+	academicTypeId, // Teacher's academic type ID
 }) {
 	const [uploading, setUploading] = useState(false);
 	const [selectedExcelFile, setSelectedExcelFile] = useState(null);
@@ -492,7 +493,9 @@ export default function StudentModal({
 							</Label>
 							{student.files && student.files.length > 0 ? (
 								<div className="space-y-2">
-									{student.files.map((file, index) => (
+									{student.files
+										.filter((file) => !academicTypeId || file.academicTypeId == academicTypeId)
+										.map((file, index) => (
 										<div
 											key={index}
 											className="flex justify-between items-center p-3 rounded-lg bg-slate-50 dark:bg-slate-700"

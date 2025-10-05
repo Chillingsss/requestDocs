@@ -18,7 +18,8 @@ export default function TeacherDashboard() {
 	const [students, setStudents] = useState([]);
 	const [teacherGradeLevelId, setTeacherGradeLevelId] = useState(null);
 	const [teacherSectionId, setTeacherSectionId] = useState(null);
-	const [teacherUserId, setTeacherUserId] = useState(null); // Add teacher user ID state
+	const [teacherUserId, setTeacherUserId] = useState(null);
+	const [academicTypeId, setAcademicTypeId] = useState(null);
 	const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger state
 	const navigate = useNavigate();
 	const COOKIE_KEY = "mogchs_user";
@@ -65,11 +66,7 @@ export default function TeacherDashboard() {
 						setTeacherGradeLevelId(decrypted.gradeLevelId);
 						setTeacherSectionId(decrypted.sectionId || null);
 						setTeacherUserId(decrypted.id); // Extract user ID
-						console.log(
-							"Debug - Set teacherGradeLevelId:",
-							decrypted.gradeLevelId
-						);
-						console.log("Debug - Set teacherSectionId:", decrypted.sectionId);
+						setAcademicTypeId(decrypted.academicTypeId);
 					} else if (decrypted && decrypted.userLevel === "Teacher") {
 						console.warn("Teacher user found but no gradeLevelId assigned");
 						// You might want to redirect to an error page or show a message
@@ -265,6 +262,7 @@ export default function TeacherDashboard() {
 								teacherGradeLevelId={teacherGradeLevelId}
 								teacherSectionId={teacherSectionId}
 								teacherUserId={teacherUserId}
+								academicTypeId={academicTypeId}
 								refreshTrigger={refreshTrigger}
 							/>
 						</>

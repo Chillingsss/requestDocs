@@ -8,8 +8,10 @@ class User {
     $json = json_decode($json, true);
 
     // Check in tbluser
-    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.pinCode, a.gradeLevelId, a.sectionId, a.isActive, b.name AS userLevel FROM tbluser a
+    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.pinCode, a.gradeLevelId, a.sectionId, a.isActive, b.name AS userLevel, d.id AS academicTypeId FROM tbluser a
             INNER JOIN tbluserlevel b ON a.userLevel = b.id
+            INNER JOIN tblgradelevel c ON a.gradeLevelId = c.id
+            INNER JOIN tblacademictype d ON c.academicTId = d.id
             WHERE BINARY a.id = :username";
     $stmt = $conn->prepare($sql);
     $stmt->bindParam(':username', $json['username']);
@@ -51,7 +53,8 @@ class User {
                     'gradeLevelId' => $user['gradeLevelId'],
                     'sectionId' => $user['sectionId'],
                     'needsPasswordReset' => $needsPasswordReset,
-                    'needsPinReset' => $needsPinReset
+                    'needsPinReset' => $needsPinReset,
+                    'academicTypeId' => $user['academicTypeId'],
                 ]);
             }
             error_log("Normal login for user: " . $user['id']);
@@ -63,6 +66,7 @@ class User {
                 'email' => $user['email'],
                 'gradeLevelId' => $user['gradeLevelId'],
                 'sectionId' => $user['sectionId'],
+                'academicTypeId' => $user['academicTypeId'],
             ]);
         }
     }
