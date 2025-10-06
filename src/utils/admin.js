@@ -211,6 +211,81 @@ export async function resetPassword(
 	}
 }
 
+export async function resetPin(userId, userType) {
+	const formData = new FormData();
+	formData.append("operation", "resetPin");
+	formData.append("json", JSON.stringify({ userId, userType }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function verifyCurrentPassword(userId, userType, currentPassword) {
+	const formData = new FormData();
+	formData.append("operation", "verifyCurrentPassword");
+	formData.append(
+		"json",
+		JSON.stringify({ userId, userType, currentPassword })
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function changePassword(userId, userType, newPassword) {
+	return await resetPassword(userId, userType, newPassword);
+}
+
+export async function verifyCurrentPin(userId, userType, currentPin) {
+	const formData = new FormData();
+	formData.append("operation", "verifyCurrentPin");
+	formData.append("json", JSON.stringify({ userId, userType, currentPin }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function changePin(userId, userType, newPin) {
+	const formData = new FormData();
+	formData.append("operation", "changePin");
+	formData.append("json", JSON.stringify({ userId, userType, newPin }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 export async function getGradeLevel() {
 	const formData = new FormData();
 	formData.append("operation", "getGradelevel");

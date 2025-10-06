@@ -220,7 +220,7 @@ export async function getRequestAttachments(requestId) {
 	}
 }
 
-export async function getStudentProfile(userId) {
+export async function _getStudentProfile(userId) {
 	const formData = new FormData();
 	formData.append("operation", "getProfile");
 	formData.append("json", JSON.stringify({ userId }));
@@ -238,7 +238,7 @@ export async function getStudentProfile(userId) {
 	}
 }
 
-export async function updateStudentProfile(userId, profileData) {
+export async function _updateStudentProfile(userId, profileData) {
 	const formData = new FormData();
 	formData.append("operation", "updateProfile");
 	formData.append("json", JSON.stringify({ userId, ...profileData }));
@@ -254,6 +254,16 @@ export async function updateStudentProfile(userId, profileData) {
 	} catch (error) {
 		throw error;
 	}
+}
+
+export async function getUserProfile(userId, userType) {
+	// For student, we use the _getStudentProfile function
+	return await _getStudentProfile(userId);
+}
+
+export async function updateUserProfile(userId, userType, profileData) {
+	// For student, we use the _updateStudentProfile function
+	return await _updateStudentProfile(userId, profileData);
 }
 
 export async function cancelRequest(requestId) {
@@ -287,4 +297,83 @@ export async function getExpectedDays() {
 	} catch (error) {
 		throw error;
 	}
+}
+
+// New Nodemailer-based OTP sender hitting Node mail server directly
+export async function sendPasswordResetOtpMail(email, fullName) {
+	const hostname =
+		typeof window !== "undefined" ? window.location.hostname : "";
+	const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(hostname);
+	const baseOverride = process.env.REACT_APP_MAIL_API_BASE;
+	const endpoint = baseOverride
+		? `${baseOverride.replace(/\/$/, "")}/api/send-password-reset-otp`
+		: isLocal
+		? "http://localhost:4001/send-password-reset-otp"
+		: "/api/send-password-reset-otp";
+
+	const { data } = await axios.post(endpoint, { email, fullName });
+	return data;
+}
+
+// Convenience helper: look up email/name from PHP backend, then send via Nodemailer
+export async function sendPasswordResetOtpForUser(userId, userType) {
+	// Fetch profile from PHP backend
+	const profile = await getUserProfile(userId, userType);
+	const email = profile?.email;
+	const fullName = `${profile?.firstname || ""} ${
+		profile?.lastname || ""
+	}`.trim();
+	if (!email) {
+		throw new Error("User has no email on file");
+	}
+	// Send using the environment-aware mail endpoint
+	return await sendPasswordResetOtpMail(email, fullName);
+}
+
+export async function _verifyStudentCurrentPassword(userId, currentPassword) {
+	const formData = new FormData();
+	formData.append("operation", "verifyCurrentPassword");
+	formData.append(
+		"json",
+		JSON.stringify({ userId, currentPassword, userType: "student" })
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/student.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function verifyCurrentPassword(userId, userType, currentPassword) {
+	return await _verifyStudentCurrentPassword(userId, currentPassword);
+}
+
+export async function _changeStudentPassword(userId, newPassword) {
+	const formData = new FormData();
+	formData.append("operation", "resetPassword"); // Re-using resetPassword operation
+	formData.append(
+		"json",
+		JSON.stringify({ userId, newPassword, userType: "student" })
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/student.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function changePassword(userId, userType, newPassword) {
+	return await _changeStudentPassword(userId, newPassword);
 }

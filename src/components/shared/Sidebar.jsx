@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import CryptoJS from "crypto-js";
 import Cookies from "js-cookie";
+import ProfileModal from "./ProfileModal"; // Import the new generic ProfileModal
 
 const SECRET_KEY = "mogchs_secret_key";
 
@@ -29,6 +30,7 @@ export default function Sidebar({
 }) {
 	const [showUserDropdown, setShowUserDropdown] = useState(false);
 	const [currentUser, setCurrentUser] = useState(null);
+	const [isProfileModalOpen, setIsProfileModalOpen] = useState(false); // New state for modal
 
 	// Get current user from cookie
 	useEffect(() => {
@@ -76,6 +78,15 @@ export default function Sidebar({
 			setShowUserDropdown(false);
 		}
 	}, [sidebarOpen]);
+
+	const handleProfileClick = () => {
+		setShowUserDropdown(false);
+		setIsProfileModalOpen(true);
+	};
+
+	const handleCloseProfileModal = () => {
+		setIsProfileModalOpen(false);
+	};
 
 	return (
 		<>
@@ -188,15 +199,13 @@ export default function Sidebar({
 											</div>
 										</div>
 										{/* Profile button - only show for students */}
-										{panelType === "student" && (
-											<button
-												onClick={onProfileClick}
-												className="flex items-center p-3 space-x-3 w-full text-left text-blue-400 rounded-b-lg transition-colors hover:bg-slate-700"
-											>
-												<User2 className="w-4 h-4" />
-												<span className="text-sm">Profile</span>
-											</button>
-										)}
+										<button
+											onClick={handleProfileClick}
+											className="flex items-center p-3 space-x-3 w-full text-left text-blue-400 rounded-b-lg transition-colors hover:bg-slate-700"
+										>
+											<User2 className="w-4 h-4" />
+											<span className="text-sm">Profile</span>
+										</button>
 										<button
 											onClick={onLogout}
 											className="flex items-center p-3 space-x-3 w-full text-left text-red-400 rounded-b-lg transition-colors hover:bg-slate-700"
@@ -244,6 +253,12 @@ export default function Sidebar({
 					)}
 				</div>
 			</aside>
+			<ProfileModal
+				isOpen={isProfileModalOpen}
+				onClose={handleCloseProfileModal}
+				userId={currentUser?.id}
+				userType={panelType}
+			/>
 		</>
 	);
 }

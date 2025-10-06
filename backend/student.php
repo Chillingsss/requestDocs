@@ -1077,6 +1077,66 @@ class User {
       return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
   }
+
+  function verifyCurrentPassword($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $currentPassword = $json['currentPassword'];
+
+    try {
+      $sql = "SELECT password FROM tblstudent WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':userId', $userId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (password_verify($currentPassword, $user['password'])) {
+          return json_encode(['success' => true, 'message' => 'Current password verified.']);
+        }
+        return json_encode(['success' => false, 'error' => 'Invalid current password.']);
+      }
+      return json_encode(['success' => false, 'error' => 'User not found.']);
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function resetPassword($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    
+    $userId = $json['userId'];
+    $newPassword = isset($json['newPassword']) ? $json['newPassword'] : null;
+
+    try {
+      $conn->beginTransaction();
+      
+      if (empty($newPassword)) {
+          return json_encode(['status' => 'error', 'message' => 'No new password provided for update']);
+      }
+      
+      $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+      $sql = "UPDATE tblstudent SET password = :password WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':password', $hashedPassword);
+      $stmt->bindParam(':userId', $userId);
+      
+      if ($stmt->execute()) {
+          $conn->commit();
+          return json_encode(['status' => 'success', 'message' => 'Password reset successfully']);
+      } else {
+          $conn->rollBack();
+          return json_encode(['status' => 'error', 'message' => 'Failed to reset password']);
+      }
+    } catch (Exception $e) {
+        $conn->rollBack();
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+  }
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -1133,6 +1193,12 @@ switch ($operation) {
     break;
   case "cancelRequest":
     echo $user->cancelRequest($json);
+    break;
+  case "verifyCurrentPassword": // New case for verifying current password
+    echo $user->verifyCurrentPassword($json);
+    break;
+  case "resetPassword": // New case for resetting password (used by changePassword)
+    echo $user->resetPassword($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

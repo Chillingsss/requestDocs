@@ -29,6 +29,7 @@ import {
 	updateUserProfile,
 	getAllSections,
 	resetPassword,
+	resetPin,
 } from "../../../utils/admin";
 import { getSchoolYear } from "../../../utils/registrar";
 
@@ -47,6 +48,7 @@ export default function UserProfileModal({
 	const [sectionOptions, setSectionOptions] = useState([]);
 	const [schoolYearOptions, setSchoolYearOptions] = useState([]);
 	const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+	const [isResetPinDialogOpen, setIsResetPinDialogOpen] = useState(false);
 
 	// Fetch profile data when modal opens
 	useEffect(() => {
@@ -174,6 +176,25 @@ export default function UserProfileModal({
 		}
 	};
 
+	const handleResetPin = async () => {
+		setIsResetPinDialogOpen(true);
+	};
+
+	const confirmResetPin = async () => {
+		try {
+			const result = await resetPin(userId, userType);
+			if (result.status === "success") {
+				toast.success("PIN has been reset successfully");
+				setIsResetPinDialogOpen(false);
+			} else {
+				toast.error(result.message || "Failed to reset PIN");
+			}
+		} catch (error) {
+			console.error("Failed to reset PIN:", error);
+			toast.error("Failed to reset PIN");
+		}
+	};
+
 	const handleSave = async () => {
 		setSaving(true);
 		try {
@@ -231,6 +252,16 @@ export default function UserProfileModal({
 										<KeyIcon className="w-4 h-4" />
 										<span>Reset Password</span>
 									</Button>
+									{userType !== "student" && (
+										<Button
+											onClick={handleResetPin}
+											variant="destructive"
+											className="flex items-center space-x-2"
+										>
+											<KeyIcon className="w-4 h-4" />
+											<span>Reset PIN</span>
+										</Button>
+									)}
 									<Button
 										onClick={handleEdit}
 										className="flex items-center space-x-2 text-white bg-blue-600 hover:bg-blue-700"
@@ -676,15 +707,15 @@ export default function UserProfileModal({
 				</div>
 			</div>
 			{isResetDialogOpen && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center">
+				<div className="flex fixed inset-0 z-50 justify-center items-center">
 					{/* Backdrop */}
 					<div
-						className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+						className="absolute inset-0 backdrop-blur-sm bg-black/50"
 						onClick={() => setIsResetDialogOpen(false)}
 					/>
 
 					{/* Modal */}
-					<div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 space-y-6">
+					<div className="relative p-6 space-y-6 w-full max-w-md bg-white rounded-lg shadow-xl dark:bg-gray-800">
 						{/* Header */}
 						<div className="space-y-2">
 							<h3 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -718,6 +749,56 @@ export default function UserProfileModal({
 						{/* Close button */}
 						<button
 							onClick={() => setIsResetDialogOpen(false)}
+							className="absolute top-4 right-4 text-gray-400 hover:text-gray-500 dark:hover:text-gray-400"
+						>
+							<X className="w-5 h-5" />
+						</button>
+					</div>
+				</div>
+			)}
+			{isResetPinDialogOpen && (
+				<div className="flex fixed inset-0 z-50 justify-center items-center">
+					{/* Backdrop */}
+					<div
+						className="absolute inset-0 backdrop-blur-sm bg-black/50"
+						onClick={() => setIsResetPinDialogOpen(false)}
+					/>
+
+					{/* Modal */}
+					<div className="relative p-6 space-y-6 w-full max-w-md bg-white rounded-lg shadow-xl dark:bg-gray-800">
+						{/* Header */}
+						<div className="space-y-2">
+							<h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+								Reset PIN Confirmation
+							</h3>
+							<p className="text-sm text-gray-500 dark:text-gray-400">
+								Are you sure you want to reset the PIN for {profile?.firstname}{" "}
+								{profile?.lastname}? The PIN will be reset to the last 4 digits
+								of their ID ({profile?.id?.slice(-4)}).
+							</p>
+						</div>
+
+						{/* Footer */}
+						<div className="flex justify-end space-x-2">
+							<Button
+								variant="outline"
+								onClick={() => setIsResetPinDialogOpen(false)}
+							>
+								Cancel
+							</Button>
+							<Button
+								variant="destructive"
+								onClick={confirmResetPin}
+								className="flex items-center space-x-2"
+							>
+								<KeyIcon className="w-4 h-4" />
+								<span>Reset PIN</span>
+							</Button>
+						</div>
+
+						{/* Close button */}
+						<button
+							onClick={() => setIsResetPinDialogOpen(false)}
 							className="absolute top-4 right-4 text-gray-400 hover:text-gray-500 dark:hover:text-gray-400"
 						>
 							<X className="w-5 h-5" />

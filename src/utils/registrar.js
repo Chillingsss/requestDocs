@@ -582,3 +582,154 @@ export async function sendLrnEmail({ email, firstName, lastName, lrn }) {
 		throw error;
 	}
 }
+
+export async function getUserProfile(userId) {
+	const formData = new FormData();
+	formData.append("operation", "getProfile");
+	formData.append("json", JSON.stringify({ userId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateUserProfile(userId, profileData) {
+	const formData = new FormData();
+	formData.append("operation", "updateProfile");
+	formData.append("json", JSON.stringify({ userId, ...profileData }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+// New Nodemailer-based OTP sender hitting Node mail server directly
+export async function sendPasswordResetOtpMail(email, fullName) {
+	const hostname =
+		typeof window !== "undefined" ? window.location.hostname : "";
+	const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(hostname);
+	const baseOverride = process.env.REACT_APP_MAIL_API_BASE;
+	const endpoint = baseOverride
+		? `${baseOverride.replace(/\/$/, "")}/api/send-password-reset-otp`
+		: isLocal
+		? "http://localhost:4001/send-password-reset-otp"
+		: "/api/send-password-reset-otp";
+
+	const { data } = await axios.post(endpoint, { email, fullName });
+	return data;
+}
+
+// Convenience helper: look up email/name from PHP backend, then send via Nodemailer
+export async function sendPasswordResetOtpForUser(userId, userType) {
+	// Fetch profile from PHP backend
+	const profile = await getUserProfile(userId, userType);
+	const email = profile?.email;
+	const fullName = `${profile?.firstname || ""} ${
+		profile?.lastname || ""
+	}`.trim();
+	if (!email) {
+		throw new Error("User has no email on file");
+	}
+	// Send using the environment-aware mail endpoint
+	return await sendPasswordResetOtpMail(email, fullName);
+}
+
+export async function _verifyRegistrarCurrentPassword(userId, currentPassword) {
+	const formData = new FormData();
+	formData.append("operation", "verifyCurrentPassword");
+	formData.append(
+		"json",
+		JSON.stringify({ userId, currentPassword, userType: "registrar" })
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+
+		console.log("responsedata", response.data);
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function verifyCurrentPassword(userId, userType, currentPassword) {
+	return await _verifyRegistrarCurrentPassword(userId, currentPassword);
+}
+
+export async function changePassword(userId, userType, newPassword) {
+	const formData = new FormData();
+	formData.append("operation", "resetPassword");
+	formData.append(
+		"json",
+		JSON.stringify({ userId, newPassword, userType: "registrar" })
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function verifyCurrentPin(userId, userType, currentPin) {
+	const formData = new FormData();
+	formData.append("operation", "verifyCurrentPin");
+	formData.append(
+		"json",
+		JSON.stringify({ userId, currentPin, userType: "registrar" })
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function changePin(userId, userType, newPin) {
+	const formData = new FormData();
+	formData.append("operation", "changePin");
+	formData.append(
+		"json",
+		JSON.stringify({ userId, newPin, userType: "registrar" })
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

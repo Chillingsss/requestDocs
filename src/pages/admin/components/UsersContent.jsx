@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
-import { Plus } from "lucide-react";
+import { Input } from "../../../components/ui/input";
+import { Plus, Search } from "lucide-react";
 
 export default function UsersContent({
 	users,
@@ -11,6 +12,30 @@ export default function UsersContent({
 	onActivateUser,
 	onDeactivateUser,
 }) {
+	const [searchTerm, setSearchTerm] = useState("");
+
+	// Filter users based on search term
+	const filteredUsers = useMemo(() => {
+		if (!searchTerm.trim()) {
+			return users;
+		}
+
+		const searchLower = searchTerm.toLowerCase().trim();
+		return users.filter((user) => {
+			const fullName = `${user.firstname} ${user.lastname}`.toLowerCase();
+			const userId = user.id.toString().toLowerCase();
+			const email = user.email ? user.email.toLowerCase() : "";
+
+			return (
+				userId.includes(searchLower) ||
+				fullName.includes(searchLower) ||
+				email.includes(searchLower) ||
+				user.firstname.toLowerCase().includes(searchLower) ||
+				user.lastname.toLowerCase().includes(searchLower)
+			);
+		});
+	}, [users, searchTerm]);
+
 	return (
 		<>
 			{/* Users List */}
@@ -31,6 +56,27 @@ export default function UsersContent({
 						</div>
 					</div>
 
+					{/* Search Bar */}
+					<div className="mb-4">
+						<div className="flex gap-4 justify-between items-center">
+							<div className="relative flex-1 max-w-md">
+								<Search className="absolute left-3 top-1/2 w-4 h-4 text-gray-400 transform -translate-y-1/2" />
+								<Input
+									type="text"
+									placeholder="Search by User ID, name, or email..."
+									value={searchTerm}
+									onChange={(e) => setSearchTerm(e.target.value)}
+									className="pl-10 w-full"
+								/>
+							</div>
+							{searchTerm && (
+								<div className="text-sm text-gray-500 dark:text-gray-400">
+									{filteredUsers.length} of {users.length} users
+								</div>
+							)}
+						</div>
+					</div>
+
 					{loading ? (
 						<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 							Loading users...
@@ -38,6 +84,10 @@ export default function UsersContent({
 					) : users.length === 0 ? (
 						<div className="py-8 text-center text-slate-500 dark:text-slate-400">
 							No users found
+						</div>
+					) : filteredUsers.length === 0 ? (
+						<div className="py-8 text-center text-slate-500 dark:text-slate-400">
+							No users match your search criteria
 						</div>
 					) : (
 						<div className="overflow-x-auto">
@@ -62,7 +112,7 @@ export default function UsersContent({
 									</tr>
 								</thead>
 								<tbody>
-									{users.map((user, index) => (
+									{filteredUsers.map((user, index) => (
 										<tr
 											key={user.id}
 											className={`border-b border-slate-100 dark:border-slate-600 transition-colors duration-200 hover:bg-slate-100 dark:hover:bg-slate-600 ${
@@ -72,28 +122,28 @@ export default function UsersContent({
 											}`}
 										>
 											<td
-												className="px-4 py-3 text-sm text-slate-900 dark:text-white cursor-pointer"
+												className="px-4 py-3 text-sm cursor-pointer text-slate-900 dark:text-white"
 												onClick={() => onViewProfile(user.id, "user")}
 											>
 												{user.id}
 											</td>
 											<td
-												className="px-4 py-3 text-sm text-slate-900 dark:text-white cursor-pointer"
+												className="px-4 py-3 text-sm cursor-pointer text-slate-900 dark:text-white"
 												onClick={() => onViewProfile(user.id, "user")}
 											>
 												{user.firstname} {user.lastname}
 											</td>
 											<td
-												className="px-4 py-3 text-sm text-slate-900 dark:text-white cursor-pointer"
+												className="px-4 py-3 text-sm cursor-pointer text-slate-900 dark:text-white"
 												onClick={() => onViewProfile(user.id, "user")}
 											>
 												{user.email}
 											</td>
 											<td
-												className="px-4 py-3 text-sm text-slate-900 dark:text-white cursor-pointer"
+												className="px-4 py-3 text-sm cursor-pointer text-slate-900 dark:text-white"
 												onClick={() => onViewProfile(user.id, "user")}
 											>
-												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+												<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-200">
 													{user.userLevel}
 												</span>
 											</td>
@@ -108,7 +158,7 @@ export default function UsersContent({
 													>
 														{user.isActive ? "Active" : "Inactive"}
 													</span>
-													<label className="relative inline-flex items-center cursor-pointer">
+													<label className="inline-flex relative items-center cursor-pointer">
 														<input
 															type="checkbox"
 															checked={user.isActive}

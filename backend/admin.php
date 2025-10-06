@@ -1252,146 +1252,56 @@ class User {
    function getUserProfile($json)
    {
     include "connection.php";
+
     $json = json_decode($json, true);
     $userId = $json['userId'];
-    $userType = $json['userType']; // 'user' or 'student'
-    
+
     try {
-        if ($userType === 'student') {
-            // Get student profile
-            $sql = "SELECT 
-                      s.id,
-                      s.firstname,
-                      s.middlename,
-                      s.lastname,
-                      s.lrn,
-                      s.email,
-                      s.birthDate,
-                      s.age,
-                      s.religion,
-                      s.completeAddress,
-                      s.fatherName,
-                      s.motherName,
-                      s.guardianName,
-                      s.guardianRelationship,
-                      s.sectionId,
-                      s.schoolyearId,
-                      s.strandId,
-                      sec.name as sectionName,
-                      sy.year as schoolYear,
-                      t.name as track,
-                      st.name as strand,
-                      ul.name as userLevel
-                    FROM tblstudent s
-                    LEFT JOIN tblsection sec ON s.sectionId = sec.id
-                    LEFT JOIN tblschoolyear sy ON s.schoolyearId = sy.id
-                    LEFT JOIN tblstrand st ON s.strandId = st.id
-                    LEFT JOIN tbltrack t ON st.trackId = t.id
-                    LEFT JOIN tbluserlevel ul ON s.userLevel = ul.id
-                    WHERE s.id = :userId";
-        } else {
-            // Get admin/teacher profile
-            $sql = "SELECT 
-                      u.id,
-                      u.firstname,
-                      u.lastname,
-                      u.email,
-                      u.gradeLevelId,
-                      u.sectionId,
-                      gl.name as gradeLevel,
-                      sec.name as sectionName,
-                      ul.name as userLevel
-                    FROM tbluser u
-                    LEFT JOIN tblgradelevel gl ON u.gradeLevelId = gl.id
-                    LEFT JOIN tblsection sec ON u.sectionId = sec.id
-                    LEFT JOIN tbluserlevel ul ON u.userLevel = ul.id
-                    WHERE u.id = :userId";
-        }
-        
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':userId', $userId);
-        $stmt->execute();
+      $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.email, b.name AS userLevel 
+              FROM tbluser a
+              INNER JOIN tbluserlevel b ON a.userLevel = b.id
+              WHERE a.id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':userId', $userId);
+      $stmt->execute();
 
-        if ($stmt->rowCount() > 0) {
-            $profile = $stmt->fetch(PDO::FETCH_ASSOC);
-            $profile['userType'] = $userType; // Add user type to profile data
-            return json_encode($profile);
-        }
-        return json_encode(['error' => 'User profile not found']);
-
+      if ($stmt->rowCount() > 0) {
+        $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+        return json_encode($profile);
+      }
+      return json_encode(['error' => 'User profile not found']);
     } catch (PDOException $e) {
-        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
-   }
+  }
 
-   function updateUserProfile($json)
-   {
+  function updateUserProfile($json) {
     include "connection.php";
+
     $json = json_decode($json, true);
     $userId = $json['userId'];
-    $userType = $json['userType'];
-    
+    $firstname = $json['firstname'];
+    $middlename = $json['middlename'];
+    $lastname = $json['lastname'];
+    $email = $json['email'];
+
     try {
-        if ($userType === 'student') {
-            // Update student profile
-            $sql = "UPDATE tblstudent 
-                    SET firstname = :firstname, 
-                        middlename = :middlename, 
-                        lastname = :lastname, 
-                        email = :email,
-                        birthDate = :birthDate,
-                        age = :age,
-                        religion = :religion,
-                        completeAddress = :completeAddress,
-                        fatherName = :fatherName,
-                        motherName = :motherName,
-                        guardianName = :guardianName,
-                        guardianRelationship = :guardianRelationship
-                    WHERE id = :userId";
-            
-            $stmt = $conn->prepare($sql);
-            $stmt->bindParam(':firstname', $json['firstname']);
-            $stmt->bindParam(':middlename', $json['middlename']);
-            $stmt->bindParam(':lastname', $json['lastname']);
-            $stmt->bindParam(':email', $json['email']);
-            $stmt->bindParam(':birthDate', $json['birthDate']);
-            $stmt->bindParam(':age', $json['age']);
-            $stmt->bindParam(':religion', $json['religion']);
-            $stmt->bindParam(':completeAddress', $json['completeAddress']);
-            $stmt->bindParam(':fatherName', $json['fatherName']);
-            $stmt->bindParam(':motherName', $json['motherName']);
-            $stmt->bindParam(':guardianName', $json['guardianName']);
-            $stmt->bindParam(':guardianRelationship', $json['guardianRelationship']);
-            $stmt->bindParam(':userId', $userId);
-        } else {
-            // Update admin/teacher profile
-            $sql = "UPDATE tbluser 
-                    SET firstname = :firstname, 
-                        lastname = :lastname, 
-                        email = :email,
-                        gradeLevelId = :gradeLevelId,
-                        sectionId = :sectionId
-                    WHERE id = :userId";
-            
-            $stmt = $conn->prepare($sql);
-            $stmt->bindParam(':firstname', $json['firstname']);
-            $stmt->bindParam(':lastname', $json['lastname']);
-            $stmt->bindParam(':email', $json['email']);
-            $stmt->bindParam(':gradeLevelId', $json['gradeLevelId']);
-            $stmt->bindParam(':sectionId', $json['sectionId']);
-            $stmt->bindParam(':userId', $userId);
-        }
+      $sql = "UPDATE tbluser SET firstname = :firstname, middlename = :middlename, lastname = :lastname, email = :email, updatedAt = NOW() WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':firstname', $firstname);
+      $stmt->bindParam(':middlename', $middlename);
+      $stmt->bindParam(':lastname', $lastname);
+      $stmt->bindParam(':email', $email);
+      $stmt->bindParam(':userId', $userId);
 
-        if ($stmt->execute()) {
-            return json_encode(['success' => true, 'message' => 'Profile updated successfully']);
-        } else {
-            return json_encode(['error' => 'Failed to update profile']);
-        }
-
+      if ($stmt->execute()) {
+        return json_encode(['success' => true, 'message' => 'Profile updated successfully']);
+      }
+      return json_encode(['error' => 'Failed to update profile']);
     } catch (PDOException $e) {
-        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
     }
-   }
+  }
 
    function activateUser($json)
    {
@@ -2377,6 +2287,114 @@ class User {
     }
    }
 
+   function verifyCurrentPassword($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $currentPassword = $json['currentPassword'];
+    $userType = $json['userType'];
+
+    try {
+      $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+      $sql = "SELECT password FROM $table WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':userId', $userId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (password_verify($currentPassword, $user['password'])) {
+          return json_encode(['success' => true, 'message' => 'Current password verified.']);
+        }
+        return json_encode(['success' => false, 'error' => 'Invalid current password.']);
+      }
+      return json_encode(['success' => false, 'error' => 'User not found.']);
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function verifyCurrentPin($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $currentPin = $json['currentPin'];
+    $userType = $json['userType'];
+
+    try {
+      $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+      $sql = "SELECT pinCode FROM $table WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':userId', $userId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (password_verify($currentPin, $user['pinCode'])) {
+          return json_encode(['success' => true, 'message' => 'Current PIN verified.']);
+        }
+        return json_encode(['success' => false, 'error' => 'Invalid current PIN.']);
+      }
+      return json_encode(['success' => false, 'error' => 'User not found.']);
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function changePin($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $newPin = $json['newPin'];
+    $userType = $json['userType'];
+
+    try {
+      $hashedPin = password_hash($newPin, PASSWORD_DEFAULT);
+      $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+      $sql = "UPDATE $table SET pinCode = :pin WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':pin', $hashedPin);
+      $stmt->bindParam(':userId', $userId);
+      
+      if ($stmt->execute()) {
+        return json_encode(['success' => true, 'message' => 'PIN updated successfully.']);
+      }
+      return json_encode(['success' => false, 'error' => 'Failed to update PIN.']);
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function resetPin($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $userType = $json['userType'];
+
+    try {
+      // Get last 4 digits of user ID as default PIN
+      $defaultPin = substr($userId, -4);
+      $hashedPin = password_hash($defaultPin, PASSWORD_DEFAULT);
+      
+      $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+      $sql = "UPDATE $table SET pinCode = :pin WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':pin', $hashedPin);
+      $stmt->bindParam(':userId', $userId);
+      
+      if ($stmt->execute()) {
+        return json_encode(['status' => 'success', 'message' => 'PIN reset successfully to last 4 digits of ID']);
+      }
+      return json_encode(['status' => 'error', 'message' => 'Failed to reset PIN']);
+    } catch (PDOException $e) {
+      return json_encode(['status' => 'error', 'message' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -2559,6 +2577,24 @@ switch ($operation) {
     break;
   case "exportRequestAnalytics":
     echo $user->exportRequestAnalytics($json);
+    break;
+  case "getProfile": // New case for fetching profile
+    echo $user->getUserProfile($json);
+    break;
+  case "updateProfile": // New case for updating profile
+    echo $user->updateUserProfile($json);
+    break;
+  case "verifyCurrentPassword": // New case for verifying current password
+    echo $user->verifyCurrentPassword($json);
+    break;
+  case "verifyCurrentPin": // New case for verifying current PIN
+    echo $user->verifyCurrentPin($json);
+    break;
+  case "changePin": // New case for changing PIN
+    echo $user->changePin($json);
+    break;
+  case "resetPin": // New case for resetting PIN
+    echo $user->resetPin($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

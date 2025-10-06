@@ -1817,6 +1817,162 @@ function processLrnRequest($json)
     }
   }
 
+  function getUserProfile($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+
+    try {
+      $sql = "SELECT id, firstname, middlename, lastname, email FROM tbluser WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':userId', $userId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+        return json_encode($profile);
+      }
+      return json_encode(['error' => 'User profile not found']);
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function updateUserProfile($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $firstname = $json['firstname'];
+    $middlename = $json['middlename'];
+    $lastname = $json['lastname'];
+    $email = $json['email'];
+
+    try {
+      $sql = "UPDATE tbluser SET firstname = :firstname, middlename = :middlename, lastname = :lastname, email = :email, updatedAt = NOW() WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':firstname', $firstname);
+      $stmt->bindParam(':middlename', $middlename);
+      $stmt->bindParam(':lastname', $lastname);
+      $stmt->bindParam(':email', $email);
+      $stmt->bindParam(':userId', $userId);
+
+      if ($stmt->execute()) {
+        return json_encode(['success' => true, 'message' => 'Profile updated successfully']);
+      }
+      return json_encode(['error' => 'Failed to update profile']);
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function verifyCurrentPassword($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $currentPassword = $json['currentPassword'];
+    $userType = $json['userType'];
+
+    try {
+      $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+      $sql = "SELECT password FROM $table WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':userId', $userId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (password_verify($currentPassword, $user['password'])) {
+          return json_encode(['success' => true, 'message' => 'Current password verified.']);
+        }
+        return json_encode(['success' => false, 'error' => 'Invalid current password.']);
+      }
+      return json_encode(['success' => false, 'error' => 'User not found.']);
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function resetPassword($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $newPassword = $json['newPassword'];
+    $userType = $json['userType'];
+
+    try {
+      $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+      $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+      $sql = "UPDATE $table SET password = :password WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':password', $hashedPassword);
+      $stmt->bindParam(':userId', $userId);
+      
+      if ($stmt->execute()) {
+        return json_encode(['success' => true, 'message' => 'Password updated successfully.']);
+      }
+      return json_encode(['success' => false, 'error' => 'Failed to update password.']);
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function verifyCurrentPin($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $currentPin = $json['currentPin'];
+    $userType = $json['userType'];
+
+    try {
+      $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+      $sql = "SELECT pinCode FROM $table WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':userId', $userId);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (password_verify($currentPin, $user['pinCode'])) {
+          return json_encode(['success' => true, 'message' => 'Current PIN verified.']);
+        }
+        return json_encode(['success' => false, 'error' => 'Invalid current PIN.']);
+      }
+      return json_encode(['success' => false, 'error' => 'User not found.']);
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
+  function changePin($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $userId = $json['userId'];
+    $newPin = $json['newPin'];
+    $userType = $json['userType'];
+
+    try {
+      $hashedPin = password_hash($newPin, PASSWORD_DEFAULT);
+      $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+      $sql = "UPDATE $table SET pinCode = :pin WHERE id = :userId";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':pin', $hashedPin);
+      $stmt->bindParam(':userId', $userId);
+      
+      if ($stmt->execute()) {
+        return json_encode(['success' => true, 'message' => 'PIN updated successfully.']);
+      }
+      return json_encode(['success' => false, 'error' => 'Failed to update PIN.']);
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
 }
 
 $operation = isset($_POST["operation"]) ? $_POST["operation"] : "0";
@@ -1914,6 +2070,24 @@ switch ($operation) {
     break;
   case "getRequestOwner":
     echo $user->getRequestOwner($json);
+    break;
+  case "getProfile": // New case for fetching profile
+    echo $user->getUserProfile($json);
+    break;
+  case "updateProfile": // New case for updating profile
+    echo $user->updateUserProfile($json);
+    break;
+  case "verifyCurrentPassword": // New case for verifying current password
+    echo $user->verifyCurrentPassword($json);
+    break;
+  case "resetPassword": // New case for resetting password
+    echo $user->resetPassword($json);
+    break;
+  case "verifyCurrentPin": // New case for verifying current PIN
+    echo $user->verifyCurrentPin($json);
+    break;
+  case "changePin": // New case for changing PIN
+    echo $user->changePin($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

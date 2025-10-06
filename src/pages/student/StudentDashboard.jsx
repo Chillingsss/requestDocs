@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Menu, FileText, LogOut, Plus, User, RefreshCw } from "lucide-react";
-import { getUserRequests, getStudentProfile } from "../../utils/student";
+import { getUserRequests, getUserProfile } from "../../utils/student"; // Updated import
 import Cookies from "js-cookie";
 import CryptoJS from "crypto-js";
 import toast, { Toaster } from "react-hot-toast";
@@ -13,8 +13,7 @@ import ThemeToggle from "../../components/ThemeToggle";
 import Sidebar from "../../components/shared/Sidebar";
 import StatsCards from "./components/StatsCards";
 import RequestsTable from "./components/RequestsTable";
-import ProfileModal from "./modal/ProfileModal";
-import RequestDetailsModal from "./modal/RequestDetailsModal";
+import ProfileModal from "../../components/shared/ProfileModal";
 
 export default function StudentDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -43,7 +42,7 @@ export default function StudentDashboard() {
 	React.useEffect(() => {
 		if (userId) {
 			fetchUserRequests();
-			fetchStudentProfile();
+			fetchUserProfile(); // Renamed function call
 		}
 	}, [userId]);
 
@@ -60,9 +59,9 @@ export default function StudentDashboard() {
 			.finally(() => setLoadingRequests(false));
 	};
 
-	const fetchStudentProfile = async () => {
+	const fetchUserProfile = async () => {
 		try {
-			const data = await getStudentProfile(userId);
+			const data = await getUserProfile(userId, "student"); // Using the generic getUserProfile
 			if (!data.error) {
 				setStudentProfile(data);
 			}
@@ -258,6 +257,7 @@ export default function StudentDashboard() {
 					isOpen={showProfileModal}
 					onClose={() => setShowProfileModal(false)}
 					userId={userId}
+					userType="student" // Added userType prop
 				/>
 			)}
 		</div>
