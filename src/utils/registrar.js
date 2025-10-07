@@ -323,6 +323,23 @@ export async function getAllStudentDocuments() {
 	}
 }
 
+export async function getAllStudentFiles() {
+	const formData = new FormData();
+	formData.append("operation", "getAllStudentFiles");
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 export async function processRelease(requestId, userId) {
 	const formData = new FormData();
 	formData.append("operation", "processRelease");

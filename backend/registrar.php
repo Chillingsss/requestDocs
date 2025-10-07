@@ -725,6 +725,117 @@ class User {
     return json_encode([]);
   }
 
+  function getAllStudentFiles(){
+    include "connection.php";
+
+    try {
+      // Query for Excel files from tblsfrecord
+      $sql1 = "SELECT 
+                sf.id,
+                sf.fileName,
+                sf.studentId,
+                sf.gradeLevelId,
+                sf.createdAt,
+                gl.name as gradeLevelName,
+                s.firstname,
+                s.lastname,
+                s.middlename,
+                s.lrn,
+                t.name as track,
+                st.name as strand,
+                'Excel File' as documentType,
+                'sfrecord' as sourceTable
+              FROM tblsfrecord sf
+              LEFT JOIN tblgradelevel gl ON sf.gradeLevelId = gl.id
+              LEFT JOIN tblstudent s ON sf.studentId = s.id
+              LEFT JOIN tbltrack t ON s.strandId IN (SELECT id FROM tblstrand WHERE trackId = t.id)
+              LEFT JOIN tblstrand st ON s.strandId = st.id";
+
+      // Query for PDF files from tblstudentdocument
+      $sql2 = "SELECT 
+                sd.id,
+                sd.fileName,
+                sd.studentId,
+                sd.gradeLevelId,
+                sd.createdAt,
+                gl.name as gradeLevelName,
+                s.firstname,
+                s.lastname,
+                s.middlename,
+                s.lrn,
+                t.name as track,
+                st.name as strand,
+                CASE 
+                  WHEN sd.fileName LIKE '%.pdf' THEN 'PDF File'
+                  ELSE 'Document'
+                END as documentType,
+                'studentdocument' as sourceTable
+              FROM tblstudentdocument sd
+              LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
+              LEFT JOIN tblstudent s ON sd.studentId = s.id
+              LEFT JOIN tbltrack t ON s.strandId IN (SELECT id FROM tblstrand WHERE trackId = t.id)
+              LEFT JOIN tblstrand st ON s.strandId = st.id";
+
+      // Combine both queries with UNION
+      $sql = "($sql1) UNION ALL ($sql2) ORDER BY lastname ASC, firstname ASC, createdAt DESC";
+      
+      $stmt = $conn->prepare($sql);
+      $stmt->execute();
+
+      if ($stmt->rowCount() > 0) {
+        $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Filter files to only include those that actually exist in the filesystem
+        $validFiles = [];
+        foreach ($files as $file) {
+          $filePath = __DIR__ . '/documents/' . $file['fileName'];
+          if (file_exists($filePath)) {
+            $validFiles[] = $file;
+          }
+        }
+        
+        // Group files by student
+        $groupedFiles = [];
+        foreach ($validFiles as $file) {
+          $studentId = $file['studentId'];
+          if (!isset($groupedFiles[$studentId])) {
+            $groupedFiles[$studentId] = [
+              'studentId' => $file['studentId'],
+              'firstname' => $file['firstname'],
+              'lastname' => $file['lastname'],
+              'middlename' => $file['middlename'],
+              'lrn' => $file['lrn'],
+              'track' => $file['track'],
+              'strand' => $file['strand'],
+              'gradeLevelId' => $file['gradeLevelId'],
+              'gradeLevelName' => $file['gradeLevelName'],
+              'files' => []
+            ];
+          }
+          $groupedFiles[$studentId]['files'][] = [
+            'id' => $file['id'],
+            'fileName' => $file['fileName'],
+            'documentType' => $file['documentType'],
+            'sourceTable' => $file['sourceTable'],
+            'createdAt' => $file['createdAt']
+          ];
+        }
+        
+        // Convert to indexed array and sort by student name
+        $result = array_values($groupedFiles);
+        usort($result, function($a, $b) {
+          return strcmp($a['lastname'] . $a['firstname'], $b['lastname'] . $b['firstname']);
+        });
+        
+        return json_encode($result);
+      }
+      return json_encode([]);
+
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
   function uploadStudentDocuments() {
     include "connection.php";
     try {
@@ -2034,6 +2145,9 @@ switch ($operation) {
     break;
   case "getAllStudentDocuments":
     echo $user->getAllStudentDocuments();
+    break;
+  case "getAllStudentFiles":
+    echo $user->getAllStudentFiles();
     break;
   case "processRelease":
     echo $user->processRelease($json);
