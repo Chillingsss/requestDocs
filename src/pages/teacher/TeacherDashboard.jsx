@@ -10,7 +10,6 @@ import StudentFileManagement from "./components/StudentFileManagement";
 import ThemeToggle from "../../components/ThemeToggle";
 import Sidebar from "../../components/shared/Sidebar";
 import CryptoJS from "crypto-js";
-import StudentsTab from "../registrar/components/StudentsTab";
 import TeacherStudentsTab from "./components/TeacherStudentsTab";
 
 export default function TeacherDashboard() {

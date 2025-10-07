@@ -354,6 +354,52 @@ class User {
     }
   }
 
+  private function deleteExistingFiles($studentId, $gradeLevelId, $uploadDir)
+  {
+    try {
+      include "connection.php";
+      
+      // Get existing file names from database
+      $excelSql = "SELECT fileName FROM tblsfrecord WHERE studentId = :studentId AND gradeLevelId = :gradeLevelId";
+      $excelStmt = $conn->prepare($excelSql);
+      $excelStmt->bindParam(':studentId', $studentId);
+      $excelStmt->bindParam(':gradeLevelId', $gradeLevelId);
+      $excelStmt->execute();
+      
+      if ($excelStmt->rowCount() > 0) {
+        $excelResult = $excelStmt->fetch(PDO::FETCH_ASSOC);
+        $existingExcelFile = $excelResult['fileName'];
+        
+        // Delete Excel file from filesystem
+        if ($existingExcelFile && file_exists($uploadDir . $existingExcelFile)) {
+          unlink($uploadDir . $existingExcelFile);
+          error_log("Deleted existing Excel file: " . $existingExcelFile);
+        }
+      }
+      
+      // Get existing PDF file names from database
+      $pdfSql = "SELECT fileName FROM tblstudentdocument WHERE studentId = :studentId AND gradeLevelId = :gradeLevelId AND documentId = 5";
+      $pdfStmt = $conn->prepare($pdfSql);
+      $pdfStmt->bindParam(':studentId', $studentId);
+      $pdfStmt->bindParam(':gradeLevelId', $gradeLevelId);
+      $pdfStmt->execute();
+      
+      if ($pdfStmt->rowCount() > 0) {
+        $pdfResult = $pdfStmt->fetch(PDO::FETCH_ASSOC);
+        $existingPdfFile = $pdfResult['fileName'];
+        
+        // Delete PDF file from filesystem
+        if ($existingPdfFile && file_exists($uploadDir . $existingPdfFile)) {
+          unlink($uploadDir . $existingPdfFile);
+          error_log("Deleted existing PDF file: " . $existingPdfFile);
+        }
+      }
+      
+    } catch (Exception $e) {
+      error_log("Error deleting existing files: " . $e->getMessage());
+    }
+  }
+
   private function convertExcelToPdf($excelFilePath, $excelFileName)
   {
     try {
@@ -494,15 +540,14 @@ class User {
               return json_encode(['success' => false, 'error' => 'Excel file size too large. Maximum size is 10MB.']);
           }
 
-          // Use the original filename
-          $excelFileName = $excelFile['name'];
+          // Generate unique ID for file naming
+          $uniqueId = str_pad($studentId, 2, '0', STR_PAD_LEFT);
+          $originalFileName = pathinfo($excelFile['name'], PATHINFO_FILENAME);
+          $excelFileName = $uniqueId . '-' . $originalFileName . '.' . $fileExtension;
           $excelFilePath = $uploadDir . $excelFileName;
 
-          // Check if a file with the same name already exists and delete it
-          if (file_exists($excelFilePath)) {
-              error_log("Deleting existing file: " . $excelFilePath);
-              unlink($excelFilePath); // Delete the existing file
-          }
+          // Delete existing files for this student and grade level
+          $this->deleteExistingFiles($studentId, $gradeLevelId, $uploadDir);
 
           // Move uploaded Excel file
           error_log("Moving uploaded file from " . $excelFile['tmp_name'] . " to " . $excelFilePath);
@@ -718,14 +763,14 @@ class User {
               continue;
             }
 
-            // Use the original filename
-            $excelFileName = $excelFile['name'];
+            // Generate unique ID for file naming
+            $uniqueId = str_pad($studentId, 2, '0', STR_PAD_LEFT);
+            $originalFileName = pathinfo($excelFile['name'], PATHINFO_FILENAME);
+            $excelFileName = $uniqueId . '-' . $originalFileName . '.' . $fileExtension;
             $excelFilePath = $uploadDir . $excelFileName;
 
-            // Check if a file with the same name already exists and delete it
-            if (file_exists($excelFilePath)) {
-              unlink($excelFilePath); // Delete the existing file
-            }
+            // Delete existing files for this student and grade level
+            $this->deleteExistingFiles($studentId, $gradeLevelId, $uploadDir);
 
             // Move uploaded Excel file
             if (move_uploaded_file($excelFile['tmp_name'], $excelFilePath)) {
