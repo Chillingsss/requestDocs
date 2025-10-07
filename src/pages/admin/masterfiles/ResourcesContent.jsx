@@ -88,11 +88,15 @@ export default function ResourcesContent() {
 				</div>
 
 				{/* Tabs */}
-				<div className="border-b border-slate-200 dark:border-slate-700">
-					<nav className="flex space-x-8">
+				<div className="relative border-b border-slate-200 dark:border-slate-700">
+					{/* Gradient fade indicators for mobile scrolling */}
+					<div className="absolute top-0 bottom-0 left-0 z-10 w-4 bg-gradient-to-r from-white to-transparent pointer-events-none dark:from-slate-900 sm:hidden"></div>
+					<div className="absolute top-0 right-0 bottom-0 z-10 w-4 bg-gradient-to-l from-white to-transparent pointer-events-none dark:from-slate-900 sm:hidden"></div>
+
+					<nav className="flex overflow-x-auto pb-1 space-x-4 sm:space-x-8 scrollbar-hide">
 						<button
 							onClick={() => setActiveTab("documents")}
-							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+							className={`py-2 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
 								activeTab === "documents"
 									? "border-blue-500 text-blue-600 dark:text-blue-400"
 									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
@@ -102,7 +106,7 @@ export default function ResourcesContent() {
 						</button>
 						<button
 							onClick={() => setActiveTab("requirement-types")}
-							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+							className={`py-2 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
 								activeTab === "requirement-types"
 									? "border-blue-500 text-blue-600 dark:text-blue-400"
 									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
@@ -112,7 +116,7 @@ export default function ResourcesContent() {
 						</button>
 						<button
 							onClick={() => setActiveTab("document-requirements")}
-							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+							className={`py-2 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
 								activeTab === "document-requirements"
 									? "border-blue-500 text-blue-600 dark:text-blue-400"
 									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
@@ -122,7 +126,7 @@ export default function ResourcesContent() {
 						</button>
 						<button
 							onClick={() => setActiveTab("purposes")}
-							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+							className={`py-2 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
 								activeTab === "purposes"
 									? "border-blue-500 text-blue-600 dark:text-blue-400"
 									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
@@ -132,7 +136,7 @@ export default function ResourcesContent() {
 						</button>
 						<button
 							onClick={() => setActiveTab("academic-types")}
-							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+							className={`py-2 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
 								activeTab === "academic-types"
 									? "border-blue-500 text-blue-600 dark:text-blue-400"
 									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
@@ -142,7 +146,7 @@ export default function ResourcesContent() {
 						</button>
 						<button
 							onClick={() => setActiveTab("grade-levels")}
-							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+							className={`py-2 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
 								activeTab === "grade-levels"
 									? "border-blue-500 text-blue-600 dark:text-blue-400"
 									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
@@ -152,7 +156,7 @@ export default function ResourcesContent() {
 						</button>
 						<button
 							onClick={() => setActiveTab("sections")}
-							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+							className={`py-2 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
 								activeTab === "sections"
 									? "border-blue-500 text-blue-600 dark:text-blue-400"
 									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
@@ -162,7 +166,7 @@ export default function ResourcesContent() {
 						</button>
 						<button
 							onClick={() => setActiveTab("strands")}
-							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+							className={`py-2 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
 								activeTab === "strands"
 									? "border-blue-500 text-blue-600 dark:text-blue-400"
 									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
