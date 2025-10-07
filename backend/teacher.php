@@ -540,10 +540,25 @@ class User {
               return json_encode(['success' => false, 'error' => 'Excel file size too large. Maximum size is 10MB.']);
           }
 
-          // Generate unique ID for file naming
+          // Get grade level name from database
+          $gradeLevelSql = "SELECT name FROM tblgradelevel WHERE id = :gradeLevelId";
+          $gradeLevelStmt = $conn->prepare($gradeLevelSql);
+          $gradeLevelStmt->bindParam(':gradeLevelId', $gradeLevelId);
+          $gradeLevelStmt->execute();
+          $gradeLevelResult = $gradeLevelStmt->fetch(PDO::FETCH_ASSOC);
+          $gradeLevelName = $gradeLevelResult ? str_replace(' ', '', $gradeLevelResult['name']) : 'Unknown';
+
+          // Get student's lastname from database
+          $studentSql = "SELECT lastname FROM tblstudent WHERE id = :studentId";
+          $studentStmt = $conn->prepare($studentSql);
+          $studentStmt->bindParam(':studentId', $studentId);
+          $studentStmt->execute();
+          $studentResult = $studentStmt->fetch(PDO::FETCH_ASSOC);
+          $studentLastname = $studentResult ? str_replace(' ', '', $studentResult['lastname']) : 'Unknown';
+
+          // Generate unique ID for file naming with grade level and student lastname
           $uniqueId = str_pad($studentId, 2, '0', STR_PAD_LEFT);
-          $originalFileName = pathinfo($excelFile['name'], PATHINFO_FILENAME);
-          $excelFileName = $uniqueId . '-' . $originalFileName . '.' . $fileExtension;
+          $excelFileName = $uniqueId . '-' . $gradeLevelName . '-' . $studentLastname . '.' . $fileExtension;
           $excelFilePath = $uploadDir . $excelFileName;
 
           // Delete existing files for this student and grade level
@@ -763,10 +778,25 @@ class User {
               continue;
             }
 
-            // Generate unique ID for file naming
+            // Get grade level name from database
+            $gradeLevelSql = "SELECT name FROM tblgradelevel WHERE id = :gradeLevelId";
+            $gradeLevelStmt = $conn->prepare($gradeLevelSql);
+            $gradeLevelStmt->bindParam(':gradeLevelId', $gradeLevelId);
+            $gradeLevelStmt->execute();
+            $gradeLevelResult = $gradeLevelStmt->fetch(PDO::FETCH_ASSOC);
+            $gradeLevelName = $gradeLevelResult ? str_replace(' ', '', $gradeLevelResult['name']) : 'Unknown';
+
+            // Get student's lastname from database
+            $studentSql = "SELECT lastname FROM tblstudent WHERE id = :studentId";
+            $studentStmt = $conn->prepare($studentSql);
+            $studentStmt->bindParam(':studentId', $studentId);
+            $studentStmt->execute();
+            $studentResult = $studentStmt->fetch(PDO::FETCH_ASSOC);
+            $studentLastname = $studentResult ? str_replace(' ', '', $studentResult['lastname']) : 'Unknown';
+
+            // Generate unique ID for file naming with grade level and student lastname
             $uniqueId = str_pad($studentId, 2, '0', STR_PAD_LEFT);
-            $originalFileName = pathinfo($excelFile['name'], PATHINFO_FILENAME);
-            $excelFileName = $uniqueId . '-' . $originalFileName . '.' . $fileExtension;
+            $excelFileName = $uniqueId . '-' . $gradeLevelName . '-' . $studentLastname . '.' . $fileExtension;
             $excelFilePath = $uploadDir . $excelFileName;
 
             // Delete existing files for this student and grade level
