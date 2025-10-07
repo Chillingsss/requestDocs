@@ -1,7 +1,7 @@
 import React from "react";
-import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
+import { Button } from "../../../../components/ui/button";
 import {
 	Select,
 	SelectContent,
@@ -10,30 +10,50 @@ import {
 	SelectValue,
 } from "../../../../components/ui/select";
 
-export default function PurposeModal({
+export default function StrandModal({
 	showModal,
-	modalType,
-	showEditModal,
-	formData,
-	documents,
-	onFormDataChange,
+	onClose,
 	onSubmit,
-	onCancel,
+	formData = { name: "", trackId: "" },
+	onFormDataChange,
+	showEditModal,
+	loading,
+	tracks = [],
 }) {
-	if (!showModal || modalType !== "purpose") return null;
+	const handleChange = (e) => {
+		const { name, value } = e.target;
+		onFormDataChange({
+			...formData,
+			[name]: value,
+		});
+	};
+
+	const handleTrackChange = (value) => {
+		onFormDataChange({
+			...formData,
+			trackId: value,
+		});
+	};
+
+	const handleSubmit = (e) => {
+		e.preventDefault();
+		onSubmit(e);
+	};
+
+	if (!showModal) return null;
 
 	return (
 		<div className="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-40">
 			<div className="relative mx-4 w-full max-w-md bg-white rounded-lg border shadow-lg dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-				<form onSubmit={onSubmit}>
+				<form onSubmit={handleSubmit}>
 					<div className="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-slate-700">
 						<h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-							{showEditModal ? "Edit" : "Add"} Purpose
+							{showEditModal ? "Edit Strand" : "Add New Strand"}
 						</h2>
 						<button
 							type="button"
 							className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200"
-							onClick={onCancel}
+							onClick={onClose}
 							aria-label="Close"
 						>
 							<span className="text-2xl">&times;</span>
@@ -45,44 +65,41 @@ export default function PurposeModal({
 								htmlFor="name"
 								className="block mb-1 text-slate-700 dark:text-slate-300"
 							>
-								Purpose Name <span className="text-red-500">*</span>
+								Strand Name <span className="text-red-500">*</span>
 							</Label>
 							<Input
 								id="name"
+								name="name"
 								value={formData.name || ""}
-								onChange={(e) =>
-									onFormDataChange({ ...formData, name: e.target.value })
-								}
-								placeholder="Enter purpose name"
+								onChange={handleChange}
 								className="w-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
+								placeholder="Enter strand name"
 								required
 							/>
 						</div>
 						<div>
 							<Label
-								htmlFor="documentId"
+								htmlFor="trackId"
 								className="block mb-1 text-slate-700 dark:text-slate-300"
 							>
-								Document <span className="text-red-500">*</span>
+								Track <span className="text-red-500">*</span>
 							</Label>
 							<Select
-								value={formData.documentId || ""}
-								onValueChange={(value) =>
-									onFormDataChange({ ...formData, documentId: value })
-								}
+								value={formData.trackId || ""}
+								onValueChange={handleTrackChange}
 								required
 							>
 								<SelectTrigger className="w-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100">
-									<SelectValue placeholder="Select a document" />
+									<SelectValue placeholder="Select a track" />
 								</SelectTrigger>
 								<SelectContent className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600">
-									{documents.map((doc) => (
+									{tracks.map((track) => (
 										<SelectItem
-											key={doc.id}
-											value={doc.id}
+											key={track.id}
+											value={track.id.toString()}
 											className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600"
 										>
-											{doc.name}
+											{track.name}
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -93,16 +110,18 @@ export default function PurposeModal({
 						<Button
 							type="button"
 							variant="outline"
-							onClick={onCancel}
+							onClick={onClose}
+							disabled={loading}
 							className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
 						>
 							Cancel
 						</Button>
 						<Button
 							type="submit"
+							disabled={loading}
 							className="text-white bg-blue-600 hover:bg-blue-700"
 						>
-							{showEditModal ? "Update" : "Add"}
+							{loading ? "Saving..." : "Save"}
 						</Button>
 					</div>
 				</form>

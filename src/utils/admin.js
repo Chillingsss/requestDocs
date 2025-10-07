@@ -1070,3 +1070,139 @@ export async function deleteSection(sectionId) {
 		throw error;
 	}
 }
+
+// Track management functions
+export async function getTracks() {
+	const formData = new FormData();
+	formData.append("operation", "getTracks");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addTrack(trackData) {
+	const formData = new FormData();
+	formData.append("operation", "addTrack");
+	formData.append("json", JSON.stringify(trackData));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateTrack(trackId, trackData) {
+	const formData = new FormData();
+	formData.append("operation", "updateTrack");
+	formData.append("json", JSON.stringify({ id: trackId, ...trackData }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deleteTrack(trackId) {
+	const formData = new FormData();
+	formData.append("operation", "deleteTrack");
+	formData.append("json", JSON.stringify({ id: trackId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+// Strand management functions
+export async function getStrands() {
+	const formData = new FormData();
+	formData.append("operation", "getStrands");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addStrand(strandData) {
+	const formData = new FormData();
+	formData.append("operation", "addStrand");
+	formData.append("json", JSON.stringify(strandData));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateStrand(strandId, strandData) {
+	const formData = new FormData();
+	formData.append("operation", "updateStrand");
+	formData.append("json", JSON.stringify({ id: strandId, ...strandData }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deleteStrand(strandId) {
+	const formData = new FormData();
+	formData.append("operation", "deleteStrand");
+	formData.append("json", JSON.stringify({ id: strandId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

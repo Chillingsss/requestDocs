@@ -20,8 +20,8 @@ export default function DocumentRequirementsTab({
 
 	if (loading) {
 		return (
-			<div className="flex justify-center items-center py-8">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+			<div className="py-8 text-center text-slate-600 dark:text-slate-400">
+				Loading...
 			</div>
 		);
 	}
@@ -110,36 +110,36 @@ export default function DocumentRequirementsTab({
 					</h3>
 					<button
 						onClick={onAdd}
-						className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+						className="inline-flex items-center px-3 py-2 text-sm font-medium leading-4 text-white bg-blue-600 rounded-md border border-transparent hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
 					>
-						<Plus className="h-4 w-4 mr-2" />
+						<Plus className="mr-2 w-4 h-4" />
 						Add Requirements
 					</button>
 				</div>
 
 				{/* Table */}
-				<div className="bg-white dark:bg-slate-800 shadow-sm rounded-lg overflow-hidden">
+				<div className="overflow-hidden bg-white rounded-lg shadow-sm dark:bg-slate-800">
 					<div className="overflow-x-auto">
 						<table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
 							<thead className="bg-slate-50 dark:bg-slate-700">
 								<tr>
-									<th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+									<th className="px-6 py-3 text-xs font-medium tracking-wider text-left uppercase text-slate-500 dark:text-slate-300">
 										Document
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+									<th className="px-6 py-3 text-xs font-medium tracking-wider text-left uppercase text-slate-500 dark:text-slate-300">
 										Requirement Types
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+									<th className="px-6 py-3 text-xs font-medium tracking-wider text-left uppercase text-slate-500 dark:text-slate-300">
 										Added On
 									</th>
 								</tr>
 							</thead>
-							<tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+							<tbody className="bg-white divide-y dark:bg-slate-800 divide-slate-200 dark:divide-slate-700">
 								{groupedArray.length === 0 ? (
 									<tr>
 										<td
 											colSpan="3"
-											className="px-6 py-4 text-center text-sm text-slate-500 dark:text-slate-400"
+											className="px-6 py-4 text-sm text-center text-slate-500 dark:text-slate-400"
 										>
 											No document requirements found. Click "Add Requirements"
 											to get started.
@@ -149,10 +149,10 @@ export default function DocumentRequirementsTab({
 									groupedArray.map((group) => (
 										<tr
 											key={group.documentId}
-											className="hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+											className="transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
 											onClick={() => handleRowClick(group)}
 										>
-											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
+											<td className="px-6 py-4 text-sm font-medium whitespace-nowrap text-slate-900 dark:text-slate-100">
 												{group.documentName}
 											</td>
 											<td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
@@ -166,7 +166,7 @@ export default function DocumentRequirementsTab({
 													))}
 												</div>
 											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+											<td className="px-6 py-4 text-sm whitespace-nowrap text-slate-500 dark:text-slate-400">
 												{new Date(group.createdAt).toLocaleDateString()}
 											</td>
 										</tr>
@@ -180,10 +180,10 @@ export default function DocumentRequirementsTab({
 
 			{/* Edit Modal */}
 			{showEditModal && editingDocument && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+				<div className="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50">
+					<div className="mx-4 w-full max-w-md bg-white rounded-lg shadow-xl dark:bg-slate-800">
 						{/* Header */}
-						<div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+						<div className="flex justify-between items-center p-6 border-b border-slate-200 dark:border-slate-700">
 							<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
 								Edit Requirements for {editingDocument.documentName}
 							</h3>
@@ -194,7 +194,7 @@ export default function DocumentRequirementsTab({
 								}}
 								className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
 							>
-								<X className="h-5 w-5" />
+								<X className="w-5 h-5" />
 							</button>
 						</div>
 
@@ -202,14 +202,14 @@ export default function DocumentRequirementsTab({
 						<form onSubmit={handleEditSubmit} className="p-6 space-y-4">
 							{/* Requirement Types Selection */}
 							<div>
-								<label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+								<label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
 									Requirement Types
 								</label>
-								<div className="max-h-48 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-md p-2">
+								<div className="overflow-y-auto p-2 max-h-48 rounded-md border border-slate-300 dark:border-slate-600">
 									{requirementTypes.map((reqType) => (
 										<div
 											key={reqType.id}
-											className="flex items-center p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer"
+											className="flex items-center p-2 rounded cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
 											onClick={() => {
 												const currentSelected =
 													editFormData.requirementTypeIds || [];
@@ -253,9 +253,9 @@ export default function DocumentRequirementsTab({
 								<button
 									type="button"
 									onClick={handleDeleteDocument}
-									className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+									className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md border border-transparent hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
 								>
-									<Trash2 className="h-4 w-4 inline mr-2" />
+									<Trash2 className="inline mr-2 w-4 h-4" />
 									Delete All
 								</button>
 								<div className="flex space-x-3">
@@ -265,15 +265,15 @@ export default function DocumentRequirementsTab({
 											setShowEditModal(false);
 											setEditingDocument(null);
 										}}
-										className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+										className="px-4 py-2 text-sm font-medium bg-white rounded-md border text-slate-700 dark:text-slate-300 dark:bg-slate-700 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
 									>
 										Cancel
 									</button>
 									<button
 										type="submit"
-										className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+										className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md border border-transparent hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
 									>
-										<Edit className="h-4 w-4 inline mr-2" />
+										<Edit className="inline mr-2 w-4 h-4" />
 										Update
 									</button>
 								</div>

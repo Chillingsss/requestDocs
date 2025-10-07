@@ -2167,6 +2167,215 @@ class User {
     }
    }
 
+   // Track management functions
+   function getTracks()
+   {
+    include "connection.php";
+
+    try {
+        $sql = "SELECT * FROM tbltrack ORDER BY name";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $tracks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return json_encode($tracks);
+        }
+        return json_encode([]);
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function addTrack($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "INSERT INTO tbltrack (name, createdAt) VALUES (:name, NOW())";
+        $stmt = $conn->prepare($sql);
+        
+        $name = $json['name'];
+        $stmt->bindParam(':name', $name);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Track added successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to add track']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function updateTrack($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "UPDATE tbltrack SET name = :name WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        
+        $name = $json['name'];
+        $id = $json['id'];
+        
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':id', $id);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Track updated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to update track']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function deleteTrack($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        // Check if track is being used in strands
+        $checkSql = "SELECT COUNT(*) as count FROM tblstrand WHERE trackId = :id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':id', $json['id']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'Cannot delete track. It is being used by strands.']);
+        }
+        
+        $sql = "DELETE FROM tbltrack WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $json['id']);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Track deleted successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to delete track']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   // Strand management functions
+   function getStrands()
+   {
+    include "connection.php";
+
+    try {
+        $sql = "SELECT 
+                    s.id,
+                    s.name,
+                    s.trackId,
+                    s.createdAt,
+                    t.name as trackName
+                FROM tblstrand s
+                INNER JOIN tbltrack t ON s.trackId = t.id
+                ORDER BY t.name, s.name";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $strands = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return json_encode($strands);
+        }
+        return json_encode([]);
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function addStrand($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "INSERT INTO tblstrand (name, trackId, createdAt) VALUES (:name, :trackId, NOW())";
+        $stmt = $conn->prepare($sql);
+        
+        $name = $json['name'];
+        $trackId = $json['trackId'];
+        
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':trackId', $trackId);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Strand added successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to add strand']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function updateStrand($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        $sql = "UPDATE tblstrand SET name = :name, trackId = :trackId WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        
+        $name = $json['name'];
+        $trackId = $json['trackId'];
+        $id = $json['id'];
+        
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':trackId', $trackId);
+        $stmt->bindParam(':id', $id);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Strand updated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to update strand']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function deleteStrand($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        // Check if strand is being used in students
+        $checkSql = "SELECT COUNT(*) as count FROM tblstudent WHERE strandId = :id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':id', $json['id']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'Cannot delete strand. It is being used by students.']);
+        }
+        
+        $sql = "DELETE FROM tblstrand WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $json['id']);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'Strand deleted successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to delete strand']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
    function exportRequestAnalytics($json)
    {
     include "connection.php";
@@ -2595,6 +2804,30 @@ switch ($operation) {
     break;
   case "resetPin": // New case for resetting PIN
     echo $user->resetPin($json);
+    break;
+  case "getTracks":
+    echo $user->getTracks();
+    break;
+  case "addTrack":
+    echo $user->addTrack($json);
+    break;
+  case "updateTrack":
+    echo $user->updateTrack($json);
+    break;
+  case "deleteTrack":
+    echo $user->deleteTrack($json);
+    break;
+  case "getStrands":
+    echo $user->getStrands();
+    break;
+  case "addStrand":
+    echo $user->addStrand($json);
+    break;
+  case "updateStrand":
+    echo $user->updateStrand($json);
+    break;
+  case "deleteStrand":
+    echo $user->deleteStrand($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

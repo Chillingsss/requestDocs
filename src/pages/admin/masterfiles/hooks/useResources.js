@@ -29,6 +29,14 @@ import {
 	addSection,
 	updateSection,
 	deleteSection,
+	getTracks,
+	addTrack,
+	updateTrack,
+	deleteTrack,
+	getStrands,
+	addStrand,
+	updateStrand,
+	deleteStrand,
 } from "../../../../utils/admin";
 
 export default function useResources() {
@@ -39,6 +47,8 @@ export default function useResources() {
 	const [gradeLevels, setGradeLevels] = useState([]);
 	const [academicTypes, setAcademicTypes] = useState([]);
 	const [sections, setSections] = useState([]);
+	const [tracks, setTracks] = useState([]);
+	const [strands, setStrands] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
@@ -65,6 +75,8 @@ export default function useResources() {
 				gradeLevelsData,
 				academicTypesData,
 				sectionsData,
+				tracksData,
+				strandsData,
 			] = await Promise.all([
 				getDocuments(),
 				getRequirementTypes(),
@@ -73,6 +85,8 @@ export default function useResources() {
 				getGradeLevels(),
 				getAcademicTypes(),
 				getSections(),
+				getTracks(),
+				getStrands(),
 			]);
 
 			setDocuments(docsData || []);
@@ -82,6 +96,8 @@ export default function useResources() {
 			setGradeLevels(Array.isArray(gradeLevelsData) ? gradeLevelsData : []);
 			setAcademicTypes(academicTypesData || []);
 			setSections(sectionsData || []);
+			setTracks(tracksData || []);
+			setStrands(strandsData || []);
 		} catch (error) {
 			console.error("Error fetching data:", error);
 			toast.error("Failed to load resources");
@@ -92,6 +108,8 @@ export default function useResources() {
 			setGradeLevels([]);
 			setAcademicTypes([]);
 			setSections([]);
+			setTracks([]);
+			setStrands([]);
 		} finally {
 			setLoading(false);
 		}
@@ -110,6 +128,11 @@ export default function useResources() {
 			});
 		} else if (type === "academicType") {
 			setFormData({ name: "", description: "" });
+		} else if (type === "strand") {
+			setFormData({
+				name: "",
+				trackId: tracks.length > 0 ? tracks[0].id : "",
+			});
 		} else {
 			setFormData({ name: "" });
 		}
@@ -138,6 +161,11 @@ export default function useResources() {
 			setFormData({
 				name: item.name,
 				description: item.description || "",
+			});
+		} else if (type === "strand") {
+			setFormData({
+				name: item.name,
+				trackId: item.trackId || "",
 			});
 		} else {
 			setFormData({
@@ -184,6 +212,8 @@ export default function useResources() {
 				result = await deleteAcademicType(deletingItem.id);
 			} else if (deletingItem.type === "section") {
 				result = await deleteSection(deletingItem.id);
+			} else if (deletingItem.type === "strand") {
+				result = await deleteStrand(deletingItem.id);
 			}
 
 			if (result && result.status === "success") {
@@ -201,6 +231,8 @@ export default function useResources() {
 							? "Academic type"
 							: deletingItem.type === "section"
 							? "Section"
+							: deletingItem.type === "strand"
+							? "Strand"
 							: "Document requirement"
 					} deleted successfully`
 				);
@@ -243,6 +275,12 @@ export default function useResources() {
 			return;
 		}
 
+		// For strands, also check trackId
+		if (modalType === "strand" && !formData.trackId) {
+			toast.error("Track selection is required");
+			return;
+		}
+
 		const submitData = {
 			...formData,
 			userId: userId || null,
@@ -275,6 +313,9 @@ export default function useResources() {
 				} else if (modalType === "section") {
 					console.log("Updating section:", editingItem.id, submitData);
 					result = await updateSection(editingItem.id, submitData);
+				} else if (modalType === "strand") {
+					console.log("Updating strand:", editingItem.id, submitData);
+					result = await updateStrand(editingItem.id, submitData);
 				} else {
 					console.log("Updating requirement type:", editingItem.id, submitData);
 					result = await updateRequirementType(editingItem.id, submitData);
@@ -295,6 +336,9 @@ export default function useResources() {
 				} else if (modalType === "section") {
 					console.log("Adding section:", submitData);
 					result = await addSection(submitData);
+				} else if (modalType === "strand") {
+					console.log("Adding strand:", submitData);
+					result = await addStrand(submitData);
 				} else {
 					console.log("Adding requirement type:", submitData);
 					result = await addRequirementType(submitData);
@@ -316,6 +360,8 @@ export default function useResources() {
 							? "Academic type"
 							: modalType === "section"
 							? "Section"
+							: modalType === "strand"
+							? "Strand"
 							: "Requirement type"
 					} ${showEditModal ? "updated" : "added"} successfully`
 				);
@@ -427,6 +473,7 @@ export default function useResources() {
 			documentId: "",
 			gradeLevelId: "",
 			academicTId: "",
+			trackId: "",
 			description: "",
 		});
 		setEditingItem(null);
@@ -454,6 +501,8 @@ export default function useResources() {
 		gradeLevels,
 		academicTypes,
 		sections,
+		tracks,
+		strands,
 		loading,
 		showAddModal,
 		showEditModal,

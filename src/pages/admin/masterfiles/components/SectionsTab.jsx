@@ -34,14 +34,29 @@ export default function SectionsTab({
 		});
 	}, [sections, selectedGradeLevel, searchTerm]);
 	if (loading) {
-		return <div className="text-center py-8">Loading...</div>;
+		return (
+			<div className="py-8 text-center text-slate-600 dark:text-slate-400">
+				Loading...
+			</div>
+		);
+	}
+
+	if (!Array.isArray(sections)) {
+		return (
+			<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+				<CardContent className="p-8 text-center text-slate-500 dark:text-slate-400">
+					<Users className="mx-auto mb-4 w-12 h-12 text-slate-300 dark:text-slate-600" />
+					<p>Sections data is invalid</p>
+				</CardContent>
+			</Card>
+		);
 	}
 
 	if (sections.length === 0) {
 		return (
-			<Card>
-				<CardContent className="p-8 text-center text-slate-500">
-					<Users className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+			<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+				<CardContent className="p-8 text-center text-slate-500 dark:text-slate-400">
+					<Users className="mx-auto mb-4 w-12 h-12 text-slate-300 dark:text-slate-600" />
 					<p>No sections found</p>
 				</CardContent>
 			</Card>
@@ -50,11 +65,13 @@ export default function SectionsTab({
 
 	return (
 		<div className="space-y-4">
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-				<h3 className="text-lg font-semibold">Sections</h3>
+			<div className="flex flex-col gap-4 justify-between items-start sm:flex-row sm:items-center">
+				<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+					Sections
+				</h3>
 				<Button
 					onClick={() => onAdd("section")}
-					className="flex gap-2 items-center"
+					className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700"
 				>
 					<Plus className="w-4 h-4" />
 					Add Section
@@ -62,15 +79,15 @@ export default function SectionsTab({
 			</div>
 
 			{/* Filters */}
-			<div className="flex flex-col sm:flex-row gap-4">
+			<div className="flex flex-col gap-4 sm:flex-row">
 				<div className="flex-1">
 					<div className="relative">
-						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+						<Search className="absolute left-3 top-1/2 w-4 h-4 transform -translate-y-1/2 text-slate-400 dark:text-slate-500" />
 						<Input
 							placeholder="Search sections..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
-							className="pl-10"
+							className="pl-10 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
 						/>
 					</div>
 				</div>
@@ -79,13 +96,22 @@ export default function SectionsTab({
 						value={selectedGradeLevel}
 						onValueChange={setSelectedGradeLevel}
 					>
-						<SelectTrigger>
+						<SelectTrigger className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100">
 							<SelectValue placeholder="Filter by grade level" />
 						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All Grade Levels</SelectItem>
+						<SelectContent className="bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600">
+							<SelectItem
+								value="all"
+								className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600"
+							>
+								All Grade Levels
+							</SelectItem>
 							{gradeLevels.map((gradeLevel) => (
-								<SelectItem key={gradeLevel.id} value={gradeLevel.id}>
+								<SelectItem
+									key={gradeLevel.id}
+									value={gradeLevel.id}
+									className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600"
+								>
 									{gradeLevel.name}
 								</SelectItem>
 							))}
@@ -95,15 +121,15 @@ export default function SectionsTab({
 			</div>
 
 			{/* Results count */}
-			<div className="text-sm text-slate-600">
+			<div className="text-sm text-slate-600 dark:text-slate-400">
 				Showing {filteredSections.length} of {sections.length} sections
 			</div>
 
 			{/* Sections Grid */}
 			{filteredSections.length === 0 ? (
-				<Card>
-					<CardContent className="p-8 text-center text-slate-500">
-						<Users className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+				<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+					<CardContent className="p-8 text-center text-slate-500 dark:text-slate-400">
+						<Users className="mx-auto mb-4 w-12 h-12 text-slate-300 dark:text-slate-600" />
 						<p>No sections match your filters</p>
 					</CardContent>
 				</Card>
@@ -112,16 +138,17 @@ export default function SectionsTab({
 					{filteredSections.map((section) => (
 						<Card
 							key={section.id}
-							className="hover:shadow-md transition-shadow"
+							className="bg-white transition-shadow hover:shadow-md dark:bg-slate-800 border-slate-200 dark:border-slate-700"
 						>
 							<CardContent className="p-4">
 								<div className="flex justify-between items-start mb-3">
-									<Users className="w-8 h-8 text-purple-500" />
+									<Users className="w-8 h-8 text-purple-500 dark:text-purple-400" />
 									<div className="flex gap-2">
 										<Button
 											variant="outline"
 											size="sm"
 											onClick={() => onEdit(section, "section")}
+											className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
 										>
 											<Edit className="w-4 h-4" />
 										</Button>
@@ -129,17 +156,19 @@ export default function SectionsTab({
 											variant="outline"
 											size="sm"
 											onClick={() => onDelete(section.id, "section")}
-											className="text-red-600 hover:text-red-700"
+											className="text-red-600 border-red-300 dark:border-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
 										>
 											<Trash2 className="w-4 h-4" />
 										</Button>
 									</div>
 								</div>
-								<h4 className="font-semibold mb-1">{section.name}</h4>
-								<p className="text-sm text-slate-600 mb-2">
+								<h4 className="mb-1 font-semibold text-slate-900 dark:text-slate-100">
+									{section.name}
+								</h4>
+								<p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
 									Grade Level: {section.gradeLevelName}
 								</p>
-								<p className="text-sm text-slate-500">
+								<p className="text-xs text-slate-500 dark:text-slate-500">
 									Created: {new Date(section.createdAt).toLocaleDateString()}
 								</p>
 							</CardContent>

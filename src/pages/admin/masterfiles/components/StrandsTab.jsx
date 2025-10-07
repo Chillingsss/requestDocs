@@ -1,10 +1,10 @@
 import React from "react";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
-import { Plus, Edit, Trash2, Tag } from "lucide-react";
+import { Plus, Edit, Trash2, BookOpen } from "lucide-react";
 
-export default function RequirementTypesTab({
-	requirementTypes,
+export default function StrandsTab({
+	strands,
 	loading,
 	onAdd,
 	onEdit,
@@ -18,23 +18,23 @@ export default function RequirementTypesTab({
 		);
 	}
 
-	if (!Array.isArray(requirementTypes)) {
+	if (!Array.isArray(strands)) {
 		return (
 			<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
 				<CardContent className="p-8 text-center text-slate-500 dark:text-slate-400">
-					<Tag className="mx-auto mb-4 w-12 h-12 text-slate-300 dark:text-slate-600" />
-					<p>Requirement types data is invalid</p>
+					<BookOpen className="mx-auto mb-4 w-12 h-12 text-slate-300 dark:text-slate-600" />
+					<p>Strands data is invalid</p>
 				</CardContent>
 			</Card>
 		);
 	}
 
-	if (requirementTypes.length === 0) {
+	if (strands.length === 0) {
 		return (
 			<Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
 				<CardContent className="p-8 text-center text-slate-500 dark:text-slate-400">
-					<Tag className="mx-auto mb-4 w-12 h-12 text-slate-300 dark:text-slate-600" />
-					<p>No requirement types found</p>
+					<BookOpen className="mx-auto mb-4 w-12 h-12 text-slate-300 dark:text-slate-600" />
+					<p>No strands found</p>
 				</CardContent>
 			</Card>
 		);
@@ -44,31 +44,31 @@ export default function RequirementTypesTab({
 		<div className="space-y-4">
 			<div className="flex justify-between items-center">
 				<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-					Requirement Types
+					Strands
 				</h3>
 				<Button
-					onClick={() => onAdd("requirement")}
+					onClick={() => onAdd("strand")}
 					className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700"
 				>
 					<Plus className="w-4 h-4" />
-					Add Requirement Type
+					Add Strand
 				</Button>
 			</div>
 
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-				{requirementTypes.map((reqType) => (
+				{strands.map((strand) => (
 					<Card
-						key={reqType.id}
+						key={strand.id}
 						className="bg-white transition-shadow hover:shadow-md dark:bg-slate-800 border-slate-200 dark:border-slate-700"
 					>
 						<CardContent className="p-4">
 							<div className="flex justify-between items-start mb-3">
-								<Tag className="w-8 h-8 text-green-500 dark:text-green-400" />
+								<BookOpen className="w-8 h-8 text-blue-500 dark:text-blue-400" />
 								<div className="flex gap-2">
 									<Button
 										variant="outline"
 										size="sm"
-										onClick={() => onEdit(reqType, "requirement")}
+										onClick={() => onEdit(strand, "strand")}
 										className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
 									>
 										<Edit className="w-4 h-4" />
@@ -76,7 +76,7 @@ export default function RequirementTypesTab({
 									<Button
 										variant="outline"
 										size="sm"
-										onClick={() => onDelete(reqType.id, "requirement")}
+										onClick={() => onDelete(strand.id, "strand")}
 										className="text-red-600 border-red-300 dark:border-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
 									>
 										<Trash2 className="w-4 h-4" />
@@ -84,10 +84,13 @@ export default function RequirementTypesTab({
 								</div>
 							</div>
 							<h4 className="mb-1 font-semibold text-slate-900 dark:text-slate-100">
-								{reqType.nameType}
+								{strand.name}
 							</h4>
+							<p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
+								Track: {strand.trackName || "N/A"}
+							</p>
 							<p className="text-xs text-slate-500 dark:text-slate-500">
-								Created: {new Date(reqType.createdAt).toLocaleDateString()}
+								Created: {new Date(strand.createdAt).toLocaleDateString()}
 							</p>
 						</CardContent>
 					</Card>

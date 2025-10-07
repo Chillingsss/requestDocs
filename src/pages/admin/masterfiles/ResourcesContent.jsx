@@ -13,6 +13,8 @@ import useResources from "./hooks/useResources";
 import { getUserIdFromCookie } from "./utils/cookieUtils";
 import AcademicTypesTab from "./components/AcademicTypesTab";
 import AcademicTypeModal from "./components/AcademicTypeModal";
+import StrandsTab from "./components/StrandsTab";
+import StrandModal from "./components/StrandModal";
 
 export default function ResourcesContent() {
 	const [activeTab, setActiveTab] = useState("documents");
@@ -24,6 +26,8 @@ export default function ResourcesContent() {
 		gradeLevels,
 		sections,
 		academicTypes,
+		tracks,
+		strands,
 		loading,
 		showAddModal,
 		showEditModal,
@@ -79,7 +83,7 @@ export default function ResourcesContent() {
 					<h2 className="text-2xl font-bold">Resources Management</h2>
 					<p className="text-slate-600 dark:text-slate-400">
 						Manage documents, requirement types, document requirements,
-						purposes, grade levels, and sections used in the system
+						purposes, grade levels, sections, and strands used in the system
 					</p>
 				</div>
 
@@ -90,8 +94,8 @@ export default function ResourcesContent() {
 							onClick={() => setActiveTab("documents")}
 							className={`py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === "documents"
-									? "border-blue-500 text-blue-600"
-									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+									? "border-blue-500 text-blue-600 dark:text-blue-400"
+									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
 							}`}
 						>
 							Documents
@@ -100,8 +104,8 @@ export default function ResourcesContent() {
 							onClick={() => setActiveTab("requirement-types")}
 							className={`py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === "requirement-types"
-									? "border-blue-500 text-blue-600"
-									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+									? "border-blue-500 text-blue-600 dark:text-blue-400"
+									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
 							}`}
 						>
 							Requirement Types
@@ -110,8 +114,8 @@ export default function ResourcesContent() {
 							onClick={() => setActiveTab("document-requirements")}
 							className={`py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === "document-requirements"
-									? "border-blue-500 text-blue-600"
-									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+									? "border-blue-500 text-blue-600 dark:text-blue-400"
+									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
 							}`}
 						>
 							Document Requirements
@@ -120,8 +124,8 @@ export default function ResourcesContent() {
 							onClick={() => setActiveTab("purposes")}
 							className={`py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === "purposes"
-									? "border-blue-500 text-blue-600"
-									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+									? "border-blue-500 text-blue-600 dark:text-blue-400"
+									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
 							}`}
 						>
 							Purposes
@@ -130,8 +134,8 @@ export default function ResourcesContent() {
 							onClick={() => setActiveTab("academic-types")}
 							className={`py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === "academic-types"
-									? "border-blue-500 text-blue-600"
-									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+									? "border-blue-500 text-blue-600 dark:text-blue-400"
+									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
 							}`}
 						>
 							Academic Types
@@ -140,8 +144,8 @@ export default function ResourcesContent() {
 							onClick={() => setActiveTab("grade-levels")}
 							className={`py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === "grade-levels"
-									? "border-blue-500 text-blue-600"
-									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+									? "border-blue-500 text-blue-600 dark:text-blue-400"
+									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
 							}`}
 						>
 							Grade Levels
@@ -150,11 +154,21 @@ export default function ResourcesContent() {
 							onClick={() => setActiveTab("sections")}
 							className={`py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === "sections"
-									? "border-blue-500 text-blue-600"
-									: "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+									? "border-blue-500 text-blue-600 dark:text-blue-400"
+									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
 							}`}
 						>
 							Sections
+						</button>
+						<button
+							onClick={() => setActiveTab("strands")}
+							className={`py-2 px-1 border-b-2 font-medium text-sm ${
+								activeTab === "strands"
+									? "border-blue-500 text-blue-600 dark:text-blue-400"
+									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
+							}`}
+						>
+							Strands
 						</button>
 					</nav>
 				</div>
@@ -230,13 +244,22 @@ export default function ResourcesContent() {
 							onDelete={handleDelete}
 						/>
 					)}
+					{activeTab === "strands" && (
+						<StrandsTab
+							strands={strands}
+							loading={loading}
+							onAdd={handleAdd}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+						/>
+					)}
 				</div>
 			</div>
 			{/* Modals */}
 			<ResourceModal
 				showModal={
 					(showAddModal || showEditModal) &&
-					!["purpose", "academicType"].includes(modalType)
+					!["purpose", "academicType", "strand"].includes(modalType)
 				}
 				modalType={modalType}
 				showEditModal={showEditModal}
@@ -250,13 +273,27 @@ export default function ResourcesContent() {
 
 			{/* Academic Type Modal */}
 			<AcademicTypeModal
-				showModal={(showAddModal || showEditModal) && modalType === "academicType"}
+				showModal={
+					(showAddModal || showEditModal) && modalType === "academicType"
+				}
 				onClose={resetForm}
 				onSubmit={handleFormSubmit}
 				formData={formData}
 				onFormDataChange={setFormData}
 				showEditModal={showEditModal}
 				loading={loading}
+			/>
+
+			{/* Strand Modal */}
+			<StrandModal
+				showModal={(showAddModal || showEditModal) && modalType === "strand"}
+				onClose={resetForm}
+				onSubmit={handleFormSubmit}
+				formData={formData}
+				onFormDataChange={setFormData}
+				showEditModal={showEditModal}
+				loading={loading}
+				tracks={tracks}
 			/>
 
 			<PurposeModal
