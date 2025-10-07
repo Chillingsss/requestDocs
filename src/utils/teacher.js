@@ -205,10 +205,10 @@ export async function getUserProfile(userId) {
 	}
 }
 
-export async function updateUserProfile(userId, profileData) {
+export async function updateUserProfile(userId, userType, profileData) {
 	const formData = new FormData();
 	formData.append("operation", "updateProfile");
-	formData.append("json", JSON.stringify({ userId, ...profileData }));
+	formData.append("json", JSON.stringify({ userId, userType, ...profileData }));
 
 	const apiUrl = getDecryptedApiUrl();
 

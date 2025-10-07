@@ -1850,7 +1850,7 @@ function processLrnRequest($json)
     $email = $json['email'];
 
     try {
-      $sql = "UPDATE tbluser SET firstname = :firstname, middlename = :middlename, lastname = :lastname, email = :email, updatedAt = NOW() WHERE id = :userId";
+      $sql = "UPDATE tbluser SET firstname = :firstname, middlename = :middlename, lastname = :lastname, email = :email WHERE id = :userId";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':firstname', $firstname);
       $stmt->bindParam(':middlename', $middlename);
