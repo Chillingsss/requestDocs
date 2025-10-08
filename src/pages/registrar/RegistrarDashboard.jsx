@@ -673,7 +673,9 @@ export default function RegistrarDashboard() {
 																	)}
 																</div>
 																<div className="text-xs text-slate-500 dark:text-slate-400 sm:hidden">
-																	{req.dateRequested}
+																	{formatShortDateTime(
+																		req.dateRequestedFull || req.dateRequested
+																	)}
 																</div>
 															</td>
 															<td className="px-3 py-3 lg:px-4 lg:py-2">
@@ -741,7 +743,9 @@ export default function RegistrarDashboard() {
 																	)}
 															</td>
 															<td className="hidden px-3 py-3 lg:px-4 lg:py-2 sm:table-cell">
-																{formatShortDateTime(req.dateRequested)}
+																{formatShortDateTime(
+																	req.dateRequestedFull || req.dateRequested
+																)}
 															</td>
 															<td className="px-3 py-3 lg:px-4 lg:py-2">
 																<div className="flex flex-col gap-1">

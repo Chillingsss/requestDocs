@@ -28,7 +28,7 @@ class User {
 
       // Set Philippine timezone and get current datetime
       date_default_timezone_set('Asia/Manila');
-      $philippineDateTime = date('Y-m-d h:i:s A');
+      $philippineDateTime = date('Y-m-d H:i:s');
 
       // First, get the status ID for "Pending" status
       $statusSql = "SELECT id FROM tblstatus WHERE name = 'Pending' LIMIT 1";
@@ -246,7 +246,7 @@ class User {
 
       // Set Philippine timezone and get current datetime
       date_default_timezone_set('Asia/Manila');
-      $philippineDateTime = date('Y-m-d h:i:s A');
+      $philippineDateTime = date('Y-m-d H:i:s');
 
       // First, get the status ID for "Pending" status
       $statusSql = "SELECT id FROM tblstatus WHERE name = 'Pending' LIMIT 1";
@@ -881,7 +881,7 @@ class User {
 
       // Set Philippine timezone and get current datetime
       date_default_timezone_set('Asia/Manila');
-      $philippineDateTime = date('Y-m-d h:i:s A');
+      $philippineDateTime = date('Y-m-d H:i:s');
 
       // Validate required fields
       if (!isset($json['requestId']) || !isset($json['typeId']) || !isset($_FILES['attachment'])) {
@@ -1001,7 +1001,7 @@ class User {
 
       // Set Philippine timezone and get current datetime
       date_default_timezone_set('Asia/Manila');
-      $philippineDateTime = date('Y-m-d h:i:s A');
+      $philippineDateTime = date('Y-m-d H:i:s');
 
       // Validate required fields
       if (!isset($json['requestId'])) {

@@ -827,7 +827,10 @@ export default function ProcessedRequest({
 										</span>
 									</div>
 									<p className="text-lg font-semibold text-slate-900 dark:text-white">
-										{formatShortDateTime(currentRequest.dateRequested)}
+										{formatShortDateTime(
+											currentRequest.dateRequestedFull ||
+												currentRequest.dateRequested
+										)}
 									</p>
 								</div>
 

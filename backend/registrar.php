@@ -79,6 +79,7 @@ class User {
                 d.name as document,
                 r.purpose,
                 DATE(r.createdAt) as dateRequested,
+                r.createdAt as dateRequestedFull,
                 s.name as status,
                 s.id as statusId,
                 rs_schedule.dateSchedule as releaseDate,
@@ -200,7 +201,7 @@ class User {
     
     // Set Philippine timezone and get current datetime
     date_default_timezone_set('Asia/Manila');
-    $datetime = date('Y-m-d h:i:s A');
+    $datetime = date('Y-m-d H:i:s');
 
     try {
       $conn->beginTransaction();
@@ -1200,7 +1201,7 @@ class User {
     
     // Set Philippine timezone and get current datetime
     date_default_timezone_set('Asia/Manila');
-    $datetime = date('Y-m-d h:i:s A');
+    $datetime = date('Y-m-d H:i:s');
 
     try {
       $conn->beginTransaction();
