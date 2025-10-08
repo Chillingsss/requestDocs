@@ -319,9 +319,45 @@ export async function getRequestStats() {
 	}
 }
 
-export async function getCompletedRequests() {
+export async function getCompletedRequests(statusFilter = null) {
 	const formData = new FormData();
 	formData.append("operation", "getCompletedRequests");
+
+	if (statusFilter) {
+		formData.append("json", JSON.stringify({ statusFilter }));
+	}
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getRequestStatuses() {
+	const formData = new FormData();
+	formData.append("operation", "getRequestStatuses");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getAllRequestsWithDetails() {
+	const formData = new FormData();
+	formData.append("operation", "getAllRequestsWithDetails");
 
 	const apiUrl = getDecryptedApiUrl();
 
@@ -370,7 +406,8 @@ export async function getTotalUsers() {
 export async function getRequestAnalytics(
 	dateFrom = null,
 	dateTo = null,
-	granularity = "day"
+	granularity = "day",
+	statusFilter = null
 ) {
 	const formData = new FormData();
 	formData.append("operation", "getRequestAnalytics");
@@ -378,6 +415,7 @@ export async function getRequestAnalytics(
 	if (dateFrom) payload.dateFrom = dateFrom;
 	if (dateTo) payload.dateTo = dateTo;
 	if (granularity) payload.granularity = granularity;
+	if (statusFilter) payload.statusFilter = statusFilter;
 	formData.append("json", JSON.stringify(payload));
 
 	const apiUrl = getDecryptedApiUrl();

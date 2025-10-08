@@ -216,12 +216,6 @@ export default function StudentsContent({
 										<th className="px-4 py-3 font-medium text-left text-slate-700 dark:text-white">
 											Track/Strand
 										</th>
-										<th className="px-4 py-3 font-medium text-left text-slate-700 dark:text-white">
-											Status
-										</th>
-										<th className="px-4 py-3 font-medium text-left text-slate-700 dark:text-white">
-											Actions
-										</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -254,45 +248,6 @@ export default function StudentsContent({
 												{student.track && student.strand
 													? `${student.track} - ${student.strand}`
 													: "N/A"}
-											</td>
-											<td className="px-4 py-3 text-sm text-slate-900 dark:text-white">
-												<span
-													className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-														student.isActive
-															? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-															: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-													}`}
-												>
-													{student.isActive ? "Active" : "Inactive"}
-												</span>
-											</td>
-											<td className="px-4 py-3">
-												<div className="flex items-center space-x-3">
-													<Button
-														onClick={() => onViewProfile(student.id, "student")}
-														variant="outline"
-														size="sm"
-														className="text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-													>
-														<Eye className="w-4 h-4" />
-													</Button>
-													<label className="inline-flex relative items-center cursor-pointer">
-														<input
-															type="checkbox"
-															checked={student.isActive}
-															onChange={(e) => {
-																e.stopPropagation();
-																if (student.isActive) {
-																	onDeactivateUser(student.id, "student");
-																} else {
-																	onActivateUser(student.id, "student");
-																}
-															}}
-															className="sr-only peer"
-														/>
-														<div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-													</label>
-												</div>
 											</td>
 										</tr>
 									))}

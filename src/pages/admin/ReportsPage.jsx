@@ -3,9 +3,9 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import {
-	getRequestAnalytics,
 	getRequestStats,
-	getCompletedRequests,
+	getAllRequestsWithDetails,
+	getRequestStatuses,
 	exportRequestAnalytics,
 } from "../../utils/admin";
 import toast from "react-hot-toast";
@@ -45,15 +45,16 @@ ChartJS.register(
 );
 
 export default function ReportsPage() {
-	const [analyticsData, setAnalyticsData] = useState(null);
+	const [allRequests, setAllRequests] = useState([]);
 	const [requestStats, setRequestStats] = useState([]);
-	const [completedRequests, setCompletedRequests] = useState([]);
+	const [requestStatuses, setRequestStatuses] = useState([]);
 	const [dateFrom, setDateFrom] = useState(null);
 	const [dateTo, setDateTo] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [granularity, setGranularity] = useState("day"); // day | week | month | year
 	const [activeReportType, setActiveReportType] = useState("overview");
 	const [selectedPresetRange, setSelectedPresetRange] = useState("custom"); // 'custom', 'today', 'last7days', 'last30days', 'thismonth', 'lastmonth'
+	const [selectedStatusFilter, setSelectedStatusFilter] = useState(""); // Filter by specific status
 	const printRef = useRef();
 
 	// Function to calculate dates based on preset
@@ -94,78 +95,152 @@ export default function ReportsPage() {
 		};
 	};
 
-	// Fetch all analytics data
-	const fetchAllAnalyticsData = async () => {
+	// Fetch all data once on component mount
+	const fetchAllData = async () => {
 		try {
 			setLoading(true);
 
-			let effectiveDateFrom = dateFrom;
-			let effectiveDateTo = dateTo;
-
-			if (selectedPresetRange !== "custom") {
-				const { from, to } = calculateDatesFromPreset(selectedPresetRange);
-				effectiveDateFrom = from;
-				effectiveDateTo = to;
-			}
-
-			const [analyticsResponse, statsResponse, completedResponse] =
+			const [statsResponse, requestsResponse, statusesResponse] =
 				await Promise.all([
-					getRequestAnalytics(effectiveDateFrom, effectiveDateTo, granularity),
 					getRequestStats(),
-					getCompletedRequests(),
+					getAllRequestsWithDetails(),
+					getRequestStatuses(),
 				]);
 
-			setAnalyticsData(analyticsResponse);
 			setRequestStats(Array.isArray(statsResponse) ? statsResponse : []);
-			setCompletedRequests(
-				Array.isArray(completedResponse) ? completedResponse : []
+			setAllRequests(Array.isArray(requestsResponse) ? requestsResponse : []);
+			setRequestStatuses(
+				Array.isArray(statusesResponse) ? statusesResponse : []
 			);
 		} catch (error) {
-			console.error("Failed to fetch analytics:", error);
-			toast.error("Failed to load analytics");
+			console.error("Failed to fetch data:", error);
+			toast.error("Failed to load data");
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	// Filter completed requests based on date range
-	const filteredCompletedRequests = useMemo(() => {
-		if (!completedRequests || completedRequests.length === 0) return [];
+	// Frontend filtering logic
+	const filteredRequests = useMemo(() => {
+		if (!allRequests || allRequests.length === 0) return [];
 
-		const fromDate = dateFrom ? parseISO(dateFrom) : null;
-		const toDate = dateTo ? parseISO(dateTo) : null;
+		let filtered = allRequests;
 
-		return completedRequests.filter((request) => {
-			const requestedDate = parseISO(request.dateRequested);
-			const completedDate = request.dateCompleted
-				? parseISO(request.dateCompleted)
-				: null;
+		// Apply status filter
+		if (selectedStatusFilter) {
+			filtered = filtered.filter(
+				(request) => request.status === selectedStatusFilter
+			);
+		}
 
-			const isInRange =
-				(!fromDate || requestedDate >= fromDate) &&
-				(!toDate || requestedDate <= toDate);
+		// Apply date range filter
+		let effectiveDateFrom = dateFrom;
+		let effectiveDateTo = dateTo;
 
-			return isInRange;
-		});
-	}, [completedRequests, dateFrom, dateTo]);
+		if (selectedPresetRange !== "custom") {
+			const { from, to } = calculateDatesFromPreset(selectedPresetRange);
+			effectiveDateFrom = from;
+			effectiveDateTo = to;
+		}
 
-	// Trigger data fetch on component mount and when date range or granularity changes
+		if (effectiveDateFrom || effectiveDateTo) {
+			const fromDate = effectiveDateFrom ? parseISO(effectiveDateFrom) : null;
+			const toDate = effectiveDateTo ? parseISO(effectiveDateTo) : null;
+
+			filtered = filtered.filter((request) => {
+				// Use statusDate for filtering when looking at status history
+				const filterDate = parseISO(request.statusDate);
+				return (
+					(!fromDate || filterDate >= fromDate) &&
+					(!toDate || filterDate <= toDate)
+				);
+			});
+		}
+
+		return filtered;
+	}, [
+		allRequests,
+		selectedStatusFilter,
+		dateFrom,
+		dateTo,
+		selectedPresetRange,
+	]);
+
+	// Fetch data once on component mount
 	useEffect(() => {
-		fetchAllAnalyticsData();
-	}, [dateFrom, dateTo, granularity, selectedPresetRange]);
+		fetchAllData();
+	}, []);
+
+	// Generate time series data from filtered requests
+	const timeSeriesData = useMemo(() => {
+		if (!filteredRequests || filteredRequests.length === 0) return [];
+
+		// Group requests by date based on granularity
+		const grouped = {};
+
+		filteredRequests.forEach((request) => {
+			// Use statusDate for time series when looking at status history
+			const requestDate = parseISO(request.statusDate);
+			let key;
+
+			switch (granularity) {
+				case "year":
+					key = requestDate.getFullYear().toString();
+					break;
+				case "month":
+					key = `${requestDate.getFullYear()}-${String(
+						requestDate.getMonth() + 1
+					).padStart(2, "0")}`;
+					break;
+				case "week":
+					const year = requestDate.getFullYear();
+					const week = Math.ceil(
+						(requestDate - new Date(year, 0, 1)) / (7 * 24 * 60 * 60 * 1000)
+					);
+					key = `${year}-W${week}`;
+					break;
+				case "day":
+				default:
+					key = format(requestDate, "yyyy-MM-dd");
+					break;
+			}
+
+			grouped[key] = (grouped[key] || 0) + 1;
+		});
+
+		return Object.entries(grouped)
+			.map(([label, count]) => ({ label, cnt: count }))
+			.sort((a, b) => a.label.localeCompare(b.label));
+	}, [filteredRequests, granularity]);
 
 	// Memoized chart data
-	const dailyCompletedChart = useMemo(() => {
-		if (!analyticsData?.dailyCompleted) return null;
-		const labels = analyticsData.dailyCompleted.map((d) =>
-			format(parseISO(d.day), "LLL dd, y")
-		);
-		const data = analyticsData.dailyCompleted.map((d) => Number(d.cnt));
+	const timeSeriesChart = useMemo(() => {
+		if (!timeSeriesData || timeSeriesData.length === 0) return null;
+
+		const labels = timeSeriesData.map((d) => {
+			const date = parseISO(d.label);
+			switch (granularity) {
+				case "year":
+					return d.label;
+				case "month":
+					return format(date, "LLL y");
+				case "week":
+					return d.label;
+				case "day":
+				default:
+					return format(date, "LLL dd, y");
+			}
+		});
+
+		const data = timeSeriesData.map((d) => Number(d.cnt));
+
 		return {
 			labels,
 			datasets: [
 				{
-					label: "Completed Requests",
+					label: selectedStatusFilter
+						? `${selectedStatusFilter} Requests`
+						: "All Requests",
 					data,
 					backgroundColor: "rgba(75, 192, 192, 0.6)",
 					borderColor: "rgba(75, 192, 192, 1)",
@@ -174,59 +249,68 @@ export default function ReportsPage() {
 				},
 			],
 		};
-	}, [analyticsData]);
+	}, [timeSeriesData, selectedStatusFilter, granularity]);
+
+	// Generate status distribution data from filtered requests
+	const statusDistributionData = useMemo(() => {
+		if (!filteredRequests || filteredRequests.length === 0) return {};
+
+		const statusCounts = {};
+		filteredRequests.forEach((request) => {
+			statusCounts[request.status] = (statusCounts[request.status] || 0) + 1;
+		});
+
+		return statusCounts;
+	}, [filteredRequests]);
 
 	const statusDistributionChart = useMemo(() => {
-		if (!analyticsData?.statusCounts) return null;
-		const labels = analyticsData.statusCounts.map((stat) => stat.status);
-		const data = analyticsData.statusCounts.map((stat) => Number(stat.count));
+		if (
+			!statusDistributionData ||
+			Object.keys(statusDistributionData).length === 0
+		)
+			return null;
+
+		const labels = Object.keys(statusDistributionData);
+		const data = Object.values(statusDistributionData);
+
+		// Dynamic color assignment based on status
+		const getStatusColor = (status) => {
+			const colorMap = {
+				Pending: "rgba(255, 99, 132, 0.8)", // Pink
+				Processed: "rgba(54, 162, 235, 0.8)", // Blue
+				Signatory: "rgba(255, 206, 86, 0.8)", // Yellow
+				Release: "rgba(75, 192, 192, 0.8)", // Teal
+				Completed: "rgba(153, 102, 255, 0.8)", // Purple
+				Cancelled: "rgba(255, 159, 64, 0.8)", // Orange
+			};
+			return colorMap[status] || "rgba(128, 128, 128, 0.8)"; // Default gray
+		};
+
+		const getBorderColor = (status) => {
+			const colorMap = {
+				Pending: "rgba(255, 99, 132, 1)",
+				Processed: "rgba(54, 162, 235, 1)",
+				Signatory: "rgba(255, 206, 86, 1)",
+				Release: "rgba(75, 192, 192, 1)",
+				Completed: "rgba(153, 102, 255, 1)",
+				Cancelled: "rgba(255, 159, 64, 1)",
+			};
+			return colorMap[status] || "rgba(128, 128, 128, 1)"; // Default gray
+		};
+
 		return {
 			labels,
 			datasets: [
 				{
 					label: "Request Status Distribution",
 					data,
-					backgroundColor: [
-						"rgba(255, 99, 132, 0.8)", // Pending - Pink
-						"rgba(54, 162, 235, 0.8)", // Processed - Blue
-						"rgba(255, 206, 86, 0.8)", // Signatory - Yellow
-						"rgba(75, 192, 192, 0.8)", // Release - Teal
-						"rgba(153, 102, 255, 0.8)", // Completed - Purple
-					],
-					borderColor: [
-						"rgba(255, 99, 132, 1)",
-						"rgba(54, 162, 235, 1)",
-						"rgba(255, 206, 86, 1)",
-						"rgba(75, 192, 192, 1)",
-						"rgba(153, 102, 255, 1)",
-					],
+					backgroundColor: labels.map(getStatusColor),
+					borderColor: labels.map(getBorderColor),
 					borderWidth: 1,
 				},
 			],
 		};
-	}, [analyticsData]);
-
-	// Derived chart data from timeSeries
-	const timeSeriesChart = useMemo(() => {
-		if (!analyticsData?.timeSeries) return null;
-		const labels = analyticsData.timeSeries.map((d) =>
-			format(parseISO(d.label), "LLL dd, y")
-		);
-		const data = analyticsData.timeSeries.map((d) => Number(d.cnt));
-		return {
-			labels,
-			datasets: [
-				{
-					label: "Completed Requests",
-					data,
-					backgroundColor: "rgba(75, 192, 192, 0.6)",
-					borderColor: "rgba(75, 192, 192, 1)",
-					borderWidth: 2,
-					tension: 0.4,
-				},
-			],
-		};
-	}, [analyticsData]);
+	}, [statusDistributionData]);
 
 	// Print functionality
 	const handlePrint = () => {
@@ -269,7 +353,9 @@ export default function ReportsPage() {
 								<CardContent className="p-4 lg:p-6">
 									<div className="flex justify-between items-center mb-4">
 										<h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-											Completed Requests Over Time
+											{selectedStatusFilter
+												? `${selectedStatusFilter} Requests Over Time`
+												: "All Requests Over Time"}
 										</h3>
 										<TrendingUp className="w-6 h-6 text-blue-500" />
 									</div>
@@ -291,7 +377,9 @@ export default function ReportsPage() {
 								<CardContent className="p-4 lg:p-6">
 									<div className="flex justify-between items-center mb-4">
 										<h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-											Request Status Distribution
+											{selectedStatusFilter
+												? `${selectedStatusFilter} Status Details`
+												: "Request Status Distribution"}
 										</h3>
 										<PieChart className="w-6 h-6 text-purple-500" />
 									</div>
@@ -350,7 +438,9 @@ export default function ReportsPage() {
 						>
 							<CardContent className="p-4 lg:p-6">
 								<h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">
-									Recently Completed Requests
+									{selectedStatusFilter
+										? `${selectedStatusFilter} Requests (Recent)`
+										: "All Requests (Recent)"}
 								</h3>
 								<div className="overflow-x-auto">
 									<table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
@@ -360,12 +450,12 @@ export default function ReportsPage() {
 												<th className="px-4 py-3">Document</th>
 												<th className="px-4 py-3">Purpose</th>
 												<th className="px-4 py-3">Requested Date</th>
-												<th className="px-4 py-3">Completed Date</th>
+												<th className="px-4 py-3">Status Date</th>
 												<th className="px-4 py-3">Status</th>
 											</tr>
 										</thead>
 										<tbody>
-											{filteredCompletedRequests.map((request, index) => {
+											{filteredRequests.map((request, index) => {
 												// Combine free text and predefined purposes
 												const purposeDisplay = [
 													request.freeTextPurpose,
@@ -398,10 +488,10 @@ export default function ReportsPage() {
 															)}
 														</td>
 														<td className="px-4 py-3">
-															{request.dateCompleted ? (
+															{request.statusDate ? (
 																<>
 																	{format(
-																		parseISO(request.dateCompleted),
+																		parseISO(request.statusDate),
 																		"LLL dd, y"
 																	)}
 																</>
@@ -463,7 +553,7 @@ export default function ReportsPage() {
 								Request Analytics
 							</div>
 							<div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-								Filter by date and compare today vs yesterday
+								Filter by date and view all request statuses
 							</div>
 						</div>
 						<div className="flex gap-2 items-center">
@@ -489,6 +579,18 @@ export default function ReportsPage() {
 								<option value="week">Per Week</option>
 								<option value="month">Per Month</option>
 								<option value="year">Per Year</option>
+							</select>
+							<select
+								className="p-2 rounded border dark:bg-slate-700 dark:border-slate-600"
+								value={selectedStatusFilter}
+								onChange={(e) => setSelectedStatusFilter(e.target.value)}
+							>
+								<option value="">All Statuses</option>
+								{requestStatuses.map((status) => (
+									<option key={status.id} value={status.name}>
+										{status.name}
+									</option>
+								))}
 							</select>
 							{selectedPresetRange === "custom" && (
 								<>
@@ -535,10 +637,25 @@ export default function ReportsPage() {
 				<Card className="dark:bg-slate-800 dark:border-slate-700">
 					<CardContent className="p-4 lg:p-6">
 						<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
+							{selectedStatusFilter
+								? `${selectedStatusFilter} in Range`
+								: "Total in Range"}
+						</div>
+						<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
+							{filteredRequests ? filteredRequests.length : "-"}
+						</div>
+					</CardContent>
+				</Card>
+				<Card className="dark:bg-slate-800 dark:border-slate-700">
+					<CardContent className="p-4 lg:p-6">
+						<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
 							Completed in Range
 						</div>
 						<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
-							{analyticsData ? analyticsData.completedInRange : "-"}
+							{filteredRequests
+								? filteredRequests.filter((r) => r.status === "Completed")
+										.length
+								: "-"}
 						</div>
 					</CardContent>
 				</Card>
@@ -548,28 +665,30 @@ export default function ReportsPage() {
 							Today Completed
 						</div>
 						<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
-							{analyticsData ? analyticsData.todayCompleted : "-"}
+							{filteredRequests
+								? filteredRequests.filter(
+										(r) =>
+											r.status === "Completed" &&
+											format(parseISO(r.dateCompleted), "yyyy-MM-dd") ===
+												format(new Date(), "yyyy-MM-dd")
+								  ).length
+								: "-"}
 						</div>
 					</CardContent>
 				</Card>
 				<Card className="dark:bg-slate-800 dark:border-slate-700">
 					<CardContent className="p-4 lg:p-6">
 						<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
-							Yesterday Completed
+							Completion Rate
 						</div>
 						<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
-							{analyticsData ? analyticsData.yesterdayCompleted : "-"}
-						</div>
-					</CardContent>
-				</Card>
-				<Card className="dark:bg-slate-800 dark:border-slate-700">
-					<CardContent className="p-4 lg:p-6">
-						<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
-							Today vs Yesterday
-						</div>
-						<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
-							{analyticsData
-								? `${analyticsData.percentChange.toFixed(1)}%`
+							{filteredRequests && filteredRequests.length > 0
+								? `${(
+										(filteredRequests.filter((r) => r.status === "Completed")
+											.length /
+											filteredRequests.length) *
+										100
+								  ).toFixed(1)}%`
 								: "-"}
 						</div>
 					</CardContent>

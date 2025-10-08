@@ -758,9 +758,15 @@ class User {
     }
    }
 
-   function getCompletedRequests()
+   function getCompletedRequests($json = null)
    {
     include "connection.php";
+    
+    $statusFilter = null;
+    if ($json) {
+      $jsonData = json_decode($json, true);
+      $statusFilter = isset($jsonData['statusFilter']) && !empty($jsonData['statusFilter']) ? $jsonData['statusFilter'] : null;
+    }
 
     try {
       $sql = "SELECT 
@@ -783,11 +789,70 @@ class User {
                 SELECT MAX(rs2.id) 
                 FROM tblrequeststatus rs2 
                 WHERE rs2.requestId = r.id
-              )
-              AND st.name = 'Completed'
-              GROUP BY r.id, s.firstname, s.lastname, d.name, r.purpose, r.createdAt, rs.createdAt, st.name
-              ORDER BY rs.createdAt DESC
-              LIMIT 50";
+              )";
+      
+      if ($statusFilter) {
+        $sql .= " AND st.name = :statusFilter";
+      }
+      
+      $sql .= " GROUP BY r.id, s.firstname, s.lastname, d.name, r.purpose, r.createdAt, rs.createdAt, st.name
+                ORDER BY rs.createdAt DESC
+                LIMIT 100";
+
+      $stmt = $conn->prepare($sql);
+      if ($statusFilter) {
+        $stmt->bindParam(':statusFilter', $statusFilter);
+      }
+      $stmt->execute();
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+      return json_encode($rows);
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function getRequestStatuses()
+   {
+    include "connection.php";
+
+    try {
+      $sql = "SELECT id, name FROM tblstatus ORDER BY name";
+      $stmt = $conn->prepare($sql);
+      $stmt->execute();
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+      return json_encode($rows);
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function getAllRequestsWithDetails()
+   {
+    include "connection.php";
+
+    try {
+      $sql = "SELECT 
+                r.id,
+                CONCAT(s.firstname, ' ', s.lastname) as student,
+                d.name as document,
+                r.purpose as freeTextPurpose,
+                GROUP_CONCAT(DISTINCT p.name) as predefinedPurposes,
+                DATE(r.createdAt) as dateRequested,
+                DATE(rs.createdAt) as dateCompleted,
+                st.name as status,
+                rs.createdAt as statusDate,
+                rs.id as statusId
+              FROM tblrequest r
+              INNER JOIN tbldocument d ON r.documentId = d.id
+              INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
+              INNER JOIN tblstatus st ON rs.statusId = st.id
+              INNER JOIN tblstudent s ON r.studentId = s.id
+              LEFT JOIN tblrequestpurpose rp ON r.id = rp.requestId
+              LEFT JOIN tblpurpose p ON rp.purposeId = p.id
+              GROUP BY r.id, s.firstname, s.lastname, d.name, r.purpose, r.createdAt, rs.createdAt, st.name, rs.id
+              ORDER BY rs.createdAt DESC";
 
       $stmt = $conn->prepare($sql);
       $stmt->execute();
@@ -845,6 +910,7 @@ class User {
     $dateFrom = isset($json['dateFrom']) && !empty($json['dateFrom']) ? $json['dateFrom'] : null;
     $dateTo = isset($json['dateTo']) && !empty($json['dateTo']) ? $json['dateTo'] : null;
     $granularity = isset($json['granularity']) && !empty($json['granularity']) ? strtolower($json['granularity']) : 'day';
+    $statusFilter = isset($json['statusFilter']) && !empty($json['statusFilter']) ? $json['statusFilter'] : null;
 
     try {
       // Status distribution within optional date range (based on latest status timestamp per request)
@@ -865,7 +931,10 @@ class User {
       if ($dateTo) {
         $statusSql .= " AND DATE(rs.createdAt) <= :dateTo";
       }
-      $statusSql .= " GROUP BY s.id, s.name";
+      if ($statusFilter) {
+        $statusSql .= " AND s.name = :statusFilter";
+      }
+      $statusSql .= " GROUP BY s.id, s.name ORDER BY s.name";
       $statusStmt = $conn->prepare($statusSql);
       if ($dateFrom) {
         $statusStmt->bindParam(':dateFrom', $dateFrom);
@@ -873,8 +942,44 @@ class User {
       if ($dateTo) {
         $statusStmt->bindParam(':dateTo', $dateTo);
       }
+      if ($statusFilter) {
+        $statusStmt->bindParam(':statusFilter', $statusFilter);
+      }
       $statusStmt->execute();
       $statusRows = $statusStmt->fetchAll(PDO::FETCH_ASSOC);
+
+      // Total requests in range (all statuses or filtered by status)
+      $totalSql = "SELECT COUNT(DISTINCT r.id) as totalCount
+              FROM tblrequest r
+              INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
+              INNER JOIN tblstatus st ON rs.statusId = st.id
+              WHERE rs.id = (
+                SELECT MAX(rs2.id) 
+                FROM tblrequeststatus rs2 
+                WHERE rs2.requestId = r.id
+              )";
+      if ($dateFrom) {
+        $totalSql .= " AND DATE(rs.createdAt) >= :tDateFrom";
+      }
+      if ($dateTo) {
+        $totalSql .= " AND DATE(rs.createdAt) <= :tDateTo";
+      }
+      if ($statusFilter) {
+        $totalSql .= " AND st.name = :tStatusFilter";
+      }
+      $totalStmt = $conn->prepare($totalSql);
+      if ($dateFrom) {
+        $totalStmt->bindParam(':tDateFrom', $dateFrom);
+      }
+      if ($dateTo) {
+        $totalStmt->bindParam(':tDateTo', $dateTo);
+      }
+      if ($statusFilter) {
+        $totalStmt->bindParam(':tStatusFilter', $statusFilter);
+      }
+      $totalStmt->execute();
+      $totalRow = $totalStmt->fetch(PDO::FETCH_ASSOC);
+      $totalInRange = $totalRow ? intval($totalRow['totalCount']) : 0;
 
       // Completed counts in range (based on completed status timestamp)
       $completedSql = "SELECT COUNT(*) as completedCount
@@ -910,57 +1015,65 @@ class User {
 
       $percentChange = $yesterdayCount > 0 ? (($todayCount - $yesterdayCount) / $yesterdayCount) * 100 : ($todayCount > 0 ? 100 : 0);
 
-      // Time series completed counts by granularity
+      // Time series for all requests by granularity (with optional status filter)
       $timeSql = '';
+      $whereConditions = [];
+      
+      if ($dateFrom) { $whereConditions[] = "DATE(r.createdAt) >= :tFrom"; }
+      if ($dateTo) { $whereConditions[] = "DATE(r.createdAt) <= :tTo"; }
+      if ($statusFilter) { 
+        $whereConditions[] = "r.id IN (
+          SELECT DISTINCT rs.requestId 
+          FROM tblrequeststatus rs 
+          INNER JOIN tblstatus s ON rs.statusId = s.id 
+          WHERE s.name = :tStatusFilter 
+          AND rs.id = (
+            SELECT MAX(rs2.id) 
+            FROM tblrequeststatus rs2 
+            WHERE rs2.requestId = rs.requestId
+          )
+        )";
+      }
+      if (!$dateFrom && !$dateTo && !$statusFilter) { 
+        $whereConditions[] = "r.createdAt >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)"; 
+      }
+      
+      $whereClause = count($whereConditions) > 0 ? " WHERE " . implode(" AND ", $whereConditions) : "";
+      
       switch ($granularity) {
         case 'year':
-          $timeSql = "SELECT DATE_FORMAT(rs.createdAt, '%Y') as label, COUNT(*) as cnt
-                      FROM tblrequeststatus rs
-                      INNER JOIN tblstatus st ON rs.statusId = st.id
-                      WHERE st.name = 'Completed'";
-          if ($dateFrom) { $timeSql .= " AND DATE(rs.createdAt) >= :tFrom"; }
-          if ($dateTo) { $timeSql .= " AND DATE(rs.createdAt) <= :tTo"; }
-          $timeSql .= " GROUP BY DATE_FORMAT(rs.createdAt, '%Y') ORDER BY DATE_FORMAT(rs.createdAt, '%Y')";
+          $timeSql = "SELECT DATE_FORMAT(r.createdAt, '%Y') as label, COUNT(DISTINCT r.id) as cnt
+                      FROM tblrequest r" . $whereClause . "
+                      GROUP BY DATE_FORMAT(r.createdAt, '%Y') ORDER BY DATE_FORMAT(r.createdAt, '%Y')";
           break;
         case 'month':
-          $timeSql = "SELECT DATE_FORMAT(rs.createdAt, '%Y-%m') as label, COUNT(*) as cnt
-                      FROM tblrequeststatus rs
-                      INNER JOIN tblstatus st ON rs.statusId = st.id
-                      WHERE st.name = 'Completed'";
-          if ($dateFrom) { $timeSql .= " AND DATE(rs.createdAt) >= :tFrom"; }
-          if ($dateTo) { $timeSql .= " AND DATE(rs.createdAt) <= :tTo"; }
-          $timeSql .= " GROUP BY DATE_FORMAT(rs.createdAt, '%Y-%m') ORDER BY DATE_FORMAT(rs.createdAt, '%Y-%m')";
+          $timeSql = "SELECT DATE_FORMAT(r.createdAt, '%Y-%m') as label, COUNT(DISTINCT r.id) as cnt
+                      FROM tblrequest r" . $whereClause . "
+                      GROUP BY DATE_FORMAT(r.createdAt, '%Y-%m') ORDER BY DATE_FORMAT(r.createdAt, '%Y-%m')";
           break;
         case 'week':
-          $timeSql = "SELECT DATE_FORMAT(rs.createdAt, '%x-W%v') as label, COUNT(*) as cnt
-                      FROM tblrequeststatus rs
-                      INNER JOIN tblstatus st ON rs.statusId = st.id
-                      WHERE st.name = 'Completed'";
-          if ($dateFrom) { $timeSql .= " AND DATE(rs.createdAt) >= :tFrom"; }
-          if ($dateTo) { $timeSql .= " AND DATE(rs.createdAt) <= :tTo"; }
-          $timeSql .= " GROUP BY DATE_FORMAT(rs.createdAt, '%x-W%v') ORDER BY MIN(DATE(rs.createdAt))";
+          $timeSql = "SELECT DATE_FORMAT(r.createdAt, '%x-W%v') as label, COUNT(DISTINCT r.id) as cnt
+                      FROM tblrequest r" . $whereClause . "
+                      GROUP BY DATE_FORMAT(r.createdAt, '%x-W%v') ORDER BY MIN(DATE(r.createdAt))";
           break;
         case 'day':
         default:
-          $timeSql = "SELECT DATE(rs.createdAt) as label, COUNT(*) as cnt
-                      FROM tblrequeststatus rs
-                      INNER JOIN tblstatus st ON rs.statusId = st.id
-                      WHERE st.name = 'Completed'";
-          if ($dateFrom) { $timeSql .= " AND DATE(rs.createdAt) >= :tFrom"; }
-          if ($dateTo) { $timeSql .= " AND DATE(rs.createdAt) <= :tTo"; }
-          if (!$dateFrom && !$dateTo) { $timeSql .= " AND rs.createdAt >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)"; }
-          $timeSql .= " GROUP BY DATE(rs.createdAt) ORDER BY DATE(rs.createdAt)";
+          $timeSql = "SELECT DATE(r.createdAt) as label, COUNT(DISTINCT r.id) as cnt
+                      FROM tblrequest r" . $whereClause . "
+                      GROUP BY DATE(r.createdAt) ORDER BY DATE(r.createdAt)";
           break;
       }
 
       $timeStmt = $conn->prepare($timeSql);
       if ($dateFrom) { $timeStmt->bindParam(':tFrom', $dateFrom); }
       if ($dateTo) { $timeStmt->bindParam(':tTo', $dateTo); }
+      if ($statusFilter) { $timeStmt->bindParam(':tStatusFilter', $statusFilter); }
       $timeStmt->execute();
       $timeRows = $timeStmt->fetchAll(PDO::FETCH_ASSOC);
 
       return json_encode([
         'statusCounts' => $statusRows,
+        'totalInRange' => $totalInRange,
         'completedInRange' => $completedInRange,
         'todayCompleted' => $todayCount,
         'yesterdayCompleted' => $yesterdayCount,
@@ -2662,7 +2775,13 @@ switch ($operation) {
     echo $user->getRequestStats();
     break;
   case "getCompletedRequests":
-    echo $user->getCompletedRequests();
+    echo $user->getCompletedRequests($json);
+    break;
+  case "getRequestStatuses":
+    echo $user->getRequestStatuses();
+    break;
+  case "getAllRequestsWithDetails":
+    echo $user->getAllRequestsWithDetails();
     break;
   case "getRecentActivity":
     echo $user->getRecentActivity();
