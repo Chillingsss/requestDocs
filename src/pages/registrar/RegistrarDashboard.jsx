@@ -334,6 +334,9 @@ export default function RegistrarDashboard() {
 	// Handle navigation
 	const handleNavClick = (key) => {
 		setActiveTab(key);
+		if (window.innerWidth < 1024) {
+			setSidebarOpen(false);
+		}
 	};
 
 	const logout = () => {

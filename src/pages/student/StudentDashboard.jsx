@@ -87,6 +87,9 @@ export default function StudentDashboard() {
 
 	const handleNavClick = (key) => {
 		setActiveTab(key);
+		if (window.innerWidth < 1024) {
+			setSidebarOpen(false);
+		}
 	};
 
 	// Initialize sidebar state based on screen size

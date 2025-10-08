@@ -150,6 +150,9 @@ export default function TeacherDashboard() {
 
 	const handleNavClick = (key) => {
 		setActiveTab(key);
+		if (window.innerWidth < 1024) {
+			setSidebarOpen(false);
+		}
 	};
 
 	// Calculate stats - need to group by student id first
