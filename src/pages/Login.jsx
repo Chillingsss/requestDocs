@@ -16,6 +16,7 @@ import ForgotLRN from "../components/ForgotLRN";
 import Captcha from "../components/Captcha";
 import ThemeToggle from "../components/ThemeToggle";
 import EmailSetup from "../components/EmailSetup";
+import { useSecurity } from "../contexts/SecurityContext";
 import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
 import { getDecryptedApiUrl } from "../utils/apiConfig";
@@ -40,6 +41,7 @@ export default function LoginPage() {
 	const [captchaError, setCaptchaError] = useState("");
 
 	const navigate = useNavigate();
+	const { startSecurityMonitoring } = useSecurity();
 
 	useEffect(() => {
 		const encrypted = Cookies.get(COOKIE_KEY);
@@ -83,6 +85,9 @@ export default function LoginPage() {
 			).toString();
 			Cookies.set(COOKIE_KEY, encrypted, { expires: 1 }); // 1 day expiry
 
+			// Start security monitoring
+			startSecurityMonitoring();
+
 			// Navigate to appropriate dashboard
 			if (pendingUser.userLevel === "Admin") {
 				toast.success("Welcome to Admin Dashboard!");
@@ -120,9 +125,29 @@ export default function LoginPage() {
 		setUsername("");
 		setPassword("");
 		setError("");
-		toast.success(
-			"Password reset completed. Please login with your new password."
-		);
+
+		// Start security monitoring for the user who just reset their password
+		if (pendingUser) {
+			const encrypted = CryptoJS.AES.encrypt(
+				JSON.stringify(pendingUser),
+				SECRET_KEY
+			).toString();
+			Cookies.set(COOKIE_KEY, encrypted, { expires: 1 }); // 1 day expiry
+			startSecurityMonitoring();
+
+			// Navigate to appropriate dashboard
+			if (pendingUser.userLevel === "Student") {
+				navigate("/StudentDashboard");
+			} else if (pendingUser.userLevel === "Admin") {
+				navigate("/AdminDashboard");
+			} else if (pendingUser.userLevel === "Registrar") {
+				navigate("/RegistrarDashboard");
+			} else if (pendingUser.userLevel === "Teacher") {
+				navigate("/TeacherDashboard");
+			}
+		}
+
+		toast.success("Password reset completed. Welcome back!");
 	};
 
 	const handlePasswordResetCancel = () => {
@@ -198,6 +223,10 @@ export default function LoginPage() {
 				SECRET_KEY
 			).toString();
 			Cookies.set(COOKIE_KEY, encrypted, { expires: 1 }); // 1 day expiry
+
+			// Start security monitoring
+			startSecurityMonitoring();
+
 			toast.success("Email verified! Welcome to Student Dashboard!");
 			navigate("/StudentDashboard");
 		}
@@ -314,6 +343,10 @@ export default function LoginPage() {
 					SECRET_KEY
 				).toString();
 				Cookies.set(COOKIE_KEY, encrypted, { expires: 1 }); // 1 day expiry
+
+				// Start security monitoring
+				startSecurityMonitoring();
+
 				toast.success("Welcome to Student Dashboard!");
 				navigate("/StudentDashboard");
 			} else {

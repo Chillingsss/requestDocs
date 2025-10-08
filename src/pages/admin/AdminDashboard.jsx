@@ -48,6 +48,7 @@ import ResourcesContent from "./masterfiles/ResourcesContent";
 import Sidebar from "../../components/shared/Sidebar";
 import UserProfileModal from "./modal/UserProfileModal";
 import ReportsPage from "./ReportsPage";
+import { useSecurity } from "../../contexts/SecurityContext";
 
 const SECRET_KEY = "mogchs_secret_key";
 
@@ -89,6 +90,7 @@ export default function AdminDashboard() {
 		id: "",
 		type: "",
 	});
+	const { logout: securityLogout } = useSecurity();
 
 	// Initialize sidebar state based on screen size
 	useEffect(() => {
@@ -238,8 +240,7 @@ export default function AdminDashboard() {
 	};
 
 	const logout = () => {
-		Cookies.remove("mogchs_user");
-		navigate("/");
+		securityLogout();
 	};
 
 	const handleAddUserSuccess = () => {

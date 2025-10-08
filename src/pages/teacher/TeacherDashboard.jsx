@@ -11,6 +11,7 @@ import ThemeToggle from "../../components/ThemeToggle";
 import Sidebar from "../../components/shared/Sidebar";
 import CryptoJS from "crypto-js";
 import TeacherStudentsTab from "./components/TeacherStudentsTab";
+import { useSecurity } from "../../contexts/SecurityContext";
 
 export default function TeacherDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -21,6 +22,7 @@ export default function TeacherDashboard() {
 	const [academicTypeId, setAcademicTypeId] = useState(null);
 	const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger state
 	const navigate = useNavigate();
+	const { logout: securityLogout } = useSecurity();
 	const COOKIE_KEY = "mogchs_user";
 	const SECRET_KEY = "mogchs_secret_key";
 
@@ -144,8 +146,7 @@ export default function TeacherDashboard() {
 	};
 
 	const logout = () => {
-		Cookies.remove("mogchs_user");
-		navigate("/");
+		securityLogout();
 	};
 
 	const handleNavClick = (key) => {

@@ -29,6 +29,7 @@ import ThemeToggle from "../../components/ThemeToggle";
 import Sidebar from "../../components/shared/Sidebar";
 import { getStudent } from "../../utils/teacher";
 import CryptoJS from "crypto-js";
+import { useSecurity } from "../../contexts/SecurityContext";
 
 export default function RegistrarDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,6 +45,7 @@ export default function RegistrarDashboard() {
 	const [refreshTrigger, setRefreshTrigger] = useState(0);
 	const [students, setStudents] = useState([]);
 	const navigate = useNavigate();
+	const { logout: securityLogout } = useSecurity();
 
 	// Get userId from cookie
 	const COOKIE_KEY = "mogchs_user";
@@ -340,8 +342,7 @@ export default function RegistrarDashboard() {
 	};
 
 	const logout = () => {
-		Cookies.remove("mogchs_user");
-		navigate("/");
+		securityLogout();
 	};
 
 	return (

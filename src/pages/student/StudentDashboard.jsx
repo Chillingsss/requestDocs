@@ -14,6 +14,7 @@ import Sidebar from "../../components/shared/Sidebar";
 import StatsCards from "./components/StatsCards";
 import RequestsTable from "./components/RequestsTable";
 import ProfileModal from "../../components/shared/ProfileModal";
+import { useSecurity } from "../../contexts/SecurityContext";
 
 export default function StudentDashboard() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,6 +25,7 @@ export default function StudentDashboard() {
 	const [refreshTrigger, setRefreshTrigger] = useState(0);
 	const [studentProfile, setStudentProfile] = useState(null);
 	const navigate = useNavigate();
+	const { logout: securityLogout } = useSecurity();
 
 	// Get userId from cookie
 	const COOKIE_KEY = "mogchs_user";
@@ -108,8 +110,7 @@ export default function StudentDashboard() {
 	}, []);
 
 	const logout = () => {
-		Cookies.remove("mogchs_user");
-		navigate("/");
+		securityLogout();
 	};
 
 	const handleRequestSuccess = () => {
