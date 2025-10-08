@@ -1034,7 +1034,13 @@ class User {
       
       // Only allow cancellation if status is Pending
       if (strtolower($requestStatus['statusName']) !== 'pending') {
-        throw new PDOException("Only pending requests can be cancelled");
+        $conn->rollBack();
+        return json_encode([
+          'error' => 'This request is already being processed and cannot be cancelled.',
+          'processed' => true,
+          'message' => 'We apologize, but this document request is already being processed by our staff. You can no longer cancel this request.',
+          'currentStatus' => $requestStatus['statusName']
+        ]);
       }
 
       // Check if Cancelled status exists, if not create it

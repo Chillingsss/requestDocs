@@ -207,43 +207,44 @@ export default function RequestsTable({
 													📅 Releasing Date: {request.releaseDateFormatted}
 												</div>
 											)}
-										{/* Expected Release Date and Countdown - Show different wording for Completed status */}
-										{request.expectedReleaseDateFormatted && (
-											<div className="mt-1 text-xs">
-												{request.status?.toLowerCase() === "completed" ? (
-													<span className="font-medium text-green-600 dark:text-green-400">
-														✅ Released Date:{" "}
-														{request.expectedReleaseDateFormatted}
-													</span>
-												) : request.daysRemaining === 0 ? (
-													<span className="font-medium text-green-600 dark:text-green-400">
-														📅 Expected release: Today!
-													</span>
-												) : request.daysRemaining > 0 ? (
-													<span className="text-blue-600 dark:text-blue-400">
-														📅 Expected release:{" "}
-														{request.expectedReleaseDateFormatted}
-														<span className="font-medium text-blue-700 dark:text-blue-300">
-															({request.daysRemaining}{" "}
-															{request.daysRemaining === 1 ? "day" : "days"}{" "}
-															left)
+										{/* Expected Release Date and Countdown - Hide for Cancelled status */}
+										{request.expectedReleaseDateFormatted &&
+											request.status?.toLowerCase() !== "cancelled" && (
+												<div className="mt-1 text-xs">
+													{request.status?.toLowerCase() === "completed" ? (
+														<span className="font-medium text-green-600 dark:text-green-400">
+															✅ Released Date:{" "}
+															{request.expectedReleaseDateFormatted}
 														</span>
-													</span>
-												) : (
-													<span className="font-medium text-red-600 dark:text-red-400">
-														⚠️ Expected release was:{" "}
-														{request.expectedReleaseDateFormatted}
-														<span className="text-red-700 dark:text-red-300">
-															({Math.abs(request.daysRemaining)}{" "}
-															{Math.abs(request.daysRemaining) === 1
-																? "day"
-																: "days"}{" "}
-															overdue)
+													) : request.daysRemaining === 0 ? (
+														<span className="font-medium text-green-600 dark:text-green-400">
+															📅 Expected release: Today!
 														</span>
-													</span>
-												)}
-											</div>
-										)}
+													) : request.daysRemaining > 0 ? (
+														<span className="text-blue-600 dark:text-blue-400">
+															📅 Expected release:{" "}
+															{request.expectedReleaseDateFormatted}
+															<span className="font-medium text-blue-700 dark:text-blue-300">
+																({request.daysRemaining}{" "}
+																{request.daysRemaining === 1 ? "day" : "days"}{" "}
+																left)
+															</span>
+														</span>
+													) : (
+														<span className="font-medium text-red-600 dark:text-red-400">
+															⚠️ Expected release was:{" "}
+															{request.expectedReleaseDateFormatted}
+															<span className="text-red-700 dark:text-red-300">
+																({Math.abs(request.daysRemaining)}{" "}
+																{Math.abs(request.daysRemaining) === 1
+																	? "day"
+																	: "days"}{" "}
+																overdue)
+															</span>
+														</span>
+													)}
+												</div>
+											)}
 										{requirementComments[request.id] &&
 											requirementComments[request.id].length > 0 && (
 												<div className="flex gap-2 items-center mt-2">

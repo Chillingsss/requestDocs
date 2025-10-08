@@ -18,6 +18,7 @@ import {
 	getDocumentRequirements,
 	cancelRequest,
 } from "../../../utils/student";
+import ProcessedRequestModal from "./ProcessedRequestModal";
 import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 import toast from "react-hot-toast";
 
@@ -38,6 +39,11 @@ export default function RequestDetailsModal({
 	const [uploading, setUploading] = useState(false);
 	const [cancelling, setCancelling] = useState(false);
 	const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+
+	// Processed request modal state
+	const [showProcessedModal, setShowProcessedModal] = useState(false);
+	const [processedMessage, setProcessedMessage] = useState("");
+	const [currentStatus, setCurrentStatus] = useState("");
 
 	useEffect(() => {
 		if (isOpen && request) {
@@ -180,7 +186,14 @@ export default function RequestDetailsModal({
 				// Then trigger the success callback to refresh the parent data
 				if (onSuccess) onSuccess();
 			} else {
-				toast.error(result.error || "Failed to cancel request");
+				// Check if request is already being processed
+				if (result.processed) {
+					setProcessedMessage(result.message);
+					setCurrentStatus(result.currentStatus);
+					setShowProcessedModal(true);
+				} else {
+					toast.error(result.error || "Failed to cancel request");
+				}
 			}
 		} catch (error) {
 			console.error("Failed to cancel request:", error);
@@ -188,6 +201,14 @@ export default function RequestDetailsModal({
 		} finally {
 			setCancelling(false);
 		}
+	};
+
+	const handleProcessedModalClose = () => {
+		setShowProcessedModal(false);
+		setProcessedMessage("");
+		setCurrentStatus("");
+		onSuccess();
+		onClose();
 	};
 
 	const getStatusIcon = (status) => {
@@ -232,7 +253,7 @@ export default function RequestDetailsModal({
 
 	return (
 		<>
-			<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+			<div className="flex fixed inset-0 z-50 justify-center items-center p-4 backdrop-blur-sm bg-black/50">
 				<div className="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-h-[90vh] flex flex-col">
 					{/* Header */}
 					<div className="flex justify-between items-center px-6 py-4 text-white bg-blue-600 rounded-t-lg">
@@ -242,14 +263,14 @@ export default function RequestDetailsModal({
 						</div>
 						<button
 							onClick={onClose}
-							className="p-2 text-white bg-transparent hover:text-gray-200 rounded-full transition-colors"
+							className="p-2 text-white bg-transparent rounded-full transition-colors hover:text-gray-200"
 						>
 							<X className="w-5 h-5" />
 						</button>
 					</div>
 
 					{/* Content */}
-					<div className="flex-1 overflow-y-auto p-6">
+					<div className="overflow-y-auto flex-1 p-6">
 						{loading ? (
 							<div className="flex justify-center items-center py-8">
 								<div className="text-gray-500">Loading...</div>
@@ -311,7 +332,7 @@ export default function RequestDetailsModal({
 									{/* Release Date - Hide for Completed status since we show actual completion date below */}
 									{request.releaseDate &&
 										request.status?.toLowerCase() !== "completed" && (
-											<div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700">
+											<div className="p-4 bg-green-50 rounded-lg border border-green-200 dark:bg-green-900/20 dark:border-green-700">
 												<div className="flex gap-3 items-center mb-3">
 													<Calendar className="w-5 h-5 text-green-600" />
 													<span className="text-sm font-medium text-green-700 dark:text-green-300">
@@ -324,86 +345,87 @@ export default function RequestDetailsModal({
 											</div>
 										)}
 
-									{/* Expected Release Date and Countdown - Show different wording for Completed status */}
-									{request.expectedReleaseDateFormatted && (
-										<div
-											className={`p-4 rounded-lg border ${
-												request.status?.toLowerCase() === "completed"
-													? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
-													: request.daysRemaining >= 0
-													? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
-													: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
-											}`}
-										>
-											<div className="flex gap-3 items-center mb-3">
-												<Calendar
-													className={`w-5 h-5 ${
-														request.status?.toLowerCase() === "completed"
-															? "text-green-600"
-															: request.daysRemaining >= 0
-															? "text-blue-600"
-															: "text-red-600"
-													}`}
-												/>
-												<span
-													className={`text-sm font-medium ${
-														request.status?.toLowerCase() === "completed"
-															? "text-green-700 dark:text-green-300"
-															: request.daysRemaining >= 0
-															? "text-blue-700 dark:text-blue-300"
-															: "text-red-700 dark:text-red-300"
-													}`}
-												>
-													{request.status?.toLowerCase() === "completed"
-														? "Released Date"
-														: "Expected Release Date"}
-												</span>
-											</div>
-											<p
-												className={`text-lg font-semibold ${
+									{/* Expected Release Date and Countdown - Hide for Cancelled status */}
+									{request.expectedReleaseDateFormatted &&
+										request.status?.toLowerCase() !== "cancelled" && (
+											<div
+												className={`p-4 rounded-lg border ${
 													request.status?.toLowerCase() === "completed"
-														? "text-green-800 dark:text-green-200"
+														? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
 														: request.daysRemaining >= 0
-														? "text-blue-800 dark:text-blue-200"
-														: "text-red-800 dark:text-red-200"
+														? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+														: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
 												}`}
 											>
-												{request.expectedReleaseDateFormatted}
-											</p>
-											{request.status?.toLowerCase() !== "completed" && (
-												<div
-													className={`text-sm mt-2 ${
-														request.daysRemaining >= 0
-															? "text-blue-600 dark:text-blue-400"
-															: "text-red-600 dark:text-red-400"
+												<div className="flex gap-3 items-center mb-3">
+													<Calendar
+														className={`w-5 h-5 ${
+															request.status?.toLowerCase() === "completed"
+																? "text-green-600"
+																: request.daysRemaining >= 0
+																? "text-blue-600"
+																: "text-red-600"
+														}`}
+													/>
+													<span
+														className={`text-sm font-medium ${
+															request.status?.toLowerCase() === "completed"
+																? "text-green-700 dark:text-green-300"
+																: request.daysRemaining >= 0
+																? "text-blue-700 dark:text-blue-300"
+																: "text-red-700 dark:text-red-300"
+														}`}
+													>
+														{request.status?.toLowerCase() === "completed"
+															? "Released Date"
+															: "Expected Release Date"}
+													</span>
+												</div>
+												<p
+													className={`text-lg font-semibold ${
+														request.status?.toLowerCase() === "completed"
+															? "text-green-800 dark:text-green-200"
+															: request.daysRemaining >= 0
+															? "text-blue-800 dark:text-blue-200"
+															: "text-red-800 dark:text-red-200"
 													}`}
 												>
-													{request.daysRemaining === 0 ? (
-														<span className="font-medium">
-															📅 Expected release: Today!
-														</span>
-													) : request.daysRemaining > 0 ? (
-														<span>
-															⏱️{" "}
+													{request.expectedReleaseDateFormatted}
+												</p>
+												{request.status?.toLowerCase() !== "completed" && (
+													<div
+														className={`text-sm mt-2 ${
+															request.daysRemaining >= 0
+																? "text-blue-600 dark:text-blue-400"
+																: "text-red-600 dark:text-red-400"
+														}`}
+													>
+														{request.daysRemaining === 0 ? (
 															<span className="font-medium">
-																{request.daysRemaining}{" "}
-																{request.daysRemaining === 1 ? "day" : "days"}{" "}
-																remaining
+																📅 Expected release: Today!
 															</span>
-														</span>
-													) : (
-														<span className="font-medium">
-															⚠️ {Math.abs(request.daysRemaining)}{" "}
-															{Math.abs(request.daysRemaining) === 1
-																? "day"
-																: "days"}{" "}
-															overdue
-														</span>
-													)}
-												</div>
-											)}
-										</div>
-									)}
+														) : request.daysRemaining > 0 ? (
+															<span>
+																⏱️{" "}
+																<span className="font-medium">
+																	{request.daysRemaining}{" "}
+																	{request.daysRemaining === 1 ? "day" : "days"}{" "}
+																	remaining
+																</span>
+															</span>
+														) : (
+															<span className="font-medium">
+																⚠️ {Math.abs(request.daysRemaining)}{" "}
+																{Math.abs(request.daysRemaining) === 1
+																	? "day"
+																	: "days"}{" "}
+																overdue
+															</span>
+														)}
+													</div>
+												)}
+											</div>
+										)}
 								</div>
 
 								{/* Purpose */}
@@ -423,7 +445,7 @@ export default function RequestDetailsModal({
 
 								{/* Progress Timeline */}
 								<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
-									<h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">
+									<h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">
 										Progress Timeline
 									</h3>
 									<div className="space-y-3">
@@ -461,14 +483,14 @@ export default function RequestDetailsModal({
 								{/* Current Attachments */}
 								{attachments.length > 0 && (
 									<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
-										<h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">
+										<h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">
 											Current Requirements
 										</h3>
 										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 											{attachments.map((attachment, index) => (
 												<div
 													key={index}
-													className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600"
+													className="p-3 bg-white rounded-lg border dark:bg-slate-800 border-slate-200 dark:border-slate-600"
 												>
 													<div className="flex gap-2 items-center mb-2">
 														<FileText className="w-4 h-4 text-blue-600" />
@@ -476,7 +498,7 @@ export default function RequestDetailsModal({
 															{attachment.requirementType || "Unknown Type"}
 														</span>
 													</div>
-													<p className="text-xs text-slate-600 dark:text-slate-400 break-all">
+													<p className="text-xs break-all text-slate-600 dark:text-slate-400">
 														{attachment.filepath}
 													</p>
 												</div>
@@ -486,7 +508,7 @@ export default function RequestDetailsModal({
 								)}
 
 								{/* Registrar Comments */}
-								<div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+								<div className="p-4 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700">
 									<div className="flex gap-3 items-center mb-4">
 										<AlertTriangle className="w-5 h-5 text-amber-600" />
 										<h3 className="text-lg font-semibold text-amber-800 dark:text-amber-200">
@@ -503,7 +525,7 @@ export default function RequestDetailsModal({
 											{comments.map((comment) => (
 												<div
 													key={comment.id}
-													className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-600"
+													className="p-3 bg-white rounded-lg border border-amber-200 dark:bg-slate-800 dark:border-amber-600"
 												>
 													<div className="flex justify-between items-start mb-2">
 														<div className="flex gap-2 items-center">
@@ -527,7 +549,7 @@ export default function RequestDetailsModal({
 														</span>
 													</div>
 
-													<div className="mb-2 p-2 bg-amber-100 dark:bg-amber-900/30 rounded text-xs text-amber-800 dark:text-amber-200">
+													<div className="p-2 mb-2 text-xs text-amber-800 bg-amber-100 rounded dark:bg-amber-900/30 dark:text-amber-200">
 														<span className="font-medium">File:</span>{" "}
 														{comment.filepath}
 														<br />
@@ -545,7 +567,7 @@ export default function RequestDetailsModal({
 								</div>
 
 								{/* Upload New Requirements */}
-								<div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700">
+								<div className="p-4 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
 									<div className="flex gap-3 items-center mb-4">
 										<Upload className="w-5 h-5 text-blue-600" />
 										<h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
@@ -554,7 +576,7 @@ export default function RequestDetailsModal({
 									</div>
 
 									{!showUploadForm ? (
-										<div className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+										<div className="mb-4 text-sm text-blue-700 dark:text-blue-300">
 											<p>
 												If you need to upload additional requirements or respond
 												to registrar comments, click the button below.
@@ -580,33 +602,33 @@ export default function RequestDetailsModal({
 									) : (
 										<div className="space-y-4">
 											{attachments.length > 0 ? (
-												<div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-md">
+												<div className="p-3 bg-blue-100 rounded-md dark:bg-blue-900/30">
 													<p className="text-sm text-blue-800 dark:text-blue-200">
 														<strong>Requirement Type:</strong>{" "}
 														{attachments[0].requirementType}
 													</p>
-													<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+													<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
 														This will be automatically set based on your
 														original request.
 													</p>
 												</div>
 											) : documentRequirements.length > 0 ? (
-												<div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-md">
+												<div className="p-3 bg-blue-100 rounded-md dark:bg-blue-900/30">
 													<p className="text-sm text-blue-800 dark:text-blue-200">
 														<strong>Requirement Type:</strong>{" "}
 														{documentRequirements[0].requirementName}
 													</p>
-													<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+													<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
 														This will be automatically set based on your
 														document type.
 													</p>
 												</div>
 											) : (
-												<div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-md">
+												<div className="p-3 bg-orange-100 rounded-md dark:bg-orange-900/30">
 													<p className="text-sm text-orange-800 dark:text-orange-200">
 														<strong>No Requirement Types Available</strong>
 													</p>
-													<p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+													<p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
 														Please contact support to configure requirement
 														types for this document.
 													</p>
@@ -614,16 +636,16 @@ export default function RequestDetailsModal({
 											)}
 
 											<div>
-												<label className="block text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+												<label className="block mb-2 text-sm font-medium text-blue-800 dark:text-blue-200">
 													File
 												</label>
 												<input
 													type="file"
 													onChange={handleFileChange}
 													accept=".jpg,.jpeg,.png,.gif,.pdf"
-													className="w-full p-2 border border-blue-300 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+													className="p-2 w-full bg-white rounded-md border border-blue-300 dark:bg-slate-800 text-slate-900 dark:text-white"
 												/>
-												<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+												<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
 													Max file size: 5MB. Allowed types: JPG, PNG, GIF, PDF
 												</p>
 											</div>
@@ -632,7 +654,7 @@ export default function RequestDetailsModal({
 												<Button
 													onClick={handleUpload}
 													disabled={!selectedFile || uploading}
-													className="bg-blue-600 hover:bg-blue-700 text-white"
+													className="text-white bg-blue-600 hover:bg-blue-700"
 												>
 													{uploading
 														? "Uploading..."
@@ -641,7 +663,7 @@ export default function RequestDetailsModal({
 												<Button
 													onClick={() => setShowUploadForm(false)}
 													variant="outline"
-													className="border-blue-300 text-blue-700 hover:bg-blue-50"
+													className="text-blue-700 border-blue-300 hover:bg-blue-50"
 												>
 													Cancel
 												</Button>
@@ -656,9 +678,9 @@ export default function RequestDetailsModal({
 												attachments.length === 0 &&
 												documentRequirements.length === 0
 											}
-											className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+											className="text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
 										>
-											<Upload className="w-4 h-4 mr-2" />
+											<Upload className="mr-2 w-4 h-4" />
 											Upload New Requirement
 										</Button>
 									)}
@@ -668,18 +690,18 @@ export default function RequestDetailsModal({
 					</div>
 
 					{/* Footer */}
-					<div className="flex justify-end gap-3 px-6 py-4 border-t bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 rounded-b-lg">
+					<div className="flex gap-3 justify-end px-6 py-4 rounded-b-lg border-t bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600">
 						{request.status.toLowerCase() === "pending" && (
 							<Button
 								onClick={handleCancelRequest}
 								variant="outline"
-								className="border-red-300 text-red-700 hover:bg-red-200 hover:text-red-700"
+								className="text-red-700 border-red-300 hover:bg-red-200 hover:text-red-700"
 								disabled={cancelling}
 							>
 								{cancelling ? (
 									<>
 										<svg
-											className="animate-spin h-4 w-4 text-red-700 mr-2"
+											className="mr-2 w-4 h-4 text-red-700 animate-spin"
 											xmlns="http://www.w3.org/2000/svg"
 											fill="none"
 											viewBox="0 0 24 24"
@@ -702,7 +724,7 @@ export default function RequestDetailsModal({
 									</>
 								) : (
 									<>
-										<AlertTriangle className="w-4 h-4 mr-2" />
+										<AlertTriangle className="mr-2 w-4 h-4" />
 										Cancel Request
 									</>
 								)}
@@ -722,7 +744,7 @@ export default function RequestDetailsModal({
 			{/* Cancel Confirmation Modal */}
 			{showCancelConfirmation && (
 				<div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-					<div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-lg shadow-2xl">
+					<div className="relative w-full max-w-md bg-white rounded-lg shadow-2xl dark:bg-slate-800">
 						{/* Header */}
 						<div className="flex justify-between items-center px-6 py-4 text-white bg-red-600 rounded-t-lg">
 							<div className="flex gap-3 items-center">
@@ -731,7 +753,7 @@ export default function RequestDetailsModal({
 							</div>
 							<button
 								onClick={() => setShowCancelConfirmation(false)}
-								className="p-2 text-white bg-transparent hover:text-red-200 rounded-full transition-colors"
+								className="p-2 text-white bg-transparent rounded-full transition-colors hover:text-red-200"
 							>
 								<X className="w-5 h-5" />
 							</button>
@@ -740,14 +762,14 @@ export default function RequestDetailsModal({
 						{/* Content */}
 						<div className="p-6">
 							<div className="mb-6">
-								<p className="text-slate-700 dark:text-slate-300 mb-3">
+								<p className="mb-3 text-slate-700 dark:text-slate-300">
 									Are you sure you want to cancel this request?
 								</p>
-								<div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+								<div className="p-4 bg-red-50 rounded-lg border border-red-200 dark:bg-red-900/20 dark:border-red-700">
 									<div className="flex gap-2 items-start">
-										<AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+										<AlertTriangle className="flex-shrink-0 mt-0.5 w-5 h-5 text-red-600" />
 										<div className="text-sm text-red-700 dark:text-red-300">
-											<p className="font-medium mb-1">
+											<p className="mb-1 font-medium">
 												This action cannot be undone.
 											</p>
 											<p>
@@ -760,11 +782,11 @@ export default function RequestDetailsModal({
 							</div>
 
 							{/* Request Details */}
-							<div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-								<h4 className="font-medium text-slate-900 dark:text-white mb-2">
+							<div className="p-4 mb-6 rounded-lg bg-slate-50 dark:bg-slate-700">
+								<h4 className="mb-2 font-medium text-slate-900 dark:text-white">
 									Request Details:
 								</h4>
-								<div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+								<div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
 									<p>
 										<span className="font-medium">Document:</span>{" "}
 										{request.document}
@@ -787,7 +809,7 @@ export default function RequestDetailsModal({
 						</div>
 
 						{/* Footer */}
-						<div className="flex justify-end gap-3 px-6 py-4 border-t bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 rounded-b-lg">
+						<div className="flex gap-3 justify-end px-6 py-4 rounded-b-lg border-t bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600">
 							<Button
 								onClick={() => setShowCancelConfirmation(false)}
 								variant="outline"
@@ -797,13 +819,13 @@ export default function RequestDetailsModal({
 							</Button>
 							<Button
 								onClick={confirmCancelRequest}
-								className="bg-red-600 hover:bg-red-700 text-white"
+								className="text-white bg-red-600 hover:bg-red-700"
 								disabled={cancelling}
 							>
 								{cancelling ? (
 									<>
 										<svg
-											className="animate-spin h-4 w-4 text-white mr-2"
+											className="mr-2 w-4 h-4 text-white animate-spin"
 											xmlns="http://www.w3.org/2000/svg"
 											fill="none"
 											viewBox="0 0 24 24"
@@ -832,6 +854,15 @@ export default function RequestDetailsModal({
 					</div>
 				</div>
 			)}
+
+			{/* Processed Request Modal */}
+			<ProcessedRequestModal
+				isOpen={showProcessedModal}
+				onClose={handleProcessedModalClose}
+				onRefresh={onSuccess}
+				message={processedMessage}
+				currentStatus={currentStatus}
+			/>
 		</>
 	);
 }

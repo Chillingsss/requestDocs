@@ -680,46 +680,47 @@ export default function RegistrarDashboard() {
 																<div className="truncate max-w-[120px] lg:max-w-none">
 																	{req.document}
 																</div>
-																{/* Expected Release Date and Countdown - Show different wording for Completed status */}
-																{req.expectedReleaseDateFormatted && (
-																	<div className="mt-1 text-xs">
-																		{req.status?.toLowerCase() ===
-																		"completed" ? (
-																			<span className="font-medium text-green-600 dark:text-green-400">
-																				✅ Released Date:{" "}
-																				{req.expectedReleaseDateFormatted}
-																			</span>
-																		) : req.daysRemaining === 0 ? (
-																			<span className="font-medium text-green-600 dark:text-green-400">
-																				📅 Expected release: Today!
-																			</span>
-																		) : req.daysRemaining > 0 ? (
-																			<span className="text-blue-600 dark:text-blue-400">
-																				📅 Expected release:{" "}
-																				{req.expectedReleaseDateFormatted}
-																				<span className="font-medium text-blue-700 dark:text-blue-300">
-																					({req.daysRemaining}{" "}
-																					{req.daysRemaining === 1
-																						? "day"
-																						: "days"}{" "}
-																					left)
+																{/* Expected Release Date and Countdown - Hide for Cancelled status */}
+																{req.expectedReleaseDateFormatted &&
+																	req.status?.toLowerCase() !== "cancelled" && (
+																		<div className="mt-1 text-xs">
+																			{req.status?.toLowerCase() ===
+																			"completed" ? (
+																				<span className="font-medium text-green-600 dark:text-green-400">
+																					✅ Released Date:{" "}
+																					{req.expectedReleaseDateFormatted}
 																				</span>
-																			</span>
-																		) : (
-																			<span className="font-medium text-red-600 dark:text-red-400">
-																				⚠️ Expected release was:{" "}
-																				{req.expectedReleaseDateFormatted}
-																				<span className="text-red-700 dark:text-red-300">
-																					({Math.abs(req.daysRemaining)}{" "}
-																					{Math.abs(req.daysRemaining) === 1
-																						? "day"
-																						: "days"}{" "}
-																					overdue)
+																			) : req.daysRemaining === 0 ? (
+																				<span className="font-medium text-green-600 dark:text-green-400">
+																					📅 Expected release: Today!
 																				</span>
-																			</span>
-																		)}
-																	</div>
-																)}
+																			) : req.daysRemaining > 0 ? (
+																				<span className="text-blue-600 dark:text-blue-400">
+																					📅 Expected release:{" "}
+																					{req.expectedReleaseDateFormatted}
+																					<span className="font-medium text-blue-700 dark:text-blue-300">
+																						({req.daysRemaining}{" "}
+																						{req.daysRemaining === 1
+																							? "day"
+																							: "days"}{" "}
+																						left)
+																					</span>
+																				</span>
+																			) : (
+																				<span className="font-medium text-red-600 dark:text-red-400">
+																					⚠️ Expected release was:{" "}
+																					{req.expectedReleaseDateFormatted}
+																					<span className="text-red-700 dark:text-red-300">
+																						({Math.abs(req.daysRemaining)}{" "}
+																						{Math.abs(req.daysRemaining) === 1
+																							? "day"
+																							: "days"}{" "}
+																						overdue)
+																					</span>
+																				</span>
+																			)}
+																		</div>
+																	)}
 																{/* Release Date (if officially scheduled) - Hide for Completed status since we show actual completion date above */}
 																{req.releaseDate &&
 																	req.status?.toLowerCase() !== "completed" && (

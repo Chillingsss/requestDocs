@@ -29,6 +29,7 @@ import CavTemplateModal from "../components/CavTemplateModal";
 import ReleaseScheduleModal from "./ReleaseScheduleModal";
 import RequirementCommentModal from "./RequirementCommentModal";
 import RequirementCommentsSection from "../components/RequirementCommentsSection";
+import CancelledRequestModal from "./CancelledRequestModal";
 
 export default function ProcessedRequest({
 	request,
@@ -56,6 +57,10 @@ export default function ProcessedRequest({
 	// Requirement comment modal state
 	const [showCommentModal, setShowCommentModal] = useState(false);
 	const [selectedRequirement, setSelectedRequirement] = useState(null);
+
+	// Cancelled request modal state
+	const [showCancelledModal, setShowCancelledModal] = useState(false);
+	const [cancelledMessage, setCancelledMessage] = useState("");
 
 	// Update currentRequest when request prop changes
 	useEffect(() => {
@@ -334,7 +339,11 @@ export default function ProcessedRequest({
 					onSuccess();
 				} else {
 					// Handle error from processRequest
-					if (response.processedBy) {
+					if (response.cancelled) {
+						// Show special modal for cancelled requests
+						setProcessing(false);
+						showCancelledRequestModal(response.message);
+					} else if (response.processedBy) {
 						toast.error(
 							`${response.error} (Processed by: ${response.processedBy})`
 						);
@@ -372,7 +381,10 @@ export default function ProcessedRequest({
 				await fetchStudentInfo();
 				onSuccess();
 			} else {
-				if (updateResponse.processedBy) {
+				if (updateResponse.cancelled) {
+					// Show special modal for cancelled requests
+					showCancelledRequestModal(updateResponse.message);
+				} else if (updateResponse.processedBy) {
 					toast.error(
 						`${updateResponse.error} (Processed by: ${updateResponse.processedBy})`
 					);
@@ -409,7 +421,10 @@ export default function ProcessedRequest({
 				await fetchStudentInfo();
 				onSuccess();
 			} else {
-				if (updateResponse.processedBy) {
+				if (updateResponse.cancelled) {
+					// Show special modal for cancelled requests
+					showCancelledRequestModal(updateResponse.message);
+				} else if (updateResponse.processedBy) {
 					toast.error(
 						`${updateResponse.error} (Processed by: ${updateResponse.processedBy})`
 					);
@@ -446,7 +461,10 @@ export default function ProcessedRequest({
 				await fetchStudentInfo();
 				onSuccess();
 			} else {
-				if (updateResponse.processedBy) {
+				if (updateResponse.cancelled) {
+					// Show special modal for cancelled requests
+					showCancelledRequestModal(updateResponse.message);
+				} else if (updateResponse.processedBy) {
 					toast.error(
 						`${updateResponse.error} (Processed by: ${updateResponse.processedBy})`
 					);
@@ -501,7 +519,10 @@ export default function ProcessedRequest({
 				// Refresh the parent data
 				onSuccess();
 			} else {
-				if (response.processedBy) {
+				if (response.cancelled) {
+					// Show special modal for cancelled requests
+					showCancelledRequestModal(response.message);
+				} else if (response.processedBy) {
 					toast.error(
 						`${response.error} (Processed by: ${response.processedBy})`
 					);
@@ -544,6 +565,19 @@ export default function ProcessedRequest({
 	const handleCommentClose = () => {
 		setShowCommentModal(false);
 		setSelectedRequirement(null);
+	};
+
+	// Helper function to show cancelled request modal
+	const showCancelledRequestModal = (message) => {
+		setCancelledMessage(message);
+		setShowCancelledModal(true);
+	};
+
+	const handleCancelledModalClose = () => {
+		setShowCancelledModal(false);
+		setCancelledMessage("");
+		onSuccess(); // Refresh data to show updated status
+		onClose(); // Close the main modal
 	};
 
 	// Ref for refreshing comments
@@ -749,7 +783,7 @@ export default function ProcessedRequest({
 						</div>
 						<button
 							onClick={onClose}
-							className="p-1.5 sm:p-2 text-white bg-transparent hover:text-gray-200 rounded-full transition-colors"
+							className="p-1.5 text-white bg-transparent rounded-full transition-colors sm:p-2 hover:text-gray-200"
 							aria-label="Close"
 						>
 							<X className="w-5 h-5" />
@@ -851,11 +885,11 @@ export default function ProcessedRequest({
 									{/* Show if current user is the owner or not */}
 									<div className="mt-2 text-xs">
 										{requestOwner.ownerId === userId ? (
-											<span className="inline-flex items-center gap-1 px-2 py-1 text-green-800 bg-green-100 rounded-full dark:text-green-400 dark:bg-green-900/20">
+											<span className="inline-flex gap-1 items-center px-2 py-1 text-green-800 bg-green-100 rounded-full dark:text-green-400 dark:bg-green-900/20">
 												✅ You are processing this request
 											</span>
 										) : (
-											<span className="inline-flex items-center gap-1 px-2 py-1 text-orange-800 bg-orange-100 rounded-full dark:text-orange-400 dark:bg-orange-900/20">
+											<span className="inline-flex gap-1 items-center px-2 py-1 text-orange-800 bg-orange-100 rounded-full dark:text-orange-400 dark:bg-orange-900/20">
 												⚠️ This request is being processed by another registrar
 											</span>
 										)}
@@ -873,120 +907,121 @@ export default function ProcessedRequest({
 										This request is available for any registrar to process.
 									</div>
 									<div className="text-xs">
-										<span className="inline-flex items-center gap-1 px-2 py-1 text-green-800 bg-green-100 rounded-full dark:text-green-400 dark:bg-green-900/20">
+										<span className="inline-flex gap-1 items-center px-2 py-1 text-green-800 bg-green-100 rounded-full dark:text-green-400 dark:bg-green-900/20">
 											🆕 Ready to be processed
 										</span>
 									</div>
 								</div>
 							) : null}
 
-							{/* Expected Release Date Information - Show different wording for Completed status */}
-							{currentRequest?.expectedReleaseDateFormatted && (
-								<div
-									className={`p-4 rounded-lg border-2 ${
-										currentRequest.status?.toLowerCase() === "completed"
-											? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
-											: currentRequest.daysRemaining >= 0
-											? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
-											: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
-									}`}
-								>
-									<div className="flex gap-3 items-center mb-3">
-										<Clock
-											className={`w-5 h-5 ${
+							{/* Expected Release Date Information - Hide for Cancelled status */}
+							{currentRequest?.expectedReleaseDateFormatted &&
+								currentRequest?.status?.toLowerCase() !== "cancelled" && (
+									<div
+										className={`p-4 rounded-lg border-2 ${
+											currentRequest.status?.toLowerCase() === "completed"
+												? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
+												: currentRequest.daysRemaining >= 0
+												? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+												: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
+										}`}
+									>
+										<div className="flex gap-3 items-center mb-3">
+											<Clock
+												className={`w-5 h-5 ${
+													currentRequest.status?.toLowerCase() === "completed"
+														? "text-green-600 dark:text-green-400"
+														: currentRequest.daysRemaining >= 0
+														? "text-blue-600 dark:text-blue-400"
+														: "text-red-600 dark:text-red-400"
+												}`}
+											/>
+											<span
+												className={`text-sm font-medium ${
+													currentRequest.status?.toLowerCase() === "completed"
+														? "text-green-700 dark:text-green-300"
+														: currentRequest.daysRemaining >= 0
+														? "text-blue-700 dark:text-blue-300"
+														: "text-red-700 dark:text-red-300"
+												}`}
+											>
+												{currentRequest.status?.toLowerCase() === "completed"
+													? "Released Date"
+													: "Expected Release Date"}
+											</span>
+										</div>
+										<div
+											className={`mb-3 text-sm ${
 												currentRequest.status?.toLowerCase() === "completed"
 													? "text-green-600 dark:text-green-400"
 													: currentRequest.daysRemaining >= 0
 													? "text-blue-600 dark:text-blue-400"
 													: "text-red-600 dark:text-red-400"
 											}`}
-										/>
-										<span
-											className={`text-sm font-medium ${
-												currentRequest.status?.toLowerCase() === "completed"
-													? "text-green-700 dark:text-green-300"
-													: currentRequest.daysRemaining >= 0
-													? "text-blue-700 dark:text-blue-300"
-													: "text-red-700 dark:text-red-300"
-											}`}
 										>
-											{currentRequest.status?.toLowerCase() === "completed"
-												? "Released Date"
-												: "Expected Release Date"}
-										</span>
-									</div>
-									<div
-										className={`mb-3 text-sm ${
-											currentRequest.status?.toLowerCase() === "completed"
-												? "text-green-600 dark:text-green-400"
-												: currentRequest.daysRemaining >= 0
-												? "text-blue-600 dark:text-blue-400"
-												: "text-red-600 dark:text-red-400"
-										}`}
-									>
-										<strong>
-											{currentRequest.status?.toLowerCase() === "completed"
-												? "Released Date:"
-												: "Expected Date:"}{" "}
-										</strong>
-										{currentRequest.expectedReleaseDateFormatted}
-									</div>
-									{currentRequest.status?.toLowerCase() !== "completed" && (
-										<>
-											<div
-												className={`text-sm ${
-													currentRequest.daysRemaining >= 0
-														? "text-blue-600 dark:text-blue-400"
-														: "text-red-600 dark:text-red-400"
-												}`}
-											>
-												{currentRequest.daysRemaining === 0 ? (
-													<span className="font-medium">
-														📅 Expected release: Today!
-													</span>
-												) : currentRequest.daysRemaining > 0 ? (
-													<span>
-														⏱️{" "}
+											<strong>
+												{currentRequest.status?.toLowerCase() === "completed"
+													? "Released Date:"
+													: "Expected Date:"}{" "}
+											</strong>
+											{currentRequest.expectedReleaseDateFormatted}
+										</div>
+										{currentRequest.status?.toLowerCase() !== "completed" && (
+											<>
+												<div
+													className={`text-sm ${
+														currentRequest.daysRemaining >= 0
+															? "text-blue-600 dark:text-blue-400"
+															: "text-red-600 dark:text-red-400"
+													}`}
+												>
+													{currentRequest.daysRemaining === 0 ? (
 														<span className="font-medium">
-															{currentRequest.daysRemaining}{" "}
-															{currentRequest.daysRemaining === 1
+															📅 Expected release: Today!
+														</span>
+													) : currentRequest.daysRemaining > 0 ? (
+														<span>
+															⏱️{" "}
+															<span className="font-medium">
+																{currentRequest.daysRemaining}{" "}
+																{currentRequest.daysRemaining === 1
+																	? "day"
+																	: "days"}{" "}
+																remaining
+															</span>
+														</span>
+													) : (
+														<span className="font-medium">
+															⚠️ {Math.abs(currentRequest.daysRemaining)}{" "}
+															{Math.abs(currentRequest.daysRemaining) === 1
 																? "day"
 																: "days"}{" "}
-															remaining
-														</span>
-													</span>
-												) : (
-													<span className="font-medium">
-														⚠️ {Math.abs(currentRequest.daysRemaining)}{" "}
-														{Math.abs(currentRequest.daysRemaining) === 1
-															? "day"
-															: "days"}{" "}
-														overdue
-													</span>
-												)}
-											</div>
-											<div
-												className={`mt-3 text-xs ${
-													currentRequest.daysRemaining >= 0
-														? "text-blue-600 dark:text-blue-400"
-														: "text-red-600 dark:text-red-400"
-												}`}
-											>
-												<strong>Note:</strong> Based on{" "}
-												{currentRequest.expectedDays || 7} days processing time
-												from request date.
-												{!releaseSchedule &&
-													currentRequest.daysRemaining < 0 && (
-														<span className="block mt-1 font-medium">
-															⚠️ This request is overdue. Please prioritize or
-															schedule release date.
+															overdue
 														</span>
 													)}
-											</div>
-										</>
-									)}
-								</div>
-							)}
+												</div>
+												<div
+													className={`mt-3 text-xs ${
+														currentRequest.daysRemaining >= 0
+															? "text-blue-600 dark:text-blue-400"
+															: "text-red-600 dark:text-red-400"
+													}`}
+												>
+													<strong>Note:</strong> Based on{" "}
+													{currentRequest.expectedDays || 7} days processing
+													time from request date.
+													{!releaseSchedule &&
+														currentRequest.daysRemaining < 0 && (
+															<span className="block mt-1 font-medium">
+																⚠️ This request is overdue. Please prioritize or
+																schedule release date.
+															</span>
+														)}
+												</div>
+											</>
+										)}
+									</div>
+								)}
 
 							{/* Release Schedule Information - Hide for Completed status since we show actual completion date above */}
 							{releaseSchedule &&
@@ -1267,7 +1302,7 @@ export default function ProcessedRequest({
 							<Button
 								onClick={onClose}
 								variant="outline"
-								className="py-3 w-full text-base font-medium sm:flex-1 bg-white dark:bg-gray-900 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-gray-800 hover:text-slate-100"
+								className="py-3 w-full text-base font-medium bg-white sm:flex-1 dark:bg-gray-900 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-gray-800 hover:text-slate-100"
 							>
 								Cancel
 							</Button>
@@ -1348,6 +1383,14 @@ export default function ProcessedRequest({
 					userId={userId}
 				/>
 			)}
+
+			{/* Cancelled Request Modal */}
+			<CancelledRequestModal
+				isOpen={showCancelledModal}
+				onClose={handleCancelledModalClose}
+				onRefresh={onSuccess}
+				message={cancelledMessage}
+			/>
 		</>
 	);
 }

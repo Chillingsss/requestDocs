@@ -224,6 +224,17 @@ class User {
       
       $currentStatus = $currentStatusStmt->fetch(PDO::FETCH_ASSOC);
       $currentStatusId = $currentStatus['statusId'];
+      $currentStatusName = $currentStatus['statusName'];
+      
+      // Check if request is cancelled - if so, prevent any processing
+      if (strtolower($currentStatusName) === 'cancelled') {
+        $conn->rollBack();
+        return json_encode([
+          'error' => 'This request has been cancelled by the student and cannot be processed.',
+          'cancelled' => true,
+          'message' => 'We apologize, but this document request has been cancelled by the student. Please refresh the page to see the updated status.'
+        ]);
+      }
       
       // Check registrar ownership - only allow processing if:
       // 1. Request is in Pending status (anyone can start processing), OR
@@ -620,6 +631,28 @@ class User {
       
       $studentData = $getStudentStmt->fetch(PDO::FETCH_ASSOC);
       $studentId = $studentData['studentId'];
+
+      // Check if request is cancelled - if so, prevent any updates
+      $statusCheckSql = "SELECT s.name as statusName
+                        FROM tblrequeststatus rs
+                        INNER JOIN tblstatus s ON rs.statusId = s.id
+                        WHERE rs.requestId = :requestId
+                        ORDER BY rs.id DESC
+                        LIMIT 1";
+      $statusCheckStmt = $conn->prepare($statusCheckSql);
+      $statusCheckStmt->bindParam(':requestId', $requestId);
+      $statusCheckStmt->execute();
+      
+      if ($statusCheckStmt->rowCount() > 0) {
+        $statusData = $statusCheckStmt->fetch(PDO::FETCH_ASSOC);
+        if (strtolower($statusData['statusName']) === 'cancelled') {
+          return json_encode([
+            'error' => 'This request has been cancelled by the student and cannot be updated.',
+            'cancelled' => true,
+            'message' => 'We apologize, but this document request has been cancelled by the student. Please refresh the page to see the updated status.'
+          ]);
+        }
+      }
 
       // Check registrar ownership - only the original processing registrar can update student info
       $ownershipSql = "SELECT userId FROM tblrequeststatus 
@@ -1193,6 +1226,16 @@ class User {
       
       // Debug logging
       error_log("Current status for request " . $requestId . ": " . $currentStatus['statusId'] . " (" . $currentStatus['statusName'] . ")");
+      
+      // Check if request is cancelled - if so, prevent any processing
+      if (strtolower($currentStatus['statusName']) === 'cancelled') {
+        $conn->rollBack();
+        return json_encode([
+          'error' => 'This request has been cancelled by the student and cannot be released.',
+          'cancelled' => true,
+          'message' => 'We apologize, but this document request has been cancelled by the student. Please refresh the page to see the updated status.'
+        ]);
+      }
       
       if ($currentStatus['statusId'] != 3) { // 3 = Signatory
         $conn->rollBack();
