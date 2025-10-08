@@ -347,52 +347,88 @@ export default function ReportsPage() {
 		switch (activeReportType) {
 			case "overview":
 				return (
-					<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+					<div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
 						{timeSeriesChart && (
 							<Card className="dark:bg-slate-800 dark:border-slate-700">
-								<CardContent className="p-4 lg:p-6">
-									<div className="flex justify-between items-center mb-4">
-										<h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+								<CardContent className="p-3 lg:p-6">
+									<div className="flex justify-between items-center mb-3 lg:mb-4">
+										<h3 className="text-sm font-semibold sm:text-base lg:text-lg text-slate-900 dark:text-white">
 											{selectedStatusFilter
 												? `${selectedStatusFilter} Requests Over Time`
 												: "All Requests Over Time"}
 										</h3>
-										<TrendingUp className="w-6 h-6 text-blue-500" />
+										<TrendingUp className="w-4 h-4 text-blue-500 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
 									</div>
-									<Line
-										data={timeSeriesChart}
-										options={{
-											responsive: true,
-											plugins: {
-												legend: { position: "top" },
-												title: { display: false },
-											},
-										}}
-									/>
+									<div className="h-64 sm:h-80 lg:h-96">
+										<Line
+											data={timeSeriesChart}
+											options={{
+												responsive: true,
+												maintainAspectRatio: false,
+												plugins: {
+													legend: {
+														position: "top",
+														labels: {
+															font: {
+																size: 12,
+															},
+														},
+													},
+													title: { display: false },
+												},
+												scales: {
+													x: {
+														ticks: {
+															font: {
+																size: 10,
+															},
+														},
+													},
+													y: {
+														ticks: {
+															font: {
+																size: 10,
+															},
+														},
+													},
+												},
+											}}
+										/>
+									</div>
 								</CardContent>
 							</Card>
 						)}
 						{statusDistributionChart && (
 							<Card className="dark:bg-slate-800 dark:border-slate-700">
-								<CardContent className="p-4 lg:p-6">
-									<div className="flex justify-between items-center mb-4">
-										<h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+								<CardContent className="p-3 lg:p-6">
+									<div className="flex justify-between items-center mb-3 lg:mb-4">
+										<h3 className="text-sm font-semibold sm:text-base lg:text-lg text-slate-900 dark:text-white">
 											{selectedStatusFilter
 												? `${selectedStatusFilter} Status Details`
 												: "Request Status Distribution"}
 										</h3>
-										<PieChart className="w-6 h-6 text-purple-500" />
+										<PieChart className="w-4 h-4 text-purple-500 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
 									</div>
-									<Doughnut
-										data={statusDistributionChart}
-										options={{
-											responsive: true,
-											plugins: {
-												legend: { position: "bottom" },
-												title: { display: false },
-											},
-										}}
-									/>
+									<div className="h-64 sm:h-80 lg:h-96">
+										<Doughnut
+											data={statusDistributionChart}
+											options={{
+												responsive: true,
+												maintainAspectRatio: false,
+												plugins: {
+													legend: {
+														position: "bottom",
+														labels: {
+															font: {
+																size: 12,
+															},
+														},
+													},
+													title: { display: false },
+												},
+											}}
+										/>
+									</div>
 								</CardContent>
 							</Card>
 						)}
@@ -443,15 +479,23 @@ export default function ReportsPage() {
 										: "All Requests (Recent)"}
 								</h3>
 								<div className="overflow-x-auto">
-									<table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+									<table className="w-full text-xs text-left sm:text-sm text-slate-500 dark:text-slate-400">
 										<thead className="bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white">
 											<tr>
-												<th className="px-4 py-3">Student</th>
-												<th className="px-4 py-3">Document</th>
-												<th className="px-4 py-3">Purpose</th>
-												<th className="px-4 py-3">Requested Date</th>
-												<th className="px-4 py-3">Status Date</th>
-												<th className="px-4 py-3">Status</th>
+												<th className="px-2 py-2 sm:px-4 sm:py-3">Student</th>
+												<th className="hidden px-2 py-2 sm:px-4 sm:py-3 sm:table-cell">
+													Document
+												</th>
+												<th className="hidden px-2 py-2 sm:px-4 sm:py-3 lg:table-cell">
+													Purpose
+												</th>
+												<th className="hidden px-2 py-2 sm:px-4 sm:py-3 md:table-cell">
+													Requested
+												</th>
+												<th className="px-2 py-2 sm:px-4 sm:py-3">
+													Status Date
+												</th>
+												<th className="px-2 py-2 sm:px-4 sm:py-3">Status</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -469,37 +513,57 @@ export default function ReportsPage() {
 														key={index}
 														className="border-b dark:border-slate-700"
 													>
-														<td className="px-4 py-3">{request.student}</td>
-														<td className="px-4 py-3">{request.document}</td>
-														<td className="px-4 py-3">{purposeDisplay}</td>
-														<td className="px-4 py-3">
-															{request.dateRequested ? (
-																<>
-																	{format(
+														<td className="px-2 py-2 sm:px-4 sm:py-3">
+															<div className="font-medium text-slate-900 dark:text-white">
+																{request.student}
+															</div>
+															<div className="text-xs text-slate-500 sm:hidden">
+																{request.document}
+															</div>
+														</td>
+														<td className="hidden px-2 py-2 sm:px-4 sm:py-3 sm:table-cell">
+															{request.document}
+														</td>
+														<td className="hidden px-2 py-2 sm:px-4 sm:py-3 lg:table-cell">
+															<div
+																className="max-w-xs truncate"
+																title={purposeDisplay}
+															>
+																{purposeDisplay}
+															</div>
+														</td>
+														<td className="hidden px-2 py-2 sm:px-4 sm:py-3 md:table-cell">
+															{request.dateRequested
+																? format(
 																		parseISO(request.dateRequested),
-																		"LLL dd, y"
-																	)}
-																</>
-															) : (
-																format(
-																	parseISO(request.dateRequested),
-																	"LLL dd, y"
-																)
-															)}
+																		"MMM dd"
+																  )
+																: "N/A"}
 														</td>
-														<td className="px-4 py-3">
-															{request.statusDate ? (
-																<>
-																	{format(
-																		parseISO(request.statusDate),
-																		"LLL dd, y"
-																	)}
-																</>
-															) : (
-																"N/A"
-															)}
+														<td className="px-2 py-2 sm:px-4 sm:py-3">
+															{request.statusDate
+																? format(parseISO(request.statusDate), "MMM dd")
+																: "N/A"}
 														</td>
-														<td className="px-4 py-3">{request.status}</td>
+														<td className="px-2 py-2 sm:px-4 sm:py-3">
+															<span
+																className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+																	request.status === "Completed"
+																		? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+																		: request.status === "Pending"
+																		? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+																		: request.status === "Processed"
+																		? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+																		: request.status === "Signatory"
+																		? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+																		: request.status === "Release"
+																		? "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200"
+																		: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+																}`}
+															>
+																{request.status}
+															</span>
+														</td>
 													</tr>
 												);
 											})}
@@ -517,29 +581,33 @@ export default function ReportsPage() {
 
 	return (
 		<div className="p-4 lg:p-8 print:p-0" ref={printRef}>
-			<div className="flex justify-between items-center mb-6 print:hidden">
+			<div className="flex flex-col mb-6 space-y-4 sm:flex-row sm:justify-between sm:items-center print:hidden sm:space-y-0">
 				<div>
-					<h1 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">
+					<h1 className="mb-2 text-xl font-bold sm:text-2xl text-slate-900 dark:text-white">
 						Request Reports
 					</h1>
-					<p className="text-slate-600 dark:text-slate-300">
+					<p className="text-sm sm:text-base text-slate-600 dark:text-slate-300">
 						Detailed analytics and insights into document requests
 					</p>
 				</div>
 				<div className="flex gap-2">
 					<Button
 						variant="outline"
-						className="flex gap-2 items-center"
+						className="flex gap-1 items-center text-xs sm:gap-2 sm:text-sm"
 						onClick={handleExportCSV}
 					>
-						<Download className="w-4 h-4" /> Export CSV
+						<Download className="w-3 h-3 sm:w-4 sm:h-4" />
+						<span className="hidden sm:inline">Export CSV</span>
+						<span className="sm:hidden">Export</span>
 					</Button>
 					<Button
 						variant="outline"
-						className="flex gap-2 items-center"
+						className="flex gap-1 items-center text-xs sm:gap-2 sm:text-sm"
 						onClick={handlePrint}
 					>
-						<Printer className="w-4 h-4" /> Print Report
+						<Printer className="w-3 h-3 sm:w-4 sm:h-4" />
+						<span className="hidden sm:inline">Print Report</span>
+						<span className="sm:hidden">Print</span>
 					</Button>
 				</div>
 			</div>
@@ -547,7 +615,7 @@ export default function ReportsPage() {
 			{/* Date Range Filter */}
 			<Card className="mb-6 dark:bg-slate-800 dark:border-slate-700 print:hidden">
 				<CardContent className="p-4 lg:p-6">
-					<div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+					<div className="space-y-4">
 						<div>
 							<div className="text-base font-semibold lg:text-lg text-slate-900 dark:text-white">
 								Request Analytics
@@ -556,58 +624,91 @@ export default function ReportsPage() {
 								Filter by date and view all request statuses
 							</div>
 						</div>
-						<div className="flex gap-2 items-center">
-							<select
-								className="p-2 rounded border dark:bg-slate-700 dark:border-slate-600"
-								value={selectedPresetRange}
-								onChange={(e) => setSelectedPresetRange(e.target.value)}
-							>
-								<option value="custom">Custom Range</option>
-								<option value="today">Today</option>
-								<option value="yesterday">Yesterday</option>
-								<option value="last7days">Last 7 Days</option>
-								<option value="last30days">Last 30 Days</option>
-								<option value="thismonth">This Month</option>
-								<option value="lastmonth">Last Month</option>
-							</select>
-							<select
-								className="p-2 rounded border dark:bg-slate-700 dark:border-slate-600"
-								value={granularity}
-								onChange={(e) => setGranularity(e.target.value)}
-							>
-								<option value="day">Per Day</option>
-								<option value="week">Per Week</option>
-								<option value="month">Per Month</option>
-								<option value="year">Per Year</option>
-							</select>
-							<select
-								className="p-2 rounded border dark:bg-slate-700 dark:border-slate-600"
-								value={selectedStatusFilter}
-								onChange={(e) => setSelectedStatusFilter(e.target.value)}
-							>
-								<option value="">All Statuses</option>
-								{requestStatuses.map((status) => (
-									<option key={status.id} value={status.name}>
-										{status.name}
-									</option>
-								))}
-							</select>
+
+						{/* Mobile-first filter layout */}
+						<div className="space-y-3">
+							{/* First row - Preset and Granularity */}
+							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+								<div>
+									<label className="block mb-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+										Date Range
+									</label>
+									<select
+										className="p-2 w-full text-sm rounded border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+										value={selectedPresetRange}
+										onChange={(e) => setSelectedPresetRange(e.target.value)}
+									>
+										<option value="custom">Custom Range</option>
+										<option value="today">Today</option>
+										<option value="yesterday">Yesterday</option>
+										<option value="last7days">Last 7 Days</option>
+										<option value="last30days">Last 30 Days</option>
+										<option value="thismonth">This Month</option>
+										<option value="lastmonth">Last Month</option>
+									</select>
+								</div>
+								<div>
+									<label className="block mb-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+										Granularity
+									</label>
+									<select
+										className="p-2 w-full text-sm rounded border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+										value={granularity}
+										onChange={(e) => setGranularity(e.target.value)}
+									>
+										<option value="day">Per Day</option>
+										<option value="week">Per Week</option>
+										<option value="month">Per Month</option>
+										<option value="year">Per Year</option>
+									</select>
+								</div>
+							</div>
+
+							{/* Second row - Status Filter */}
+							<div>
+								<label className="block mb-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+									Status Filter
+								</label>
+								<select
+									className="p-2 w-full text-sm rounded border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+									value={selectedStatusFilter}
+									onChange={(e) => setSelectedStatusFilter(e.target.value)}
+								>
+									<option value="">All Statuses</option>
+									{requestStatuses.map((status) => (
+										<option key={status.id} value={status.name}>
+											{status.name}
+										</option>
+									))}
+								</select>
+							</div>
+
+							{/* Custom date inputs */}
 							{selectedPresetRange === "custom" && (
-								<>
-									<input
-										type="date"
-										className="p-2 rounded border dark:bg-slate-700 dark:border-slate-600"
-										value={dateFrom || ""}
-										onChange={(e) => setDateFrom(e.target.value || null)}
-									/>
-									<span className="text-slate-500">to</span>
-									<input
-										type="date"
-										className="p-2 rounded border dark:bg-slate-700 dark:border-slate-600"
-										value={dateTo || ""}
-										onChange={(e) => setDateTo(e.target.value || null)}
-									/>
-								</>
+								<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+									<div>
+										<label className="block mb-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+											From Date
+										</label>
+										<input
+											type="date"
+											className="p-2 w-full text-sm rounded border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+											value={dateFrom || ""}
+											onChange={(e) => setDateFrom(e.target.value || null)}
+										/>
+									</div>
+									<div>
+										<label className="block mb-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+											To Date
+										</label>
+										<input
+											type="date"
+											className="p-2 w-full text-sm rounded border dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+											value={dateTo || ""}
+											onChange={(e) => setDateTo(e.target.value || null)}
+										/>
+									</div>
+								</div>
 							)}
 						</div>
 					</div>
@@ -615,43 +716,47 @@ export default function ReportsPage() {
 			</Card>
 
 			{/* Report Type Selector */}
-			<div className="flex gap-4 mb-6 print:hidden">
+			<div className="flex gap-2 mb-6 print:hidden">
 				<Button
 					variant={activeReportType === "overview" ? "default" : "outline"}
 					onClick={() => setActiveReportType("overview")}
-					className="flex gap-2 items-center"
+					className="flex-1 gap-2 items-center text-sm sm:text-base"
 				>
-					<BarChart2 className="w-4 h-4" /> Overview
+					<BarChart2 className="w-4 h-4" />
+					<span className="hidden sm:inline">Overview</span>
+					<span className="sm:hidden">Overview</span>
 				</Button>
 				<Button
 					variant={activeReportType === "detailed" ? "default" : "outline"}
 					onClick={() => setActiveReportType("detailed")}
-					className="flex gap-2 items-center"
+					className="flex-1 gap-2 items-center text-sm sm:text-base"
 				>
-					<PieChart className="w-4 h-4" /> Detailed Report
+					<PieChart className="w-4 h-4" />
+					<span className="hidden sm:inline">Detailed Report</span>
+					<span className="sm:hidden">Details</span>
 				</Button>
 			</div>
 
 			{/* Analytics KPIs */}
-			<div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6 print:grid-cols-4">
+			<div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6 print:grid-cols-4">
 				<Card className="dark:bg-slate-800 dark:border-slate-700">
-					<CardContent className="p-4 lg:p-6">
-						<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
+					<CardContent className="p-3 lg:p-6">
+						<div className="text-xs truncate text-slate-500 dark:text-slate-400">
 							{selectedStatusFilter
 								? `${selectedStatusFilter} in Range`
 								: "Total in Range"}
 						</div>
-						<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
+						<div className="mt-1 text-lg font-bold lg:text-2xl text-slate-900 dark:text-white">
 							{filteredRequests ? filteredRequests.length : "-"}
 						</div>
 					</CardContent>
 				</Card>
 				<Card className="dark:bg-slate-800 dark:border-slate-700">
-					<CardContent className="p-4 lg:p-6">
-						<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
+					<CardContent className="p-3 lg:p-6">
+						<div className="text-xs truncate text-slate-500 dark:text-slate-400">
 							Completed in Range
 						</div>
-						<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
+						<div className="mt-1 text-lg font-bold lg:text-2xl text-slate-900 dark:text-white">
 							{filteredRequests
 								? filteredRequests.filter((r) => r.status === "Completed")
 										.length
@@ -660,16 +765,16 @@ export default function ReportsPage() {
 					</CardContent>
 				</Card>
 				<Card className="dark:bg-slate-800 dark:border-slate-700">
-					<CardContent className="p-4 lg:p-6">
-						<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
+					<CardContent className="p-3 lg:p-6">
+						<div className="text-xs truncate text-slate-500 dark:text-slate-400">
 							Today Completed
 						</div>
-						<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
+						<div className="mt-1 text-lg font-bold lg:text-2xl text-slate-900 dark:text-white">
 							{filteredRequests
 								? filteredRequests.filter(
 										(r) =>
 											r.status === "Completed" &&
-											format(parseISO(r.dateCompleted), "yyyy-MM-dd") ===
+											format(parseISO(r.statusDate), "yyyy-MM-dd") ===
 												format(new Date(), "yyyy-MM-dd")
 								  ).length
 								: "-"}
@@ -677,11 +782,11 @@ export default function ReportsPage() {
 					</CardContent>
 				</Card>
 				<Card className="dark:bg-slate-800 dark:border-slate-700">
-					<CardContent className="p-4 lg:p-6">
-						<div className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">
+					<CardContent className="p-3 lg:p-6">
+						<div className="text-xs truncate text-slate-500 dark:text-slate-400">
 							Completion Rate
 						</div>
-						<div className="mt-2 text-xl font-bold lg:text-2xl text-slate-900 dark:text-white">
+						<div className="mt-1 text-lg font-bold lg:text-2xl text-slate-900 dark:text-white">
 							{filteredRequests && filteredRequests.length > 0
 								? `${(
 										(filteredRequests.filter((r) => r.status === "Completed")

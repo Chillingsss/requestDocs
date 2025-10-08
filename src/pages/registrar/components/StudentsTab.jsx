@@ -382,78 +382,111 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 	return (
 		<>
 			<Card className="dark:bg-slate-800 dark:border-slate-700">
-				<CardContent className="p-4 lg:p-6">
-					<div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+				<CardContent className="p-3 sm:p-4 lg:p-6">
+					<div className="flex flex-col gap-4 mb-6">
 						<div className="text-lg font-semibold text-slate-900 dark:text-white">
 							Students ({filteredStudents.length})
 						</div>
-						<div className="flex gap-2">
+						{/* Mobile-first button layout */}
+						<div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
 							<Button
 								onClick={() => setShowAddStudentModal(true)}
-								className="flex gap-2 items-center text-white bg-blue-600 hover:bg-blue-700"
+								className="flex gap-2 justify-center items-center w-full text-white bg-blue-600 hover:bg-blue-700 sm:w-auto"
+								size="sm"
 							>
-								<UserPlus className="w-4 h-4" /> Add Student
+								<UserPlus className="w-4 h-4" />
+								<span className="sm:inline">Add Student</span>
 							</Button>
 							<Button
 								onClick={() => setShowImportModal(true)}
-								className="flex gap-2 items-center text-white bg-green-600 hover:bg-green-700"
+								className="flex gap-2 justify-center items-center w-full text-white bg-green-600 hover:bg-green-700 sm:w-auto"
+								size="sm"
 							>
-								<Upload className="w-4 h-4" /> Import Students
+								<Upload className="w-4 h-4" />
+								<span className="sm:inline">Import Students</span>
 							</Button>
 						</div>
 					</div>
 
 					{/* Filter Controls */}
-					<div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center">
+					<div className="mb-6 space-y-4">
 						{/* Search Input */}
 						<div className="flex gap-2 items-center">
-							<Search className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+							<Search className="flex-shrink-0 w-4 h-4 text-slate-500 dark:text-slate-400" />
 							<input
 								type="text"
 								placeholder="Search by name or LRN..."
 								value={searchTerm}
 								onChange={handleSearchChange}
-								className="px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white min-w-[200px]"
+								className="flex-1 px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
 							/>
 						</div>
-						<div className="flex gap-2 items-center">
-							<Filter className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-							<select
-								value={selectedSection}
-								onChange={(e) => handleSectionChange(e.target.value)}
-								className="px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
-							>
-								<option value="">All Sections</option>
-								{sections.map((section) => (
-									<option key={section.id} value={section.name}>
-										{section.name}
-									</option>
-								))}
-							</select>
-							<select
-								value={selectedStrand}
-								onChange={(e) => handleStrandChange(e.target.value)}
-								className="px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
-							>
-								<option value="">All Strands</option>
-								{strands.map((strand) => (
-									<option key={strand.id} value={strand.id}>
-										{strand.name} ({strand.trackName})
-									</option>
-								))}
-							</select>
-							<select
-								value={selectedSchoolYear}
-								onChange={(e) => handleSchoolYearChange(e.target.value)}
-								className="px-3 py-2 text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
-							>
-								<option value="">All School Years</option>
-								{schoolYears.map((schoolYear) => (
-									<option key={schoolYear.id} value={schoolYear.id}>
-										{schoolYear.year}
-									</option>
-								))}
-							</select>
+
+						{/* Filter Dropdowns - Mobile optimized */}
+						<div className="space-y-3">
+							<div className="flex gap-2 items-center">
+								<Filter className="flex-shrink-0 w-4 h-4 text-slate-500 dark:text-slate-400" />
+								<span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+									Filters:
+								</span>
+							</div>
+
+							{/* Mobile: Stack filters vertically, Desktop: Horizontal */}
+							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+								<div className="space-y-1">
+									<label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+										Section
+									</label>
+									<select
+										value={selectedSection}
+										onChange={(e) => handleSectionChange(e.target.value)}
+										className="px-3 py-2 w-full text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+									>
+										<option value="">All Sections</option>
+										{sections.map((section) => (
+											<option key={section.id} value={section.name}>
+												{section.name}
+											</option>
+										))}
+									</select>
+								</div>
+
+								<div className="space-y-1">
+									<label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+										Strand
+									</label>
+									<select
+										value={selectedStrand}
+										onChange={(e) => handleStrandChange(e.target.value)}
+										className="px-3 py-2 w-full text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+									>
+										<option value="">All Strands</option>
+										{strands.map((strand) => (
+											<option key={strand.id} value={strand.id}>
+												{strand.name} ({strand.trackName})
+											</option>
+										))}
+									</select>
+								</div>
+
+								<div className="space-y-1 sm:col-span-2 lg:col-span-1">
+									<label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+										School Year
+									</label>
+									<select
+										value={selectedSchoolYear}
+										onChange={(e) => handleSchoolYearChange(e.target.value)}
+										className="px-3 py-2 w-full text-sm bg-white rounded-md border dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+									>
+										<option value="">All School Years</option>
+										{schoolYears.map((schoolYear) => (
+											<option key={schoolYear.id} value={schoolYear.id}>
+												{schoolYear.year}
+											</option>
+										))}
+									</select>
+								</div>
+							</div>
 						</div>
 					</div>
 
@@ -657,25 +690,25 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 							{/* Pagination Controls */}
 							{totalPages > 1 && (
 								<div className="flex flex-col gap-4 justify-between items-center sm:flex-row">
-									<div className="text-sm text-slate-600 dark:text-slate-400">
+									<div className="order-2 text-sm text-slate-600 dark:text-slate-400 sm:order-1">
 										Page {currentPage} of {totalPages}
 									</div>
 
-									<div className="flex gap-2 items-center">
+									<div className="flex order-1 gap-1 items-center sm:order-2">
 										{/* Previous Button */}
 										<Button
 											variant="outline"
 											size="sm"
 											onClick={handlePrevPage}
 											disabled={currentPage === 1}
-											className="flex gap-1 items-center"
+											className="flex gap-1 items-center px-2 sm:px-3"
 										>
 											<ChevronLeft className="w-4 h-4" />
-											Previous
+											<span className="hidden sm:inline">Previous</span>
 										</Button>
 
-										{/* Page Numbers */}
-										<div className="flex gap-1">
+										{/* Page Numbers - Hide on very small screens */}
+										<div className="hidden gap-1 sm:flex">
 											{getPageNumbers().map((pageNum, index) => (
 												<React.Fragment key={index}>
 													{pageNum === "..." ? (
@@ -698,15 +731,20 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 											))}
 										</div>
 
+										{/* Mobile: Show current page */}
+										<div className="px-3 py-1 text-sm font-medium rounded sm:hidden text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700">
+											{currentPage}
+										</div>
+
 										{/* Next Button */}
 										<Button
 											variant="outline"
 											size="sm"
 											onClick={handleNextPage}
 											disabled={currentPage === totalPages}
-											className="flex gap-1 items-center"
+											className="flex gap-1 items-center px-2 sm:px-3"
 										>
-											Next
+											<span className="hidden sm:inline">Next</span>
 											<ChevronRight className="w-4 h-4" />
 										</Button>
 									</div>

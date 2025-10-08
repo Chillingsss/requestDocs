@@ -205,15 +205,39 @@ export default function TeacherDashboard() {
 			<main className="flex-1 p-4 w-full min-w-0 lg:p-8">
 				{/* Mobile Menu Button */}
 				<div className="flex justify-between items-center mb-4 lg:hidden">
-					<button
-						onClick={() => setSidebarOpen(true)}
-						className="p-2 bg-white rounded-lg border shadow-sm dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
-					>
-						<Menu className="w-5 h-5" />
-					</button>
-					<h1 className="text-xl font-bold text-slate-900 dark:text-white">
-						Teacher {activeTab}
-					</h1>
+					<div className="flex gap-3 items-center">
+						<button
+							onClick={() => setSidebarOpen(true)}
+							className="p-2 bg-white rounded-lg border shadow-sm dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+						>
+							<Menu className="w-5 h-5" />
+						</button>
+						<h1 className="text-xl font-bold text-slate-900 dark:text-white">
+							Teacher {activeTab}
+						</h1>
+					</div>
+					<div className="flex gap-3 items-center">
+						<button
+							onClick={handleRefreshData}
+							className="p-2 bg-white rounded-lg border shadow-sm dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
+							title="Refresh Data"
+						>
+							<svg
+								className="w-5 h-5"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+								/>
+							</svg>
+						</button>
+						<ThemeToggle />
+					</div>
 				</div>
 
 				{/* Desktop Header */}
@@ -233,20 +257,7 @@ export default function TeacherDashboard() {
 				</header>
 
 				{/* Mobile Header */}
-				<header className="flex flex-col gap-4 mb-6 lg:hidden">
-					<div className="flex justify-between items-center">
-						<h1 className="text-xl font-bold text-slate-900 dark:text-white">
-							Teacher {activeTab}
-						</h1>
-						<ThemeToggle />
-					</div>
-					<Button
-						className="flex gap-2 items-center w-full bg-blue-600 hover:bg-blue-700"
-						onClick={handleRefreshData}
-					>
-						Refresh Data
-					</Button>
-				</header>
+				<header className="flex flex-col gap-4 mb-6 lg:hidden"></header>
 
 				{/* Dashboard Content */}
 				<div className="space-y-6">
