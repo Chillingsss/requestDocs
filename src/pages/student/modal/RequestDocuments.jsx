@@ -135,11 +135,11 @@ export default function RequestDocuments({
 	const getFilteredDocuments = () => {
 		if (!studentGradeLevel) return documents;
 
-		// Grade 11 students can only request Certificate of Enrollment and SF10
+		// Grade 11 students can only request Certificate and SF10
 		if (studentGradeLevel.toLowerCase().includes("grade 11")) {
 			return documents.filter(
 				(doc) =>
-					doc.name.toLowerCase().includes("certificate of enrollment") ||
+					doc.name.toLowerCase().includes("certificate") ||
 					doc.name.toLowerCase().includes("sf10") ||
 					doc.name.toLowerCase().includes("sf-10")
 			);
@@ -318,14 +318,14 @@ export default function RequestDocuments({
 				(doc) => String(doc.id) === String(documentId)
 			);
 			if (selectedDoc && studentGradeLevel.toLowerCase().includes("grade 11")) {
-				const allowedDocs = ["certificate of enrollment", "sf10", "sf-10"];
+				const allowedDocs = ["certificate", "sf10", "sf-10"];
 				const isAllowed = allowedDocs.some((allowed) =>
 					selectedDoc.name.toLowerCase().includes(allowed)
 				);
 
 				if (!isAllowed) {
 					toast.error(
-						"Grade 11 students can only request Certificate of Enrollment and SF10 documents."
+						"Grade 11 students can only request Certificate and SF10 documents."
 					);
 					return;
 				}
@@ -549,14 +549,14 @@ export default function RequestDocuments({
 				(doc) => String(doc.id) === String(selectedDocument)
 			);
 			if (selectedDoc && studentGradeLevel.toLowerCase().includes("grade 11")) {
-				const allowedDocs = ["certificate of enrollment", "sf10", "sf-10"];
+				const allowedDocs = ["certificate", "sf10", "sf-10"];
 				const isAllowed = allowedDocs.some((allowed) =>
 					selectedDoc.name.toLowerCase().includes(allowed)
 				);
 
 				if (!isAllowed) {
 					toast.error(
-						"Grade 11 students can only request Certificate of Enrollment and SF10 documents."
+						"Grade 11 students can only request Certificate and SF10 documents."
 					);
 					return;
 				}
@@ -736,7 +736,7 @@ export default function RequestDocuments({
 
 	const isCertificateOfEnrollment = () => {
 		const selectedDocName = getSelectedDocumentName().toLowerCase();
-		return selectedDocName.includes("certificate of enrollment");
+		return selectedDocName.includes("certificate");
 	};
 
 	const filteredPurposes = documentPurposes.filter((purpose) =>
@@ -797,10 +797,10 @@ export default function RequestDocuments({
 	};
 
 	return (
-		<div className="flex fixed inset-0 z-50 justify-center items-center backdrop-blur-sm bg-black/40 p-4">
+		<div className="flex fixed inset-0 z-50 justify-center items-center p-4 backdrop-blur-sm bg-black/40">
 			<div className="relative w-full max-w-2xl bg-white rounded-2xl border shadow-2xl dark:bg-slate-800 dark:border-slate-700 border-slate-200 flex flex-col max-h-[90vh]">
 				{/* Title Bar */}
-				<div className="flex justify-between items-center px-6 py-4 rounded-t-2xl border-b bg-slate-50 border-slate-100 dark:bg-slate-700 dark:border-slate-600 flex-shrink-0">
+				<div className="flex flex-shrink-0 justify-between items-center px-6 py-4 rounded-t-2xl border-b bg-slate-50 border-slate-100 dark:bg-slate-700 dark:border-slate-600">
 					<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
 						Request Document
 					</h3>
@@ -827,7 +827,7 @@ export default function RequestDocuments({
 				</div>
 				<form
 					onSubmit={handleRequestSubmit}
-					className="px-6 py-6 space-y-5 flex-1 overflow-y-auto"
+					className="overflow-y-auto flex-1 px-6 py-6 space-y-5"
 				>
 					<div>
 						<Label
@@ -839,7 +839,7 @@ export default function RequestDocuments({
 
 						{/* Grade-based document restrictions notice */}
 						{studentGradeLevel && (
-							<div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900 dark:border-blue-800">
+							<div className="p-3 mb-3 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900 dark:border-blue-800">
 								<div className="flex items-start space-x-2">
 									<div className="flex-shrink-0 mt-0.5">
 										<svg
@@ -861,18 +861,18 @@ export default function RequestDocuments({
 											Document Availability by Grade Level
 										</p>
 										{studentGradeLevel.toLowerCase().includes("grade 11") ? (
-											<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+											<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
 												As a <strong>Grade 11</strong> student, you can only
-												request <strong>Certificate of Enrollment</strong> and{" "}
+												request <strong>Certificate</strong> and{" "}
 												<strong>SF10</strong> documents.
 											</p>
 										) : studentGradeLevel.toLowerCase().includes("grade 12") ? (
-											<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+											<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
 												As a <strong>Grade 12</strong> student, you can request{" "}
 												<strong>all available documents</strong>.
 											</p>
 										) : (
-											<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+											<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
 												Document availability depends on your grade level.
 											</p>
 										)}
@@ -922,7 +922,7 @@ export default function RequestDocuments({
 									<h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
 										Duplicate Request Detected
 									</h4>
-									<p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+									<p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
 										You already have a pending request for{" "}
 										<span className="font-semibold">
 											{duplicateWarning.documentName}
@@ -939,17 +939,17 @@ export default function RequestDocuments({
 										</span>
 										.
 									</p>
-									<p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+									<p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
 										Current status:{" "}
-										<span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded-full dark:bg-amber-900 dark:text-amber-200">
+										<span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-amber-800 bg-amber-100 rounded-full dark:bg-amber-900 dark:text-amber-200">
 											{duplicateWarning.existingStatus}
 										</span>
 									</p>
-									<div className="mt-3 p-3 bg-amber-100 rounded-md border border-amber-200 dark:bg-amber-900/30 dark:border-amber-600">
-										<p className="text-xs text-amber-800 dark:text-amber-200 font-medium">
+									<div className="p-3 mt-3 bg-amber-100 rounded-md border border-amber-200 dark:bg-amber-900/30 dark:border-amber-600">
+										<p className="text-xs font-medium text-amber-800 dark:text-amber-200">
 											📋 What you can do:
 										</p>
-										<ul className="text-xs text-amber-700 dark:text-amber-300 mt-1 space-y-1">
+										<ul className="mt-1 space-y-1 text-xs text-amber-700 dark:text-amber-300">
 											<li>• Wait for your current request to be completed</li>
 											<li>• Check the status in "My Requests" section</li>
 											<li>• Contact the registrar if you have concerns</li>
@@ -987,7 +987,7 @@ export default function RequestDocuments({
 									<h4 className="text-sm font-semibold text-green-800 dark:text-green-200">
 										Expected Processing Time
 									</h4>
-									<p className="text-sm text-green-700 dark:text-green-300 mt-1">
+									<p className="mt-1 text-sm text-green-700 dark:text-green-300">
 										Your document will be ready for release in{" "}
 										<span className="font-semibold">
 											{expectedDays.days} days
@@ -1003,7 +1003,7 @@ export default function RequestDocuments({
 											</span>
 										)}
 									</p>
-									<p className="text-xs text-green-600 dark:text-green-400 mt-2">
+									<p className="mt-2 text-xs text-green-600 dark:text-green-400">
 										💡 This is an estimate based on normal processing times.
 										Actual release dates may vary.
 									</p>
@@ -1034,7 +1034,7 @@ export default function RequestDocuments({
 												onClick={() =>
 													setIsPurposeDropdownOpen(!isPurposeDropdownOpen)
 												}
-												className="w-full px-3 py-1.5 text-left bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
+												className="px-3 py-1.5 w-full text-left bg-white rounded-lg border shadow-sm border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
 											>
 												{selectedPurposeIds.length === 0 ? (
 													<span className="text-slate-500 dark:text-slate-400">
@@ -1049,7 +1049,7 @@ export default function RequestDocuments({
 															return (
 																<span
 																	key={purposeId}
-																	className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200 max-w-full"
+																	className="inline-flex items-center px-1.5 py-0.5 max-w-full text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-200"
 																>
 																	<span className="truncate">
 																		{purpose?.name}
@@ -1063,7 +1063,7 @@ export default function RequestDocuments({
 																				false
 																			);
 																		}}
-																		className="ml-1 inline-flex items-center justify-center w-4 h-4 text-blue-400 hover:text-blue-600 dark:text-blue-300 dark:hover:text-blue-100 flex-shrink-0"
+																		className="inline-flex flex-shrink-0 justify-center items-center ml-1 w-4 h-4 text-blue-400 hover:text-blue-600 dark:text-blue-300 dark:hover:text-blue-100"
 																	>
 																		×
 																	</button>
@@ -1071,15 +1071,15 @@ export default function RequestDocuments({
 															);
 														})}
 														{selectedPurposeIds.length > 3 && (
-															<span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-full dark:bg-slate-700 dark:text-slate-300">
+															<span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
 																+{selectedPurposeIds.length - 3} more
 															</span>
 														)}
 													</div>
 												)}
-												<span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+												<span className="flex absolute inset-y-0 right-0 items-center pr-2 pointer-events-none">
 													{selectedPurposeIds.length > 0 && (
-														<span className="mr-2 inline-flex items-center justify-center w-4 h-4 text-xs font-medium bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">
+														<span className="inline-flex justify-center items-center mr-2 w-4 h-4 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-200">
 															{selectedPurposeIds.length}
 														</span>
 													)}
@@ -1103,7 +1103,7 @@ export default function RequestDocuments({
 
 											{/* Dropdown menu */}
 											{isPurposeDropdownOpen && (
-												<div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-y-auto dark:bg-slate-700 dark:border-slate-600">
+												<div className="overflow-y-auto absolute z-10 mt-1 w-full max-h-60 bg-white rounded-lg border shadow-lg border-slate-300 dark:bg-slate-700 dark:border-slate-600">
 													<div className="p-2">
 														{/* Search input */}
 														<div className="relative mb-2">
@@ -1114,7 +1114,7 @@ export default function RequestDocuments({
 																onChange={(e) =>
 																	setPurposeSearchTerm(e.target.value)
 																}
-																className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-slate-600 dark:border-slate-500 dark:text-slate-50"
+																className="px-3 py-2 w-full text-sm rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-slate-600 dark:border-slate-500 dark:text-slate-50"
 															/>
 															<svg
 																className="absolute right-2 top-2.5 w-4 h-4 text-slate-400"
@@ -1136,14 +1136,14 @@ export default function RequestDocuments({
 															<button
 																type="button"
 																onClick={selectAllPurposes}
-																className="px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900"
+																className="px-2 py-1 text-xs font-medium text-blue-600 rounded hover:text-blue-800 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900"
 															>
 																Select All
 															</button>
 															<button
 																type="button"
 																onClick={clearAllPurposes}
-																className="px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-50 rounded dark:text-slate-400 dark:hover:text-slate-300 dark:hover:bg-slate-700"
+																className="px-2 py-1 text-xs font-medium rounded text-slate-600 hover:text-slate-800 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:bg-slate-700"
 															>
 																Clear All
 															</button>
@@ -1154,7 +1154,7 @@ export default function RequestDocuments({
 															{filteredPurposes.map((purposeItem) => (
 																<label
 																	key={purposeItem.id}
-																	className="flex items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer rounded-md dark:text-slate-300 dark:hover:bg-slate-600"
+																	className="flex items-center px-3 py-2 text-sm rounded-md cursor-pointer text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-600"
 																>
 																	<input
 																		type="checkbox"
@@ -1167,7 +1167,7 @@ export default function RequestDocuments({
 																				e.target.checked
 																			)
 																		}
-																		className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-400"
+																		className="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-400"
 																	/>
 																	<span className="ml-3">
 																		{purposeItem.name}
@@ -1190,19 +1190,19 @@ export default function RequestDocuments({
 										{/* Selected purposes summary */}
 										{selectedPurposeIds.length > 0 && (
 											<div className="p-2 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900 dark:border-blue-800">
-												<div className="flex items-center justify-between mb-2">
+												<div className="flex justify-between items-center mb-2">
 													<p className="text-xs font-medium text-blue-800 dark:text-blue-200">
 														Selected purposes ({selectedPurposeIds.length}):
 													</p>
 													<button
 														type="button"
 														onClick={clearAllPurposes}
-														className="text-xs text-blue-600 hover:text-blue-800 underline dark:text-blue-400 dark:hover:text-blue-300"
+														className="text-xs text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
 													>
 														Clear all
 													</button>
 												</div>
-												<div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+												<div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
 													{selectedPurposeIds.map((purposeId) => {
 														const purpose = documentPurposes.find(
 															(p) => p.id === purposeId
@@ -1210,9 +1210,9 @@ export default function RequestDocuments({
 														return (
 															<div
 																key={purposeId}
-																className="flex items-center justify-between px-2 py-1 bg-white rounded border border-blue-200 dark:bg-slate-700 dark:border-slate-600"
+																className="flex justify-between items-center px-2 py-1 bg-white rounded border border-blue-200 dark:bg-slate-700 dark:border-slate-600"
 															>
-																<span className="text-xs text-blue-800 dark:text-blue-200 truncate">
+																<span className="text-xs text-blue-800 truncate dark:text-blue-200">
 																	{purpose?.name}
 																</span>
 																<button
@@ -1223,7 +1223,7 @@ export default function RequestDocuments({
 																			false
 																		)
 																	}
-																	className="ml-2 flex-shrink-0 w-4 h-4 text-blue-400 hover:text-blue-600 dark:text-blue-300 dark:hover:text-blue-100 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-full flex items-center justify-center text-xs"
+																	className="flex flex-shrink-0 justify-center items-center ml-2 w-4 h-4 text-xs text-blue-400 rounded-full hover:text-blue-600 dark:text-blue-300 dark:hover:text-blue-100 hover:bg-blue-100 dark:hover:bg-blue-800"
 																>
 																	×
 																</button>
@@ -1234,7 +1234,7 @@ export default function RequestDocuments({
 											</div>
 										)}
 
-										<p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+										<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
 											Select one or more purposes for your request
 										</p>
 									</div>
@@ -1251,7 +1251,7 @@ export default function RequestDocuments({
 								)}
 							</div>
 							<div>
-								{/* Only show Document Attachments section if not SF10 or Certificate of Enrollment */}
+								{/* Only show Document Attachments section if not SF10 or Certificate */}
 								{!isCertificateOfEnrollment() && !isSF10Document() && (
 									<div>
 										<Label
@@ -1360,7 +1360,7 @@ export default function RequestDocuments({
 																setSecondaryRequirements([]);
 															}
 														}}
-														className="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-400"
+														className="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-400"
 													/>
 													<div className="flex-1">
 														<label

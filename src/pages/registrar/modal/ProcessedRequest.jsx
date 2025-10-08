@@ -72,12 +72,9 @@ export default function ProcessedRequest({
 		return currentRequest?.document?.toLowerCase().includes("diploma");
 	};
 
-	// Check if this is a certificate of enrollment request
+	// Check if this is a certificate request
 	const isCertificateRequest = () => {
-		return (
-			currentRequest?.document?.toLowerCase().includes("certificate") &&
-			currentRequest?.document?.toLowerCase().includes("enrollment")
-		);
+		return currentRequest?.document?.toLowerCase().includes("certificate");
 	};
 
 	// Check if this is a CAV request
@@ -1150,13 +1147,13 @@ export default function ProcessedRequest({
 									<div className="flex gap-3 items-center mb-3">
 										<FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
 										<span className="text-sm font-medium text-green-700 dark:text-green-300">
-											Certificate of Enrollment Template Ready
+											Certificate Template Ready
 										</span>
 									</div>
 									<div className="mb-2 text-sm text-green-600 dark:text-green-400">
-										A certificate of enrollment template will be generated for
-										this student. Click "Generate Certificate Template" to
-										review and edit the student information before processing.
+										A certificate template will be generated for this student.
+										Click "Generate Certificate Template" to review and edit the
+										student information before processing.
 									</div>
 									{studentInfo && (
 										<div className="p-3 mt-3 bg-white rounded border border-green-200 dark:bg-slate-800 dark:border-green-600">
