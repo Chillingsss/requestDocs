@@ -2,13 +2,45 @@
 include "headers.php";
 
 class User {
+  private function logLoginAttempt($userId, $userLevelId, $status, $failureReason = null) {
+    include "connection.php";
+    
+    try {
+      // Get current Philippine time
+      date_default_timezone_set('Asia/Manila');
+      $philippineTime = date('Y-m-d H:i:s');
+      
+      $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+      $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+      
+      // Debug logging
+      error_log("Logging login attempt - UserId: $userId, UserLevelId: " . ($userLevelId ?? 'NULL') . ", Status: $status");
+      
+      $sql = "INSERT INTO tblloginlogs (userId, userLevelId, loginTime, ipAddress, userAgent, loginStatus, failureReason) 
+              VALUES (:userId, :userLevelId, :loginTime, :ipAddress, :userAgent, :status, :failureReason)";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':userId', $userId);
+      $stmt->bindParam(':userLevelId', $userLevelId);
+      $stmt->bindParam(':loginTime', $philippineTime);
+      $stmt->bindParam(':ipAddress', $ipAddress);
+      $stmt->bindParam(':userAgent', $userAgent);
+      $stmt->bindParam(':status', $status);
+      $stmt->bindParam(':failureReason', $failureReason);
+      $stmt->execute();
+      
+      error_log("Login attempt logged successfully");
+    } catch (Exception $e) {
+      error_log("Failed to log login attempt: " . $e->getMessage());
+    }
+  }
+
   function login($json) {
     include "connection.php";
 
     $json = json_decode($json, true);
 
     // Check in tbluser
-    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.pinCode, a.gradeLevelId, a.sectionId, a.isActive, b.name AS userLevel, d.id AS academicTypeId FROM tbluser a
+    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.pinCode, a.gradeLevelId, a.sectionId, a.isActive, a.userLevel as userLevelId, b.name AS userLevel, d.id AS academicTypeId FROM tbluser a
             INNER JOIN tbluserlevel b ON a.userLevel = b.id
             LEFT JOIN tblgradelevel c ON a.gradeLevelId = c.id
             LEFT JOIN tblacademictype d ON c.academicTId = d.id
@@ -22,6 +54,7 @@ class User {
         
         // Check if account is active
         if (!$user['isActive']) {
+            $this->logLoginAttempt($json['username'], $user['userLevelId'], 'blocked', 'Account deactivated');
             return json_encode(['error' => 'Account has been deactivated. Please contact administrator.']);
         }
         
@@ -44,6 +77,7 @@ class User {
             
             if ($needsPasswordReset || $needsPinReset) {
                 error_log("Password/PIN reset required for user: " . $user['id'] . ", Password Reset: " . ($needsPasswordReset ? "Yes" : "No") . ", PIN Reset: " . ($needsPinReset ? "Yes" : "No"));
+                $this->logLoginAttempt($user['id'], $user['userLevelId'], 'success', 'Password/PIN reset required');
                 return json_encode([
                     'id' => $user['id'],
                     'userLevel' => $user['userLevel'],
@@ -58,6 +92,7 @@ class User {
                 ]);
             }
             error_log("Normal login for user: " . $user['id']);
+            $this->logLoginAttempt($user['id'], $user['userLevelId'], 'success');
             return json_encode([
                 'id' => $user['id'],
                 'userLevel' => $user['userLevel'],
@@ -73,7 +108,7 @@ class User {
 
 
     // Check in tblstudent
-    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.isActive, b.name AS userLevel FROM tblstudent a
+    $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.isActive, a.userLevel as userLevelId, b.name AS userLevel FROM tblstudent a
             INNER JOIN tbluserlevel b ON a.userLevel = b.id
             WHERE BINARY a.id = :username";
     $stmt = $conn->prepare($sql);
@@ -85,6 +120,7 @@ class User {
         
         // Check if account is active
         if (!$user['isActive']) {
+            $this->logLoginAttempt($json['username'], $user['userLevelId'], 'blocked', 'Account deactivated');
             return json_encode(['error' => 'Account has been deactivated. Please contact administrator.']);
         }
         
@@ -96,6 +132,7 @@ class User {
             // First check if student has email - if no email, they need to set it up
             if (empty($user['email'])) {
                 error_log("Student has no email, needs email setup: " . $user['id']);
+                $this->logLoginAttempt($user['id'], $user['userLevelId'], 'success', 'Email setup required');
                 return json_encode([
                     'id' => $user['id'],
                     'firstname' => $user['firstname'],
@@ -115,6 +152,7 @@ class User {
             // Check if password matches lastname (case-insensitive)
             if ($inputPasswordLower === $lastnameLower) {
                 error_log("Password reset required for student: " . $user['id']);
+                $this->logLoginAttempt($user['id'], $user['userLevelId'], 'success', 'Password reset required');
                 return json_encode([
                     'id' => $user['id'],
                     'firstname' => $user['firstname'],
@@ -126,6 +164,7 @@ class User {
             }
             
             error_log("Normal student login for user: " . $user['id']);
+            $this->logLoginAttempt($user['id'], $user['userLevelId'], 'success');
             return json_encode([
                 'id' => $user['id'],
                 'firstname' => $user['firstname'],
@@ -136,6 +175,8 @@ class User {
         }
     }
 
+    // Log failed login attempt
+    $this->logLoginAttempt($json['username'], null, 'failed', 'Invalid credentials');
     return json_encode(['error' => 'Invalid credentials']);
   }
 
@@ -2690,6 +2731,74 @@ class User {
     }
   }
 
+  function getLoginLogs($json = null)
+  {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    $limit = isset($json['limit']) ? intval($json['limit']) : 100;
+    $offset = isset($json['offset']) ? intval($json['offset']) : 0;
+    $statusFilter = isset($json['statusFilter']) ? $json['statusFilter'] : null;
+    $userLevelFilter = isset($json['userLevelFilter']) ? $json['userLevelFilter'] : null;
+    $dateFrom = isset($json['dateFrom']) ? $json['dateFrom'] : null;
+    $dateTo = isset($json['dateTo']) ? $json['dateTo'] : null;
+    
+    try {
+      $sql = "SELECT 
+                ll.id,
+                ll.userId,
+                ll.userLevelId,
+                ul.name as userLevel,
+                ll.loginTime,
+                ll.ipAddress,
+                ll.userAgent,
+                ll.loginStatus,
+                ll.failureReason
+              FROM tblloginlogs ll
+              LEFT JOIN tbluserlevel ul ON ll.userLevelId = ul.id
+              WHERE 1=1";
+      
+      $params = [];
+      
+      if ($statusFilter) {
+        $sql .= " AND ll.loginStatus = :statusFilter";
+        $params[':statusFilter'] = $statusFilter;
+      }
+      
+      if ($userLevelFilter) {
+        $sql .= " AND ul.name = :userLevelFilter";
+        $params[':userLevelFilter'] = $userLevelFilter;
+      }
+      
+      if ($dateFrom) {
+        $sql .= " AND DATE(ll.loginTime) >= :dateFrom";
+        $params[':dateFrom'] = $dateFrom;
+      }
+      
+      if ($dateTo) {
+        $sql .= " AND DATE(ll.loginTime) <= :dateTo";
+        $params[':dateTo'] = $dateTo;
+      }
+      
+      $sql .= " ORDER BY ll.loginTime DESC LIMIT :limit OFFSET :offset";
+      
+      $stmt = $conn->prepare($sql);
+      
+      foreach ($params as $key => $value) {
+        $stmt->bindParam($key, $value);
+      }
+      $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+      $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+      
+      $stmt->execute();
+      $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      
+      return json_encode($logs);
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
   function resetPin($json) {
     include "connection.php";
 
@@ -2947,6 +3056,9 @@ switch ($operation) {
     break;
   case "deleteStrand":
     echo $user->deleteStrand($json);
+    break;
+  case "getLoginLogs":
+    echo $user->getLoginLogs($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

@@ -1244,3 +1244,21 @@ export async function deleteStrand(strandId) {
 		throw error;
 	}
 }
+
+// Login Logs management functions
+export async function getLoginLogs(filters = {}) {
+	const formData = new FormData();
+	formData.append("operation", "getLoginLogs");
+	formData.append("json", JSON.stringify(filters));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}

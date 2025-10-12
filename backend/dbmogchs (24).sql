@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 05, 2025 at 06:51 AM
+-- Generation Time: Oct 12, 2025 at 03:44 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,27 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `dbmogchs`
 --
-
--- --------------------------------------------------------
-
---
--- Table structure for table `sms_logs`
---
-
-CREATE TABLE `sms_logs` (
-  `id` int(11) NOT NULL,
-  `to_number` varchar(20) NOT NULL,
-  `message` text NOT NULL,
-  `sent_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status` varchar(50) DEFAULT 'sent'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `sms_logs`
---
-
-INSERT INTO `sms_logs` (`id`, `to_number`, `message`, `sent_at`, `status`) VALUES
-(1, '+639056548089', 'asd', '2025-08-12 04:46:15', 'failed');
 
 -- --------------------------------------------------------
 
@@ -82,7 +61,7 @@ INSERT INTO `tbldocument` (`id`, `name`, `userId`, `createdAt`) VALUES
 (5, 'SF10', '02-1819-01509', '2025-07-24 14:01:00'),
 (6, 'Diploma', '02-1819-01509', '2025-07-24 14:01:00'),
 (7, 'CAV', '02-1819-01509', '2025-07-24 14:01:00'),
-(8, 'Certificate of Enrollments', '02-1819-01509', '2025-07-24 14:01:00');
+(8, 'Certificate', '02-1819-01509', '2025-07-24 14:01:00');
 
 -- --------------------------------------------------------
 
@@ -169,7 +148,33 @@ CREATE TABLE `tblgradelevel` (
 
 INSERT INTO `tblgradelevel` (`id`, `name`, `userId`, `academicTId`, `createdAt`) VALUES
 (1, 'Grade 11', NULL, 2, '2025-07-29 04:14:38'),
-(2, 'Grade 12', NULL, 2, '2025-07-29 04:14:38');
+(2, 'Grade 12', NULL, 2, '2025-07-29 04:14:38'),
+(3, 'Grade 10', '02-1819-01509', 1, '2025-10-05 07:16:27');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblloginlogs`
+--
+
+CREATE TABLE `tblloginlogs` (
+  `id` int(11) NOT NULL,
+  `userId` varchar(50) NOT NULL,
+  `userLevelId` int(11) DEFAULT NULL,
+  `loginTime` datetime NOT NULL,
+  `ipAddress` varchar(45) DEFAULT NULL,
+  `userAgent` text DEFAULT NULL,
+  `loginStatus` enum('success','failed','blocked') NOT NULL,
+  `failureReason` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblloginlogs`
+--
+
+INSERT INTO `tblloginlogs` (`id`, `userId`, `userLevelId`, `loginTime`, `ipAddress`, `userAgent`, `loginStatus`, `failureReason`) VALUES
+(2, '33333333', 4, '2025-10-12 09:37:43', '::1', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36', 'success', NULL),
+(4, '33333333', NULL, '2025-10-12 09:42:48', '::1', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36', 'failed', 'Invalid credentials');
 
 -- --------------------------------------------------------
 
@@ -220,7 +225,8 @@ CREATE TABLE `tblreleaseschedule` (
 
 INSERT INTO `tblreleaseschedule` (`id`, `requestId`, `userId`, `dateSchedule`, `createdAt`) VALUES
 (1, 1, '02-1819-01500', '2025-10-01', '2025-09-25 09:48:34'),
-(4, 2, '02-1819-01500', '2025-10-03', '2025-09-30 10:50:54');
+(4, 2, '02-1819-01500', '2025-10-03', '2025-09-30 10:50:54'),
+(5, 3, '02-1819-01500', '2025-10-10', '2025-10-05 22:35:10');
 
 -- --------------------------------------------------------
 
@@ -242,7 +248,10 @@ CREATE TABLE `tblrequest` (
 
 INSERT INTO `tblrequest` (`id`, `studentId`, `documentId`, `purpose`, `createdAt`) VALUES
 (1, '33333333', 5, 'enrollment college', '2025-09-14 03:09:20'),
-(2, '33333333', 6, 'working', '2025-09-25 10:30:09');
+(2, '33333333', 6, 'working', '2025-09-25 10:30:09'),
+(3, '33333333', 7, NULL, '2025-10-05 10:33:49'),
+(4, '33333333', 5, 'test lang', '2025-10-08 05:48:38'),
+(5, '33333333', 8, 'shesh', '2025-10-08 07:04:54');
 
 -- --------------------------------------------------------
 
@@ -255,6 +264,14 @@ CREATE TABLE `tblrequestpurpose` (
   `requestId` int(11) NOT NULL,
   `purposeId` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblrequestpurpose`
+--
+
+INSERT INTO `tblrequestpurpose` (`id`, `requestId`, `purposeId`) VALUES
+(1, 3, 6),
+(2, 3, 1);
 
 -- --------------------------------------------------------
 
@@ -284,7 +301,15 @@ INSERT INTO `tblrequeststatus` (`id`, `requestId`, `statusId`, `userId`, `create
 (12, 2, 2, '02-1819-01500', '2025-09-25 11:32:24'),
 (13, 2, 3, '02-1819-01500', '2025-09-25 12:39:01'),
 (16, 2, 4, '02-1819-01500', '2025-09-30 10:50:57'),
-(17, 2, 5, '02-1819-01500', '2025-10-02 12:21:03');
+(17, 2, 5, '02-1819-01500', '2025-10-02 12:21:03'),
+(18, 3, 1, NULL, '2025-10-05 10:33:49'),
+(19, 3, 2, '02-1819-01500', '2025-10-05 10:34:55'),
+(20, 3, 3, '02-1819-01500', '2025-10-05 10:35:00'),
+(21, 3, 4, '02-1819-01500', '2025-10-05 10:35:10'),
+(22, 3, 5, '02-1819-01500', '2025-10-05 10:35:33'),
+(23, 4, 1, NULL, '2025-10-08 05:48:38'),
+(35, 4, 2, '02-1819-01500', '2025-10-08 06:25:33'),
+(36, 5, 1, NULL, '2025-10-08 07:04:54');
 
 -- --------------------------------------------------------
 
@@ -325,7 +350,8 @@ CREATE TABLE `tblrequirements` (
 --
 
 INSERT INTO `tblrequirements` (`id`, `requestId`, `filepath`, `typeId`, `createdAt`, `isAdditional`) VALUES
-(1, 2, '494687654_692122813767152_4225768431343115829_n.jpg', 2, '2025-09-25 10:30:09', 0);
+(1, 2, '494687654_692122813767152_4225768431343115829_n.jpg', 2, '2025-09-25 10:30:09', 0),
+(2, 3, 'cav17.png', 1, '2025-10-05 10:33:49', 0);
 
 -- --------------------------------------------------------
 
@@ -398,7 +424,9 @@ INSERT INTO `tblsection` (`id`, `name`, `userId`, `gradeLevelId`, `createdAt`) V
 (7, 'Enthusiasm', NULL, 1, '2025-07-30 15:42:15'),
 (8, 'Evident', '02-1819-01509', 1, '2025-07-30 15:42:15'),
 (9, 'Raindrops', '02-1819-01509', 2, '2025-08-05 03:03:31'),
-(10, 'Rooftop', '02-1819-01500', 2, '2025-08-05 03:03:31');
+(10, 'Rooftop', '02-1819-01500', 2, '2025-08-05 03:03:31'),
+(14, 'wow', '02-1819-01509', 3, '2025-10-05 07:19:53'),
+(15, 'OHSP', '02-1819-01509', 1, '2025-10-07 15:44:36');
 
 -- --------------------------------------------------------
 
@@ -420,7 +448,7 @@ CREATE TABLE `tblsfrecord` (
 --
 
 INSERT INTO `tblsfrecord` (`id`, `fileName`, `studentId`, `gradeLevelId`, `userId`, `createdAt`) VALUES
-(119, 'SF10 - Patty (2).xlsx', '33333333', 1, '47718333', '2025-08-20 16:06:01'),
+(119, '33333333-Grade11-Aspirass.xlsx', '33333333', 1, '4771830', '2025-08-20 16:06:01'),
 (120, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '128164140135', 1, '4771830', '2025-08-20 22:21:31'),
 (121, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127964120138', 1, '4771830', '2025-08-20 22:21:31'),
 (122, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127940140437', 1, '4771830', '2025-08-20 22:21:31'),
@@ -506,7 +534,7 @@ INSERT INTO `tblsfrecord` (`id`, `fileName`, `studentId`, `gradeLevelId`, `userI
 (203, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '126905140061', 1, '02-1819-01500', '2025-08-20 22:34:52'),
 (204, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127954140318', 1, '02-1819-01500', '2025-08-20 22:34:52'),
 (207, 'SF10 - Patty (2).xlsx', '99999', 1, '47718333', '2025-08-31 16:00:42'),
-(209, 'SF10 - Patty - grade 12 (1).xlsx', '33333333', 2, '4771833', '2025-09-23 21:22:46');
+(210, 'SF10 - Patty (2).xlsx', '99999', 3, '02-1819-01500', '2025-10-05 07:16:55');
 
 -- --------------------------------------------------------
 
@@ -554,7 +582,8 @@ INSERT INTO `tblstrand` (`id`, `trackId`, `name`, `createdAt`) VALUES
 (1, 1, 'STEM', '2025-08-06 10:58:22'),
 (2, 1, 'TVL', '2025-08-06 10:58:22'),
 (3, 1, 'ABM', '2025-08-06 10:58:22'),
-(4, 1, 'HUMSS', '2025-08-06 10:58:22');
+(4, 1, 'HUMSS', '2025-08-06 10:58:22'),
+(5, 1, 'GAS', '2025-10-07 15:44:17');
 
 -- --------------------------------------------------------
 
@@ -649,7 +678,7 @@ INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, 
 ('127958140100', 'DIVINE', 'LANTAO', 'LABADOR', NULL, NULL, '$2y$10$WVUyKJNygpMvt8LGsHPAROUOMyLPZiaF8Z5kNBZO/hBA3kJeBHYGW', 4, '127958140100', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
 ('127962140118', 'JELLANAH', 'CABUGASON', 'DAAMO', NULL, NULL, '$2y$10$f3bGc03ZgW0dtF9ABooviOdC9vyn5MNWs1LDLw.A9YL4mzwj2Kidi', 4, '127962140118', 3, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
 ('127962140294', 'ROCHELLE', 'ALUNGAY', 'DATAHAN', NULL, NULL, '$2y$10$Gg5DcRArVdLkAFpWZihnrefvF.hsRzv1nCIj50ZPfaBtD0j1z9y8G', 4, '127962140294', 3, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
-('127963130086', 'LORIE', 'MAE AMAHOY', 'ABAN', NULL, NULL, '$2y$10$nU0HRJmx8pRxpt2YMlj6TeAXRFLgLMUUEoGJ5Ir1kLR2BqW/wVywC', 4, '127963130086', 3, '0000-00-00', '', 17, 'Islam', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-10-04 13:38:55'),
+('127963130086', 'LORIE', 'MAE AMAHOY', 'ABAN', NULL, NULL, '$2y$10$nU0HRJmx8pRxpt2YMlj6TeAXRFLgLMUUEoGJ5Ir1kLR2BqW/wVywC', 4, '127963130086', 3, '0000-00-00', '', 17, 'Islam', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-10-08 03:43:31'),
 ('127964120138', 'ULYAR', 'DAIRO', 'ALFANTE', NULL, NULL, '$2y$10$uCngOSfmphr5bmT1Tm.dGOdkBIiPW3qdWYeee2/.tBdKfMWxeJoge', 4, '127964120138', 2, '0000-00-00', '', 19, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
 ('127966120298', 'RAMELLA', 'BONCALES', 'YORDAN', NULL, NULL, '$2y$10$LhT5l1qR2QxJ2SfjAPUZ8u3.GnuKk99/3aLrQY4AdP49qM39cgise', 4, '127966120298', 2, '0000-00-00', '', 18, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
 ('127967140004', 'KING', 'CHANDLER MENDEZ', 'GENTILES', NULL, NULL, '$2y$10$MH.8hnXmWbApgIk13otDF.fsZq4XVJq3a01CQhao/cWb3HD3.RN/O', 4, '127967140004', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
@@ -675,12 +704,12 @@ INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, 
 ('136913130093', 'HERMINE', 'GUMBAY', 'DIMASINSIL', NULL, NULL, '$2y$10$DXSODBC8XsmnHXLqvl77aeV2vIxNaEnl58ZD7Im7zWTe0MByn5pdK', 4, '136913130093', 2, '0000-00-00', '', 17, 'Islam', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
 ('18', '<===', 'TOTAL', 'MALE', NULL, NULL, '$2y$10$Bc6Z.jRG26hUOgycmeQBfeB70rNnIO.XdFUTtAFbPExUFgZKOjL8S', 4, '18', 3, '0000-00-00', '', 0, '', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
 ('201511140006', 'CARL', 'KESTER LIGUTOM', 'PELIGRO', NULL, NULL, '$2y$10$5jvHmOKXl1kiIiQjhzOq0.nMX6E3meAjEBynFwbj/ri5asp9MTBrS', 4, '201511140006', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('33333333', 'Patricia', '', 'Aspirass', 'ralp.pelino11@gmail.com', '09056548089', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '2003-02-21', 'Cagayan de Oro City', 20, 'Roman Catholic', 'Iponan', '', '', '', '', 10, 4, 2, 0, '2025-08-06 12:42:47', '2025-09-30 02:33:08'),
+('33333333', 'Patricia', '', 'Aspirass', 'ralp.pelino11@gmail.com', '09056548089', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '2003-02-21', 'Cagayan de Oro City', 20, 'Roman Catholic', 'Iponan', '', '', '', '', 3, 4, 1, 1, '2025-08-06 12:42:47', '2025-10-07 09:55:55'),
 ('405155150193', 'MARICEL', 'SIBOLON', 'MANOS', NULL, NULL, '$2y$10$9eET.qQUrtDwOqlf2YnX4Os1lOS8XZUMGUJGUnOouoO8.eu7OArby', 4, '405155150193', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
 ('405176150009', 'BRAD', 'LUNA', 'PADERANGA', NULL, NULL, '$2y$10$IKa07rDnOnyyDRgU9Pld8.ax4NvtqJlrJOAZf2fu455/SfagePJei', 4, '405176150009', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
 ('405241150066', 'ARJAY', 'PALMARES', 'REYES', NULL, NULL, '$2y$10$BTcS0XTgogiC8zaYkwIi7uquX/Vjq/LKBlZa5.NHzS/tWjh5ZWvOe', 4, '405241150066', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('510062400004', 'JOHAYVER', 'CALIPAPA', 'MAKI', NULL, NULL, '$2y$10$GsuBHsmmAM5M8uZkjrzrCuxhzuK5FE4ppVUDu1t5D/BGMmh2qsfnu', 4, '510062400004', 2, '0000-00-00', '', 18, 'Islam', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('99999', 'Edmarlen', '', 'Catid', 'pattyaspiras@gmail.com', NULL, '$2y$10$Uaa8DoxJGgwn5nXusRp1LuS0MpAfqNWVj2kOc978/bl093Vf85tz2', 4, '99999', 1, '0000-00-00', '', 0, '', '', '', '', '', '', 2, 4, 1, 0, '2025-08-31 14:00:03', '2025-08-31 14:00:03');
+('99999', 'Edmarlen', '', 'Catid', 'pattyaspiras@gmail.com', NULL, '$2y$10$Uaa8DoxJGgwn5nXusRp1LuS0MpAfqNWVj2kOc978/bl093Vf85tz2', 4, '99999', 1, '0000-00-00', '', 0, '', '', '', '', '', '', 14, 4, 3, 0, '2025-08-31 14:00:03', '2025-10-05 05:20:35');
 
 -- --------------------------------------------------------
 
@@ -703,8 +732,8 @@ CREATE TABLE `tblstudentdocument` (
 --
 
 INSERT INTO `tblstudentdocument` (`id`, `studentId`, `fileName`, `documentId`, `gradeLevelId`, `userId`, `createdAt`) VALUES
-(25, '99999', 'SF10 - Patty (2).pdf', 5, 1, '47718333', '2025-09-23 21:18:05'),
-(26, '33333333', 'SF10 - Patty - grade 12 (1).pdf', 5, 2, '4771833', '2025-09-23 21:22:46');
+(25, '99999', 'SF10 - Patty (2).pdf', 5, 2, '47718333', '2025-09-23 21:18:05'),
+(27, '33333333', '33333333-Grade11-Aspirass.pdf', 5, 1, '4771830', '2025-10-07 20:45:16');
 
 -- --------------------------------------------------------
 
@@ -753,12 +782,13 @@ CREATE TABLE `tbluser` (
 --
 
 INSERT INTO `tbluser` (`id`, `firstname`, `lastname`, `middlename`, `email`, `password`, `userLevel`, `pinCode`, `gradeLevelId`, `sectionId`, `strandId`, `isActive`, `createdAt`) VALUES
-('02-1819-01500', 'Patty', 'Aspiras', '', 'patty@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 1, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL, NULL, 1, NULL),
-('02-1819-01509', 'Patty', 'Aspiras', '', 'patty@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL, NULL, 1, NULL),
+('00000000', 'Patty', 'Aspiras', '', 'ralp.pelino11@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL, NULL, 1, NULL),
+('02-1819-01500', 'Patty', 'Aspiras', 'shesh', 'pattyaspiras@gmail.com', '$2y$10$BS75u38Cdo6mzAN/VzhCfufDmRbGV5zjTsVzoxToBZ4gRr1PwdypO', 1, '$2y$10$L2vuWJEuSyf0DslCF7Afb.pVQNPu9HBQtWqlzpMcDE3zFSn2E9HcK', NULL, NULL, NULL, 1, NULL),
+('02-1819-01509', 'Patty', 'Aspiras', 'wew', 'patty@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL, NULL, 1, NULL),
 ('111111', 'hehe', 'huhu', '', 'rape.gallegos.coc@phinmaed.com', '$2y$10$G1WANLkrMr6VXSs5LF.ng.NfsB1Xv2rF.rem5hq6InsTfX5YeBvXu', 1, '$2y$10$hIvaUDm9IuIZpIVEPGoUvulXzIj46DC/4CHh7GnxXcYSRDmSY5m4e', NULL, NULL, NULL, 0, NULL),
 ('4771830', 'Maribelle', 'Acas', '', 'aspiraspat13@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 3, NULL, 1, NULL),
 ('4771833', 'Alexis', 'Gonzaga', '', 'alex@gmail.com', '$2y$10$JooVcuK3ntZQdiPGcAhvle9y1Q9z0vKeeDJWui0ybvjLgXYcZboNq', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 2, 10, 2, 1, NULL),
-('47718333', 'Mary', 'Aspiras', '', 'rape.gallegos.coc@phinmaed.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$hJexLGVB8PmW0khOWYKkA..pBOSB9dYyp34862M8zTk381Zf1vD32', 1, 2, 3, 1, NULL);
+('47718333', 'Mary', 'Aspiras', 'wew', 'rape.gallegos.coc1@phinmaed.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$hJexLGVB8PmW0khOWYKkA..pBOSB9dYyp34862M8zTk381Zf1vD32', 2, 9, 3, 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -785,12 +815,6 @@ INSERT INTO `tbluserlevel` (`id`, `name`, `createdAt`) VALUES
 --
 -- Indexes for dumped tables
 --
-
---
--- Indexes for table `sms_logs`
---
-ALTER TABLE `sms_logs`
-  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `tblacademictype`
@@ -834,6 +858,14 @@ ALTER TABLE `tblgradelevel`
   ADD PRIMARY KEY (`id`),
   ADD KEY `userId` (`userId`),
   ADD KEY `academicTId` (`academicTId`);
+
+--
+-- Indexes for table `tblloginlogs`
+--
+ALTER TABLE `tblloginlogs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_userId` (`userId`),
+  ADD KEY `idx_userLevelId` (`userLevelId`);
 
 --
 -- Indexes for table `tblpurpose`
@@ -988,16 +1020,10 @@ ALTER TABLE `tbluserlevel`
 --
 
 --
--- AUTO_INCREMENT for table `sms_logs`
---
-ALTER TABLE `sms_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
 -- AUTO_INCREMENT for table `tblacademictype`
 --
 ALTER TABLE `tblacademictype`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `tbldocument`
@@ -1027,7 +1053,13 @@ ALTER TABLE `tblforgotlrn`
 -- AUTO_INCREMENT for table `tblgradelevel`
 --
 ALTER TABLE `tblgradelevel`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `tblloginlogs`
+--
+ALTER TABLE `tblloginlogs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `tblpurpose`
@@ -1039,25 +1071,25 @@ ALTER TABLE `tblpurpose`
 -- AUTO_INCREMENT for table `tblreleaseschedule`
 --
 ALTER TABLE `tblreleaseschedule`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `tblrequest`
 --
 ALTER TABLE `tblrequest`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `tblrequestpurpose`
 --
 ALTER TABLE `tblrequestpurpose`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tblrequeststatus`
 --
 ALTER TABLE `tblrequeststatus`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `tblrequirementcomments`
@@ -1069,13 +1101,13 @@ ALTER TABLE `tblrequirementcomments`
 -- AUTO_INCREMENT for table `tblrequirements`
 --
 ALTER TABLE `tblrequirements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tblrequirementstype`
 --
 ALTER TABLE `tblrequirementstype`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `tblschoolyear`
@@ -1087,13 +1119,13 @@ ALTER TABLE `tblschoolyear`
 -- AUTO_INCREMENT for table `tblsection`
 --
 ALTER TABLE `tblsection`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `tblsfrecord`
 --
 ALTER TABLE `tblsfrecord`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=210;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=212;
 
 --
 -- AUTO_INCREMENT for table `tblstatus`
@@ -1105,13 +1137,13 @@ ALTER TABLE `tblstatus`
 -- AUTO_INCREMENT for table `tblstrand`
 --
 ALTER TABLE `tblstrand`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `tblstudentdocument`
 --
 ALTER TABLE `tblstudentdocument`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `tbltrack`
@@ -1155,6 +1187,12 @@ ALTER TABLE `tblforgotlrn`
 ALTER TABLE `tblgradelevel`
   ADD CONSTRAINT `tblgradelevel_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `tbluser` (`id`),
   ADD CONSTRAINT `tblgradelevel_ibfk_2` FOREIGN KEY (`academicTId`) REFERENCES `tblacademictype` (`id`);
+
+--
+-- Constraints for table `tblloginlogs`
+--
+ALTER TABLE `tblloginlogs`
+  ADD CONSTRAINT `tblloginlogs_ibfk_1` FOREIGN KEY (`userLevelId`) REFERENCES `tbluserlevel` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `tblpurpose`

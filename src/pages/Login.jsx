@@ -181,25 +181,6 @@ export default function LoginPage() {
 		setError("");
 	};
 
-	const checkStudentEmail = async (userId) => {
-		try {
-			const apiUrl = getDecryptedApiUrl();
-			const formData = new FormData();
-			formData.append("operation", "checkStudentEmail");
-			formData.append("json", JSON.stringify({ userId }));
-
-			const response = await axios.post(`${apiUrl}/admin.php`, formData, {
-				headers: { "Content-Type": "multipart/form-data" },
-			});
-
-			console.log("Check email response:", response.data);
-			return response.data;
-		} catch (error) {
-			console.error("Error checking student email:", error);
-			throw error;
-		}
-	};
-
 	const handleEmailSetupComplete = async (updatedUser) => {
 		// Email setup completed, now check if password reset is needed
 		console.log("Email setup completed for user:", updatedUser);

@@ -9,6 +9,7 @@ import {
 	FileText,
 	Settings,
 	Folder,
+	Shield,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
@@ -37,13 +38,12 @@ import {
 	Legend,
 	ArcElement,
 } from "chart.js";
-import { Bar, Doughnut } from "react-chartjs-2";
 import AddStudentModal from "./modal/AddStudentModal";
 import { getSection, getSchoolYear } from "../../utils/registrar";
-import { Label } from "../../components/ui/label";
 import DashboardContent from "./components/DashboardContent";
 import UsersContent from "./components/UsersContent";
 import StudentsContent from "./components/StudentsContent";
+import LoginLogsContent from "./components/LoginLogsContent";
 import ResourcesContent from "./masterfiles/ResourcesContent";
 import Sidebar from "../../components/shared/Sidebar";
 import UserProfileModal from "./modal/UserProfileModal";
@@ -354,6 +354,11 @@ export default function AdminDashboard() {
 		{ icon: <Users className="w-5 h-5" />, label: "Users", key: "Users" },
 		{ icon: <Users className="w-5 h-5" />, label: "Students", key: "Students" },
 		{
+			icon: <Shield className="w-5 h-5" />,
+			label: "Login Logs",
+			key: "Login Logs",
+		},
+		{
 			icon: <FileText className="w-5 h-5" />,
 			label: "Reports",
 			key: "Reports",
@@ -404,6 +409,8 @@ export default function AdminDashboard() {
 						onDeactivateUser={handleDeactivateUser}
 					/>
 				);
+			case "Login Logs":
+				return <LoginLogsContent />;
 			case "Reports":
 				return <ReportsPage />;
 			case "Settings":
