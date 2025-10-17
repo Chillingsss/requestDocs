@@ -1403,17 +1403,20 @@ class User {
     ]);
    }
 
-   function getUserProfile($json)
-   {
+  function getUserProfile($json)
+  {
     include "connection.php";
 
     $json = json_decode($json, true);
     $userId = $json['userId'];
 
     try {
-      $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.email, b.name AS userLevel 
+      $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.email, a.gradeLevelId, a.sectionId, b.name AS userLevel,
+                     gl.name AS gradeLevel, s.name AS sectionName
               FROM tbluser a
               INNER JOIN tbluserlevel b ON a.userLevel = b.id
+              LEFT JOIN tblgradelevel gl ON a.gradeLevelId = gl.id
+              LEFT JOIN tblsection s ON a.sectionId = s.id
               WHERE a.id = :userId";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':userId', $userId);
@@ -1438,14 +1441,18 @@ class User {
     $middlename = $json['middlename'];
     $lastname = $json['lastname'];
     $email = $json['email'];
+    $gradeLevelId = isset($json['gradeLevelId']) ? $json['gradeLevelId'] : null;
+    $sectionId = isset($json['sectionId']) ? $json['sectionId'] : null;
 
     try {
-      $sql = "UPDATE tbluser SET firstname = :firstname, middlename = :middlename, lastname = :lastname, email = :email WHERE id = :userId";
+      $sql = "UPDATE tbluser SET firstname = :firstname, middlename = :middlename, lastname = :lastname, email = :email, gradeLevelId = :gradeLevelId, sectionId = :sectionId WHERE id = :userId";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':firstname', $firstname);
       $stmt->bindParam(':middlename', $middlename);
       $stmt->bindParam(':lastname', $lastname);
       $stmt->bindParam(':email', $email);
+      $stmt->bindParam(':gradeLevelId', $gradeLevelId);
+      $stmt->bindParam(':sectionId', $sectionId);
       $stmt->bindParam(':userId', $userId);
 
       if ($stmt->execute()) {

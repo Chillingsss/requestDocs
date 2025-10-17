@@ -577,6 +577,7 @@ export async function getUserProfile(userId, userType) {
 		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
 			headers: { "Content-Type": "multipart/form-data" },
 		});
+		console.log("response", response.data);
 		return response.data;
 	} catch (error) {
 		throw error;

@@ -123,25 +123,25 @@ export default function UsersContent({
 										>
 											<td
 												className="px-4 py-3 text-sm cursor-pointer text-slate-900 dark:text-white"
-												onClick={() => onViewProfile(user.id, "user")}
+												onClick={() => onViewProfile(user.id, user.userLevel)}
 											>
 												{user.id}
 											</td>
 											<td
 												className="px-4 py-3 text-sm cursor-pointer text-slate-900 dark:text-white"
-												onClick={() => onViewProfile(user.id, "user")}
+												onClick={() => onViewProfile(user.id, user.userLevel)}
 											>
 												{user.firstname} {user.lastname}
 											</td>
 											<td
 												className="px-4 py-3 text-sm cursor-pointer text-slate-900 dark:text-white"
-												onClick={() => onViewProfile(user.id, "user")}
+												onClick={() => onViewProfile(user.id, user.userLevel)}
 											>
 												{user.email}
 											</td>
 											<td
 												className="px-4 py-3 text-sm cursor-pointer text-slate-900 dark:text-white"
-												onClick={() => onViewProfile(user.id, "user")}
+												onClick={() => onViewProfile(user.id, user.userLevel)}
 											>
 												<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-200">
 													{user.userLevel}

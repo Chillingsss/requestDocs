@@ -79,12 +79,17 @@ export default function UserProfileModal({
 
 	const fetchOptions = async (gradeLevelId = null) => {
 		try {
-			// Always fetch sections (needed for both admin/teacher and student users)
-			const sections = await getAllSections(gradeLevelId);
-			setSectionOptions(Array.isArray(sections) ? sections : []);
+			// Only fetch sections for teachers and students
+			if (
+				userType?.toLowerCase() === "teacher" ||
+				userType?.toLowerCase() === "student"
+			) {
+				const sections = await getAllSections(gradeLevelId);
+				setSectionOptions(Array.isArray(sections) ? sections : []);
+			}
 
 			// Only fetch school years for students
-			if (userType === "student") {
+			if (userType?.toLowerCase() === "student") {
 				const schoolYears = await getSchoolYear();
 				setSchoolYearOptions(Array.isArray(schoolYears) ? schoolYears : []);
 			}
@@ -95,7 +100,7 @@ export default function UserProfileModal({
 
 	// Filter sections based on selected grade level
 	const filteredSectionOptions =
-		userType === "student"
+		userType?.toLowerCase() === "student"
 			? sectionOptions
 			: sectionOptions.filter(
 					(section) =>
@@ -104,7 +109,7 @@ export default function UserProfileModal({
 			  );
 
 	const initializeFormData = (data) => {
-		if (userType === "student") {
+		if (userType?.toLowerCase() === "student") {
 			setFormData({
 				firstname: data.firstname || "",
 				middlename: data.middlename || "",
@@ -119,13 +124,20 @@ export default function UserProfileModal({
 				guardianName: data.guardianName || "",
 				guardianRelationship: data.guardianRelationship || "",
 			});
-		} else {
+		} else if (userType?.toLowerCase() === "teacher") {
 			setFormData({
 				firstname: data.firstname || "",
 				lastname: data.lastname || "",
 				email: data.email || "",
 				gradeLevelId: data.gradeLevelId || "",
 				sectionId: data.sectionId || "",
+			});
+		} else {
+			// For admin, registrar, and other non-teacher users
+			setFormData({
+				firstname: data.firstname || "",
+				lastname: data.lastname || "",
+				email: data.email || "",
 			});
 		}
 	};
@@ -138,8 +150,8 @@ export default function UserProfileModal({
 	const handleSelectChange = (name, value) => {
 		setFormData((prev) => ({ ...prev, [name]: value }));
 
-		// If grade level changes, clear section selection and refetch sections
-		if (name === "gradeLevelId") {
+		// If grade level changes, clear section selection and refetch sections (only for teachers)
+		if (name === "gradeLevelId" && userType?.toLowerCase() === "teacher") {
 			setFormData((prev) => ({ ...prev, sectionId: "" }));
 			fetchOptions(value);
 		}
@@ -412,6 +424,66 @@ export default function UserProfileModal({
 												</div>
 											)}
 										</div>
+										{userType?.toLowerCase() === "teacher" && (
+											<>
+												<div className="space-y-2">
+													<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+														Grade Level
+													</Label>
+													{isEditing ? (
+														<Select
+															value={formData.gradeLevelId}
+															onValueChange={(value) =>
+																handleSelectChange("gradeLevelId", value)
+															}
+														>
+															<SelectTrigger>
+																<SelectValue placeholder="Select Grade Level" />
+															</SelectTrigger>
+															<SelectContent>
+																<SelectItem value="1">Grade 11</SelectItem>
+																<SelectItem value="2">Grade 12</SelectItem>
+															</SelectContent>
+														</Select>
+													) : (
+														<div className="p-3 bg-white rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500">
+															{profile.gradeLevel || "N/A"}
+														</div>
+													)}
+												</div>
+												<div className="space-y-2">
+													<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+														Section
+													</Label>
+													{isEditing ? (
+														<Select
+															value={formData.sectionId}
+															onValueChange={(value) =>
+																handleSelectChange("sectionId", value)
+															}
+														>
+															<SelectTrigger>
+																<SelectValue placeholder="Select Section" />
+															</SelectTrigger>
+															<SelectContent>
+																{filteredSectionOptions.map((section) => (
+																	<SelectItem
+																		key={section.id}
+																		value={section.id}
+																	>
+																		{section.name}
+																	</SelectItem>
+																))}
+															</SelectContent>
+														</Select>
+													) : (
+														<div className="p-3 bg-white rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500">
+															{profile.sectionName || "N/A"}
+														</div>
+													)}
+												</div>
+											</>
+										)}
 										{userType === "student" && (
 											<>
 												<div className="space-y-2">
@@ -506,62 +578,7 @@ export default function UserProfileModal({
 											</>
 										) : (
 											<>
-												<div className="space-y-2">
-													<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-														Grade Level
-													</Label>
-													{isEditing ? (
-														<Select
-															value={formData.gradeLevelId}
-															onValueChange={(value) =>
-																handleSelectChange("gradeLevelId", value)
-															}
-														>
-															<SelectTrigger>
-																<SelectValue placeholder="Select Grade Level" />
-															</SelectTrigger>
-															<SelectContent>
-																<SelectItem value="1">Grade 11</SelectItem>
-																<SelectItem value="2">Grade 12</SelectItem>
-															</SelectContent>
-														</Select>
-													) : (
-														<div className="p-3 bg-white rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500">
-															{profile.gradeLevel || "N/A"}
-														</div>
-													)}
-												</div>
-												<div className="space-y-2">
-													<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-														Section
-													</Label>
-													{isEditing ? (
-														<Select
-															value={formData.sectionId}
-															onValueChange={(value) =>
-																handleSelectChange("sectionId", value)
-															}
-														>
-															<SelectTrigger>
-																<SelectValue placeholder="Select Section" />
-															</SelectTrigger>
-															<SelectContent>
-																{filteredSectionOptions.map((section) => (
-																	<SelectItem
-																		key={section.id}
-																		value={section.id}
-																	>
-																		{section.name}
-																	</SelectItem>
-																))}
-															</SelectContent>
-														</Select>
-													) : (
-														<div className="p-3 bg-white rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500">
-															{profile.sectionName || "N/A"}
-														</div>
-													)}
-												</div>
+												{/* No additional fields for admin, registrar, and other non-teacher users */}
 											</>
 										)}
 									</div>

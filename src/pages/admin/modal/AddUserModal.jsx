@@ -20,6 +20,8 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 		email: "",
 		password: "",
 		userLevel: "",
+		gradeLevel: "",
+		sectionId: "",
 	});
 	const [userLevels, setUserLevels] = useState([]);
 	const [loading, setLoading] = useState(false);
@@ -38,6 +40,17 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 	useEffect(() => {
 		if (isOpen) {
 			fetchUserLevels();
+			// Reset form data when modal opens
+			setFormData({
+				id: "",
+				firstname: "",
+				lastname: "",
+				email: "",
+				password: "",
+				userLevel: "",
+				gradeLevel: "",
+				sectionId: "",
+			});
 		}
 	}, [isOpen]);
 
@@ -161,7 +174,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 				newData.password = value;
 			}
 
-			// Reset gradeLevel if userLevel changes and is not Teacher
+			// Reset gradeLevel and sectionId if userLevel changes and is not Teacher
 			if (name === "userLevel" && value !== getTeacherLevelId()) {
 				newData.gradeLevel = "";
 				newData.sectionId = "";
@@ -299,6 +312,8 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 					email: "",
 					password: "",
 					userLevel: "",
+					gradeLevel: "",
+					sectionId: "",
 				});
 
 				// onClose();
@@ -326,6 +341,8 @@ export default function AddUserModal({ isOpen, onClose, onSuccess }) {
 			email: "",
 			password: "",
 			userLevel: "",
+			gradeLevel: "",
+			sectionId: "",
 		});
 		onClose();
 	};
