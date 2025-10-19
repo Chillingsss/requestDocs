@@ -156,10 +156,10 @@ export default function LoginLogsContent() {
 				<button
 					onClick={fetchLoginLogs}
 					disabled={loading}
-					className="flex gap-2 items-center px-4 py-2 text-white bg-blue-600 rounded-lg transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+					className="p-2 bg-white rounded-lg border shadow-sm transition-colors dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+					title="Refresh Data"
 				>
-					<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-					Refresh Data
+					<RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
 				</button>
 			</div>
 

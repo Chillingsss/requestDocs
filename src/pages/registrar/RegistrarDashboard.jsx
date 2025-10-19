@@ -12,6 +12,7 @@ import {
 	Menu,
 	Key,
 	PlusCircle,
+	RefreshCw,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
@@ -378,22 +379,10 @@ export default function RegistrarDashboard() {
 					<div className="flex gap-3 items-center">
 						<button
 							onClick={fetchData}
-							className="p-2 bg-white rounded-lg border shadow-sm dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
+							className="p-2 bg-white rounded-lg border shadow-sm transition-colors dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
 							title="Refresh Data"
 						>
-							<svg
-								className="w-5 h-5"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-								/>
-							</svg>
+							<RefreshCw className="w-5 h-5" />
 						</button>
 						<ThemeToggle />
 					</div>
@@ -407,10 +396,10 @@ export default function RegistrarDashboard() {
 					<div className="flex gap-4 items-center">
 						<ThemeToggle />
 						<Button
-							className="text-white bg-blue-600 hover:bg-blue-700"
+							className="p-2 bg-white rounded-lg border shadow-sm transition-colors dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
 							onClick={fetchData}
 						>
-							Refresh Data
+							<RefreshCw className="w-5 h-5" />
 						</Button>
 					</div>
 				</header>

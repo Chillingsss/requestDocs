@@ -995,6 +995,45 @@ class User {
     }
     return json_encode([]);
   }
+
+  function getGradeLevels() {
+    include "connection.php";
+    $sql = "SELECT id, name FROM tblgradelevel ORDER BY id ASC";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    if ($stmt->rowCount() > 0) {
+      $gradeLevels = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      return json_encode($gradeLevels);
+    }
+    return json_encode([]);
+  }
+
+  function getSectionsByGradeLevel($json) {
+    include "connection.php";
+    
+    $json = json_decode($json, true);
+    $gradeLevelId = $json['gradeLevelId'];
+    
+    try {
+      $sql = "SELECT s.id, s.name, s.gradeLevelId, gl.name as gradeLevelName 
+              FROM tblsection s 
+              LEFT JOIN tblgradelevel gl ON s.gradeLevelId = gl.id 
+              WHERE s.gradeLevelId = :gradeLevelId 
+              ORDER BY s.name ASC";
+      
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':gradeLevelId', $gradeLevelId);
+      $stmt->execute();
+      
+      if ($stmt->rowCount() > 0) {
+        $sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return json_encode($sections);
+      }
+      return json_encode([]);
+    } catch (PDOException $e) {
+      return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
   
   function getSf10DocumentId() {
     include "connection.php";
@@ -2128,6 +2167,70 @@ function processLrnRequest($json)
     }
   }
 
+  function updateStudent($json) {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+    $studentId = $json['studentId'];
+    $userId = $json['userId'];
+
+    try {
+      $sql = "UPDATE tblstudent 
+              SET firstname = :firstname, 
+                  middlename = :middlename, 
+                  lastname = :lastname, 
+                  lrn = :lrn,
+                  email = :email,
+                  birthDate = :birthDate,
+                  birthPlace = :birthPlace,
+                  age = :age,
+                  religion = :religion,
+                  completeAddress = :completeAddress,
+                  fatherName = :fatherName,
+                  motherName = :motherName,
+                  guardianName = :guardianName,
+                  guardianRelationship = :guardianRelationship,
+                  contactNo = :contactNo,
+                  strandId = :strandId,
+                  sectionId = :sectionId,
+                  schoolyearId = :schoolyearId,
+                  gradeLevelId = :gradeLevelId,
+                  updatedAt = NOW()
+              WHERE id = :studentId";
+
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':firstname', $json['firstname']);
+      $stmt->bindParam(':middlename', $json['middlename']);
+      $stmt->bindParam(':lastname', $json['lastname']);
+      $stmt->bindParam(':lrn', $json['lrn']);
+      $stmt->bindParam(':email', $json['email']);
+      $stmt->bindParam(':birthDate', $json['birthDate']);
+      $stmt->bindParam(':birthPlace', $json['birthPlace']);
+      $stmt->bindParam(':age', $json['age']);
+      $stmt->bindParam(':religion', $json['religion']);
+      $stmt->bindParam(':completeAddress', $json['completeAddress']);
+      $stmt->bindParam(':fatherName', $json['fatherName']);
+      $stmt->bindParam(':motherName', $json['motherName']);
+      $stmt->bindParam(':guardianName', $json['guardianName']);
+      $stmt->bindParam(':guardianRelationship', $json['guardianRelationship']);
+      $stmt->bindParam(':contactNo', $json['contactNo']);
+      $stmt->bindParam(':strandId', $json['strandId']);
+      $stmt->bindParam(':sectionId', $json['sectionId']);
+      $stmt->bindParam(':schoolyearId', $json['schoolyearId']);
+      $stmt->bindParam(':gradeLevelId', $json['gradeLevelId']);
+      $stmt->bindParam(':studentId', $studentId);
+
+      if ($stmt->execute()) {
+        return json_encode(['success' => true, 'message' => 'Student information updated successfully']);
+      } else {
+        return json_encode(['success' => false, 'error' => 'Failed to update student information']);
+      }
+
+    } catch (PDOException $e) {
+      return json_encode(['success' => false, 'error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+  }
+
 }
 
 $operation = isset($_POST["operation"]) ? $_POST["operation"] : "0";
@@ -2177,6 +2280,12 @@ switch ($operation) {
     break;
   case "getStrands":
     echo $user->getStrands();
+    break;
+  case "getGradeLevels":
+    echo $user->getGradeLevels();
+    break;
+  case "getSectionsByGradeLevel":
+    echo $user->getSectionsByGradeLevel($json);
     break;
   case "getSf10DocumentId":
     echo $user->getSf10DocumentId();
@@ -2246,6 +2355,9 @@ switch ($operation) {
     break;
   case "changePin": // New case for changing PIN
     echo $user->changePin($json);
+    break;
+  case "updateStudent": // New case for updating student
+    echo $user->updateStudent($json);
     break;
   default:
     echo json_encode("WALA KA NAGBUTANG OG OPERATION SA UBOS HAHAHHA BOBO");

@@ -22,6 +22,8 @@ import {
 	Save,
 	XCircle,
 	KeyIcon,
+	Settings,
+	ChevronDown,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -49,6 +51,7 @@ export default function UserProfileModal({
 	const [schoolYearOptions, setSchoolYearOptions] = useState([]);
 	const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 	const [isResetPinDialogOpen, setIsResetPinDialogOpen] = useState(false);
+	const [isSettingsDropdownOpen, setIsSettingsDropdownOpen] = useState(false);
 
 	// Fetch profile data when modal opens
 	useEffect(() => {
@@ -58,6 +61,20 @@ export default function UserProfileModal({
 			fetchOptions();
 		}
 	}, [isOpen, userId, userType]);
+
+	// Close dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event) => {
+			if (isSettingsDropdownOpen && !event.target.closest(".relative")) {
+				setIsSettingsDropdownOpen(false);
+			}
+		};
+
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, [isSettingsDropdownOpen]);
 
 	const fetchProfile = async () => {
 		setLoading(true);
@@ -127,6 +144,7 @@ export default function UserProfileModal({
 		} else if (userType?.toLowerCase() === "teacher") {
 			setFormData({
 				firstname: data.firstname || "",
+				middlename: data.middlename || "",
 				lastname: data.lastname || "",
 				email: data.email || "",
 				gradeLevelId: data.gradeLevelId || "",
@@ -136,6 +154,7 @@ export default function UserProfileModal({
 			// For admin, registrar, and other non-teacher users
 			setFormData({
 				firstname: data.firstname || "",
+				middlename: data.middlename || "",
 				lastname: data.lastname || "",
 				email: data.email || "",
 			});
@@ -233,7 +252,7 @@ export default function UserProfileModal({
 
 	return (
 		<div>
-			<div className="flex fixed inset-0 z-50 justify-center items-center p-4">
+			<div className="flex fixed inset-0 z-50 justify-center items-center p-2 sm:p-4">
 				{/* Backdrop */}
 				<div
 					className="absolute inset-0 backdrop-blur-sm bg-black/50"
@@ -241,104 +260,112 @@ export default function UserProfileModal({
 				/>
 
 				{/* Modal */}
-				<div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden transform transition-all duration-300 scale-100 dark:bg-gray-800">
+				<div className="relative bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-4xl max-h-[98vh] sm:max-h-[95vh] overflow-hidden transform transition-all duration-300 scale-100 dark:bg-gray-800 flex flex-col">
 					{/* Header */}
-					<div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-						<div className="flex items-center space-x-3">
-							<User className="w-6 h-6 text-blue-600" />
-							<h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+					<div className="flex flex-shrink-0 justify-between items-center p-4 border-b border-gray-200 sm:p-6 dark:border-gray-700">
+						<div className="flex items-center space-x-2 min-w-0 sm:space-x-3">
+							<User className="flex-shrink-0 w-5 h-5 text-blue-600 sm:w-6 sm:h-6" />
+							<h2 className="text-lg font-bold text-gray-900 truncate sm:text-2xl dark:text-white">
 								{userType === "student" ? "Student" : "User"} Profile
 							</h2>
-							<span className="px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-200 dark:bg-blue-900">
+							<span className="flex-shrink-0 px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full dark:text-blue-200 dark:bg-blue-900">
 								{profile?.userLevel || userType}
 							</span>
 						</div>
-						<div className="flex items-center space-x-2">
+						<div className="flex flex-shrink-0 items-center space-x-2">
 							{!isEditing ? (
-								<div className="flex items-center space-x-2">
+								<div className="relative">
 									<Button
-										onClick={handleResetPassword}
-										variant="destructive"
-										className="flex items-center space-x-2"
-									>
-										<KeyIcon className="w-4 h-4" />
-										<span>Reset Password</span>
-									</Button>
-									{userType !== "student" && (
-										<Button
-											onClick={handleResetPin}
-											variant="destructive"
-											className="flex items-center space-x-2"
-										>
-											<KeyIcon className="w-4 h-4" />
-											<span>Reset PIN</span>
-										</Button>
-									)}
-									<Button
-										onClick={handleEdit}
-										className="flex items-center space-x-2 text-white bg-blue-600 hover:bg-blue-700"
-									>
-										<Edit className="w-4 h-4" />
-										<span>Edit Profile</span>
-									</Button>
-								</div>
-							) : (
-								<>
-									<Button
-										onClick={handleCancel}
+										onClick={() =>
+											setIsSettingsDropdownOpen(!isSettingsDropdownOpen)
+										}
 										variant="outline"
-										className="flex items-center space-x-2"
+										size="sm"
+										className="flex items-center px-3 space-x-2 text-xs sm:text-sm sm:px-4"
 									>
-										<XCircle className="w-4 h-4" />
-										<span>Cancel</span>
+										<Settings className="w-4 h-4" />
+										<span>Settings</span>
+										<ChevronDown className="w-3 h-3" />
 									</Button>
-									<Button
-										onClick={handleSave}
-										disabled={saving}
-										className="flex items-center space-x-2 text-white bg-green-600 hover:bg-green-700"
-									>
-										<Save className="w-4 h-4" />
-										<span>{saving ? "Saving..." : "Save Changes"}</span>
-									</Button>
-								</>
-							)}
+
+									{/* Dropdown Menu */}
+									{isSettingsDropdownOpen && (
+										<div className="absolute right-0 top-full z-50 mt-1 w-48 bg-white rounded-md border border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-700">
+											<div className="py-1">
+												<button
+													onClick={() => {
+														handleResetPassword();
+														setIsSettingsDropdownOpen(false);
+													}}
+													className="flex items-center px-4 py-2 w-full text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:text-red-400"
+												>
+													<KeyIcon className="mr-3 w-4 h-4" />
+													Reset Password
+												</button>
+												{userType !== "student" && (
+													<button
+														onClick={() => {
+															handleResetPin();
+															setIsSettingsDropdownOpen(false);
+														}}
+														className="flex items-center px-4 py-2 w-full text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:text-red-400"
+													>
+														<KeyIcon className="mr-3 w-4 h-4" />
+														Reset PIN
+													</button>
+												)}
+												<button
+													onClick={() => {
+														handleEdit();
+														setIsSettingsDropdownOpen(false);
+													}}
+													className="flex items-center px-4 py-2 w-full text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:text-blue-400"
+												>
+													<Edit className="mr-3 w-4 h-4" />
+													Edit Profile
+												</button>
+											</div>
+										</div>
+									)}
+								</div>
+							) : null}
 							<button
 								onClick={onClose}
-								className="p-2 text-gray-400 rounded-full transition-colors hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+								className="flex-shrink-0 p-1.5 text-gray-400 rounded-full transition-colors sm:p-2 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
 							>
-								<X className="w-5 h-5" />
+								<X className="w-4 h-4 sm:w-5 sm:h-5" />
 							</button>
 						</div>
 					</div>
 
 					{/* Content */}
-					<div className="p-6 overflow-y-auto max-h-[calc(95vh-120px)]">
+					<div className="overflow-y-auto flex-1 p-4 pb-20 sm:p-6 sm:pb-6">
 						{loading ? (
 							<div className="flex justify-center items-center py-12">
 								<div className="w-12 h-12 rounded-full border-b-2 border-blue-600 animate-spin"></div>
 							</div>
 						) : profile ? (
-							<div className="space-y-8">
+							<div className="space-y-4 sm:space-y-8">
 								{/* Basic Information */}
-								<div className="p-6 bg-gray-50 rounded-lg dark:bg-gray-700">
-									<h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-										<User className="mr-2 w-5 h-5 text-blue-600" />
+								<div className="p-4 bg-gray-50 rounded-lg sm:p-6 dark:bg-gray-700">
+									<h3 className="flex items-center mb-3 text-base font-semibold text-gray-900 sm:mb-4 sm:text-lg dark:text-white">
+										<User className="mr-2 w-4 h-4 text-blue-600 sm:w-5 sm:h-5" />
 										Basic Information
 									</h3>
-									<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-										<div className="space-y-2">
-											<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+									<div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
+										<div className="space-y-1 sm:space-y-2">
+											<Label className="text-xs font-medium text-gray-700 sm:text-sm dark:text-gray-300">
 												User ID
 											</Label>
-											<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
+											<div className="p-2 text-sm text-gray-600 bg-gray-100 rounded-md border border-gray-200 sm:p-3 sm:text-base dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
 												{profile.id}
 											</div>
 										</div>
-										<div className="space-y-2">
-											<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+										<div className="space-y-1 sm:space-y-2">
+											<Label className="text-xs font-medium text-gray-700 sm:text-sm dark:text-gray-300">
 												User Level
 											</Label>
-											<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
+											<div className="p-2 text-sm text-gray-600 bg-gray-100 rounded-md border border-gray-200 sm:p-3 sm:text-base dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
 												{profile.userLevel}
 											</div>
 										</div>
@@ -359,25 +386,23 @@ export default function UserProfileModal({
 												</div>
 											)}
 										</div>
-										{userType === "student" && (
-											<div className="space-y-2">
-												<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-													Middle Name
-												</Label>
-												{isEditing ? (
-													<Input
-														name="middlename"
-														value={formData.middlename}
-														onChange={handleInputChange}
-														className="w-full"
-													/>
-												) : (
-													<div className="p-3 bg-white rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500">
-														{profile.middlename || "N/A"}
-													</div>
-												)}
-											</div>
-										)}
+										<div className="space-y-2">
+											<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+												Middle Name
+											</Label>
+											{isEditing ? (
+												<Input
+													name="middlename"
+													value={formData.middlename}
+													onChange={handleInputChange}
+													className="w-full"
+												/>
+											) : (
+												<div className="p-3 bg-white rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500">
+													{profile.middlename || "N/A"}
+												</div>
+											)}
+										</div>
 										<div className="space-y-2">
 											<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
 												Last Name
@@ -533,67 +558,60 @@ export default function UserProfileModal({
 									</div>
 								</div>
 
-								{/* Academic/Professional Information */}
-								<div className="p-6 bg-gray-50 rounded-lg dark:bg-gray-700">
-									<h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-										<Shield className="mr-2 w-5 h-5 text-green-600" />
-										{userType === "student" ? "Academic" : "Professional"}{" "}
-										Information
-									</h3>
-									<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-										{userType === "student" ? (
-											<>
-												<div className="space-y-2">
-													<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-														Section
-													</Label>
-													<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
-														{profile.sectionName || "N/A"}
-													</div>
+								{/* Academic Information - Only for students */}
+								{userType === "student" && (
+									<div className="p-4 bg-gray-50 rounded-lg sm:p-6 dark:bg-gray-700">
+										<h3 className="flex items-center mb-3 text-base font-semibold text-gray-900 sm:mb-4 sm:text-lg dark:text-white">
+											<Shield className="mr-2 w-4 h-4 text-green-600 sm:w-5 sm:h-5" />
+											Academic Information
+										</h3>
+										<div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
+											<div className="space-y-2">
+												<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+													Section
+												</Label>
+												<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
+													{profile.sectionName || "N/A"}
 												</div>
-												<div className="space-y-2">
-													<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-														Strand
-													</Label>
-													<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
-														{profile.strand || "N/A"}
-													</div>
+											</div>
+											<div className="space-y-2">
+												<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+													Strand
+												</Label>
+												<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
+													{profile.strand || "N/A"}
 												</div>
-												<div className="space-y-2">
-													<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-														Track
-													</Label>
-													<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
-														{profile.track || "N/A"}
-													</div>
+											</div>
+											<div className="space-y-2">
+												<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+													Track
+												</Label>
+												<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
+													{profile.track || "N/A"}
 												</div>
-												<div className="space-y-2">
-													<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-														School Year
-													</Label>
-													<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
-														{profile.schoolYear || "N/A"}
-													</div>
+											</div>
+											<div className="space-y-2">
+												<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+													School Year
+												</Label>
+												<div className="p-3 text-gray-600 bg-gray-100 rounded-md border border-gray-200 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300">
+													{profile.schoolYear || "N/A"}
 												</div>
-											</>
-										) : (
-											<>
-												{/* No additional fields for admin, registrar, and other non-teacher users */}
-											</>
-										)}
+											</div>
+										</div>
 									</div>
-								</div>
+								)}
 
 								{/* Student-specific sections */}
 								{userType === "student" && (
 									<>
 										{/* Personal Information */}
-										<div className="p-6 bg-gray-50 rounded-lg dark:bg-gray-700">
-											<h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-												<User className="mr-2 w-5 h-5 text-purple-600" />
+										<div className="p-4 bg-gray-50 rounded-lg sm:p-6 dark:bg-gray-700">
+											<h3 className="flex items-center mb-3 text-base font-semibold text-gray-900 sm:mb-4 sm:text-lg dark:text-white">
+												<User className="mr-2 w-4 h-4 text-purple-600 sm:w-5 sm:h-5" />
 												Personal Information
 											</h3>
-											<div className="space-y-4">
+											<div className="space-y-3 sm:space-y-4">
 												<div className="space-y-2">
 													<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
 														Religion
@@ -634,12 +652,12 @@ export default function UserProfileModal({
 										</div>
 
 										{/* Family Information */}
-										<div className="p-6 bg-gray-50 rounded-lg dark:bg-gray-700">
-											<h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-												<Users className="mr-2 w-5 h-5 text-orange-600" />
+										<div className="p-4 bg-gray-50 rounded-lg sm:p-6 dark:bg-gray-700">
+											<h3 className="flex items-center mb-3 text-base font-semibold text-gray-900 sm:mb-4 sm:text-lg dark:text-white">
+												<Users className="mr-2 w-4 h-4 text-orange-600 sm:w-5 sm:h-5" />
 												Family Information
 											</h3>
-											<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+											<div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
 												<div className="space-y-2">
 													<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
 														Father's Name
@@ -721,6 +739,32 @@ export default function UserProfileModal({
 							</div>
 						)}
 					</div>
+
+					{/* Sticky Footer - Only show when editing */}
+					{isEditing && (
+						<div className="flex-shrink-0 p-4 bg-white border-t border-gray-200 dark:border-gray-700 dark:bg-gray-800 sm:p-6">
+							<div className="flex justify-end space-x-3">
+								<Button
+									onClick={handleCancel}
+									variant="outline"
+									size="sm"
+									className="flex items-center px-4 py-2 space-x-2 text-sm"
+								>
+									<XCircle className="w-4 h-4" />
+									<span>Cancel</span>
+								</Button>
+								<Button
+									onClick={handleSave}
+									disabled={saving}
+									size="sm"
+									className="flex items-center px-4 py-2 space-x-2 text-sm text-white bg-green-600 hover:bg-green-700"
+								>
+									<Save className="w-4 h-4" />
+									<span>{saving ? "Saving..." : "Save Changes"}</span>
+								</Button>
+							</div>
+						</div>
+					)}
 				</div>
 			</div>
 			{isResetDialogOpen && (

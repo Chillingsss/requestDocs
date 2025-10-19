@@ -257,6 +257,35 @@ export async function getStrands() {
 	}
 }
 
+export async function getGradeLevels() {
+	const formData = new FormData();
+	formData.append("operation", "getGradeLevels");
+	const apiUrl = getDecryptedApiUrl();
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getSectionsByGradeLevel(gradeLevelId) {
+	const formData = new FormData();
+	formData.append("operation", "getSectionsByGradeLevel");
+	formData.append("json", JSON.stringify({ gradeLevelId }));
+	const apiUrl = getDecryptedApiUrl();
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 export async function getSf10DocumentId() {
 	const formData = new FormData();
 	formData.append("operation", "getSf10DocumentId");
@@ -737,6 +766,26 @@ export async function changePin(userId, userType, newPin) {
 	formData.append(
 		"json",
 		JSON.stringify({ userId, newPin, userType: "registrar" })
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateStudent(studentId, studentData, userId) {
+	const formData = new FormData();
+	formData.append("operation", "updateStudent");
+	formData.append(
+		"json",
+		JSON.stringify({ studentId, ...studentData, userId })
 	);
 
 	const apiUrl = getDecryptedApiUrl();

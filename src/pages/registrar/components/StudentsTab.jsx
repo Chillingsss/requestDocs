@@ -18,6 +18,7 @@ import toast from "react-hot-toast";
 import StudentImport from "../../../components/StudentImport";
 import AddStudentModal from "../../../components/AddStudentModal";
 import DocumentViewer from "../../../components/DocumentViewer";
+import EditStudentModal from "../../../components/EditStudentModal";
 import { getStudent } from "../../../utils/teacher";
 import {
 	getSection,
@@ -39,6 +40,10 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 	const [expandedStudents, setExpandedStudents] = useState(new Set());
 	const [selectedDocument, setSelectedDocument] = useState(null);
 	const [showDocumentViewer, setShowDocumentViewer] = useState(false);
+
+	// Edit student state
+	const [showEditModal, setShowEditModal] = useState(false);
+	const [selectedStudent, setSelectedStudent] = useState(null);
 
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
@@ -294,6 +299,19 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 		toast.success("Student added successfully!");
 	};
 
+	// Handle edit student
+	const handleEditStudent = (student) => {
+		setSelectedStudent(student);
+		setShowEditModal(true);
+	};
+
+	// Handle edit student completion
+	const handleEditStudentComplete = () => {
+		fetchStudents(); // Refresh students list
+		setShowEditModal(false);
+		setSelectedStudent(null);
+	};
+
 	// Generate page numbers for pagination
 	const getPageNumbers = () => {
 		const pageNumbers = [];
@@ -545,7 +563,10 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 									<tbody>
 										{currentStudents.map((student) => (
 											<React.Fragment key={student.id}>
-												<tr className="border-b transition-colors border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
+												<tr
+													className="border-b transition-colors cursor-pointer border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+													onClick={() => handleEditStudent(student)}
+												>
 													<td className="px-3 py-3 lg:px-4 lg:py-2">
 														<div className="flex items-center">
 															<div className="flex-shrink-0 mr-3 w-8 h-8">
@@ -556,7 +577,7 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 																	</span>
 																</div>
 															</div>
-															<div>
+															<div className="flex-1">
 																<div className="font-medium dark:text-white">
 																	{student.firstname} {student.middlename}{" "}
 																	{student.lastname}
@@ -592,7 +613,10 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 													</td>
 													<td className="px-3 py-3 lg:px-4 lg:py-2">
 														<Button
-															onClick={() => toggleStudentDocuments(student.id)}
+															onClick={(e) => {
+																e.stopPropagation();
+																toggleStudentDocuments(student.id);
+															}}
 															variant="outline"
 															size="sm"
 															className="flex gap-1 items-center"
@@ -780,6 +804,20 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 							setShowDocumentViewer(false);
 							setSelectedDocument(null);
 						}}
+					/>
+				)}
+
+				{/* Edit Student Modal */}
+				{showEditModal && (
+					<EditStudentModal
+						isOpen={showEditModal}
+						onClose={() => {
+							setShowEditModal(false);
+							setSelectedStudent(null);
+						}}
+						student={selectedStudent}
+						onSuccess={handleEditStudentComplete}
+						userId={userId}
 					/>
 				)}
 			</Card>

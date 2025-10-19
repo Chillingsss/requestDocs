@@ -10,6 +10,7 @@ import {
 	Settings,
 	Folder,
 	Shield,
+	RefreshCw,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,7 @@ import {
 	activateUser,
 	deactivateUser,
 	getRequestAnalytics,
+	getLoginLogs,
 } from "../../utils/admin";
 import AddUserModal from "./modal/AddUserModal";
 import toast, { Toaster } from "react-hot-toast";
@@ -39,6 +41,7 @@ import {
 	ArcElement,
 } from "chart.js";
 import AddStudentModal from "./modal/AddStudentModal";
+import EditStudentModal from "../../components/EditStudentModal";
 import { getSection, getSchoolYear } from "../../utils/registrar";
 import DashboardContent from "./components/DashboardContent";
 import UsersContent from "./components/UsersContent";
@@ -77,6 +80,8 @@ export default function AdminDashboard() {
 	const [dashboardLoading, setDashboardLoading] = useState(false);
 	const navigate = useNavigate();
 	const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+	const [showEditStudentModal, setShowEditStudentModal] = useState(false);
+	const [selectedStudent, setSelectedStudent] = useState(null);
 	const [sectionOptions, setSectionOptions] = useState([]);
 	const [schoolYearOptions, setSchoolYearOptions] = useState([]);
 	const [currentUserId, setCurrentUserId] = useState("");
@@ -201,6 +206,22 @@ export default function AdminDashboard() {
 		}
 	};
 
+	const handleRefresh = () => {
+		switch (activeSection) {
+			case "Dashboard":
+				fetchDashboardData();
+				break;
+			case "Users":
+				fetchUsers();
+				break;
+			case "Students":
+				fetchStudents();
+				break;
+			default:
+				break;
+		}
+	};
+
 	const fetchUsers = async () => {
 		try {
 			setLoading(true);
@@ -303,6 +324,18 @@ export default function AdminDashboard() {
 		}
 	};
 
+	const handleEditStudent = (student) => {
+		setSelectedStudent(student);
+		setShowEditStudentModal(true);
+	};
+
+	const handleEditStudentComplete = () => {
+		fetchStudents(); // Refresh students list
+		setShowEditStudentModal(false);
+		setSelectedStudent(null);
+		toast.success("Student information updated successfully");
+	};
+
 	// Chart data for request status
 	const requestStatusChartData = {
 		labels: dashboardData.requestStats.map((stat) => stat.status),
@@ -364,11 +397,6 @@ export default function AdminDashboard() {
 			key: "Reports",
 		},
 		{
-			icon: <Settings className="w-5 h-5" />,
-			label: "Settings",
-			key: "Settings",
-		},
-		{
 			icon: <Folder className="w-5 h-5" />,
 			label: "Resources",
 			key: "Resources",
@@ -404,6 +432,7 @@ export default function AdminDashboard() {
 							setSelectedSchoolYearFilter(e.target.value)
 						}
 						onAddStudent={() => setShowAddStudentModal(true)}
+						onEditStudent={handleEditStudent}
 						onViewProfile={handleViewProfile}
 						onActivateUser={handleActivateUser}
 						onDeactivateUser={handleDeactivateUser}
@@ -413,16 +442,6 @@ export default function AdminDashboard() {
 				return <LoginLogsContent />;
 			case "Reports":
 				return <ReportsPage />;
-			case "Settings":
-				return (
-					<Card className="dark:bg-slate-800 dark:border-slate-700">
-						<CardContent className="p-4 lg:p-6">
-							<div className="py-8 text-center text-slate-500 dark:text-slate-400">
-								Settings section coming soon...
-							</div>
-						</CardContent>
-					</Card>
-				);
 			case "Resources":
 				return <ResourcesContent />;
 			default:
@@ -470,25 +489,15 @@ export default function AdminDashboard() {
 						/>
 					</div>
 					<div className="flex gap-3 items-center">
-						{activeSection === "Dashboard" && (
+						{(activeSection === "Dashboard" ||
+							activeSection === "Users" ||
+							activeSection === "Students") && (
 							<button
-								onClick={fetchDashboardData}
-								className="p-2 bg-white rounded-lg border shadow-sm dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
+								onClick={handleRefresh}
+								className="p-2 bg-white rounded-lg border shadow-sm transition-colors dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
 								title="Refresh Data"
 							>
-								<svg
-									className="w-5 h-5"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-									/>
-								</svg>
+								<RefreshCw className="w-5 h-5" />
 							</button>
 						)}
 						<ThemeToggle />
@@ -500,16 +509,19 @@ export default function AdminDashboard() {
 					<h1 className="text-3xl font-bold text-slate-900 dark:text-white">
 						Admin {activeSection}
 					</h1>
-					<div className="flex gap-4 items-center">
-						<ThemeToggle />
-						{activeSection === "Dashboard" && (
-							<Button
-								className="text-white bg-blue-600 hover:bg-blue-700"
-								onClick={fetchDashboardData}
+					<div className="flex gap-3 items-center">
+						{(activeSection === "Dashboard" ||
+							activeSection === "Users" ||
+							activeSection === "Students") && (
+							<button
+								onClick={handleRefresh}
+								className="p-2 bg-white rounded-lg border shadow-sm transition-colors dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
+								title="Refresh Data"
 							>
-								Refresh Data
-							</Button>
+								<RefreshCw className="w-5 h-5" />
+							</button>
 						)}
+						<ThemeToggle />
 					</div>
 				</header>
 
@@ -534,6 +546,20 @@ export default function AdminDashboard() {
 				schoolYearOptions={schoolYearOptions}
 				createdBy={currentUserId}
 			/>
+
+			{/* Edit Student Modal */}
+			{showEditStudentModal && (
+				<EditStudentModal
+					isOpen={showEditStudentModal}
+					onClose={() => {
+						setShowEditStudentModal(false);
+						setSelectedStudent(null);
+					}}
+					student={selectedStudent}
+					onSuccess={handleEditStudentComplete}
+					userId={currentUserId}
+				/>
+			)}
 
 			{/* User Profile Modal */}
 			{showProfileModal && (

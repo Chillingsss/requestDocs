@@ -17,6 +17,7 @@ import {
 	BarChart2,
 	PieChart,
 	TrendingUp,
+	RefreshCw,
 } from "lucide-react";
 import {
 	Chart as ChartJS,
@@ -590,6 +591,13 @@ export default function ReportsPage() {
 						Detailed analytics and insights into document requests
 					</p>
 				</div>
+				<button
+					onClick={fetchAllData}
+					className="p-2 bg-white rounded-lg border shadow-sm transition-colors dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
+					title="Refresh Data"
+				>
+					<RefreshCw className="w-5 h-5" />
+				</button>
 				<div className="flex gap-2">
 					<Button
 						variant="outline"

@@ -16,12 +16,13 @@ class User {
 
     try {
       // First, get all students
-      $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.lrn, a.email, a.password, a.userLevel, a.birthDate, a.age, a.religion, a.completeAddress, a.fatherName, a.motherName, a.guardianName, a.guardianRelationship, a.sectionId, a.schoolyearId, b.name as sectionName, s.name as strand, t.name as track, a.strandId, sy.year as schoolYear
+      $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.lrn, a.email, a.password, a.userLevel, a.birthDate, a.age, a.religion, a.completeAddress, a.fatherName, a.motherName, a.guardianName, a.guardianRelationship, a.sectionId, a.schoolyearId, a.gradeLevelId, b.name as sectionName, s.name as strand, t.name as track, a.strandId, sy.year as schoolYear, gl.name as gradeLevelName
       FROM tblstudent a
       LEFT JOIN tblsection b ON a.sectionId = b.id
       LEFT JOIN tblstrand s ON a.strandId = s.id
       LEFT JOIN tbltrack t ON s.trackId = t.id
       LEFT JOIN tblschoolyear sy ON a.schoolyearId = sy.id
+      LEFT JOIN tblgradelevel gl ON a.gradeLevelId = gl.id
       ORDER BY a.createdAt DESC";
       $stmt = $conn->prepare($sql); 
       $stmt->execute();

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { RefreshCw } from "lucide-react";
 import DocumentsTab from "./components/DocumentsTab";
 import RequirementTypesTab from "./components/RequirementTypesTab";
 import DocumentRequirementsTab from "./components/DocumentRequirementsTab";
@@ -79,12 +80,23 @@ export default function ResourcesContent() {
 		<>
 			<div className="space-y-6">
 				{/* Header */}
-				<div className="flex flex-col gap-4">
-					<h2 className="text-2xl font-bold">Resources Management</h2>
-					<p className="text-slate-600 dark:text-slate-400">
-						Manage documents, requirement types, document requirements,
-						purposes, grade levels, sections, and strands used in the system
-					</p>
+				<div className="flex justify-between items-center">
+					<div>
+						<h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+							Resources Management
+						</h2>
+						<p className="text-slate-600 dark:text-slate-400">
+							Manage documents, requirement types, document requirements,
+							purposes, grade levels, sections, and strands used in the system
+						</p>
+					</div>
+					<button
+						onClick={useResources.fetchData}
+						className="p-2 bg-white rounded-lg border shadow-sm transition-colors dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
+						title="Refresh Data"
+					>
+						<RefreshCw className="w-5 h-5" />
+					</button>
 				</div>
 
 				{/* Tabs */}

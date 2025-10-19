@@ -3,7 +3,7 @@ import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
-import { Plus, Eye, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function StudentsContent({
 	students,
@@ -15,9 +15,7 @@ export default function StudentsContent({
 	onSectionFilterChange,
 	onSchoolYearFilterChange,
 	onAddStudent,
-	onViewProfile,
-	onActivateUser,
-	onDeactivateUser,
+	onEditStudent,
 }) {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [currentPage, setCurrentPage] = useState(1);
@@ -35,6 +33,9 @@ export default function StudentsContent({
 					`${student.firstname} ${student.middlename} ${student.lastname}`.toLowerCase();
 				const lrn = student.lrn ? student.lrn.toString().toLowerCase() : "";
 				const email = student.email ? student.email.toLowerCase() : "";
+				const gradeLevelName = student.gradeLevelName
+					? student.gradeLevelName.toLowerCase()
+					: "";
 				const sectionName = student.sectionName
 					? student.sectionName.toLowerCase()
 					: "";
@@ -48,6 +49,7 @@ export default function StudentsContent({
 					lrn.includes(searchLower) ||
 					fullName.includes(searchLower) ||
 					email.includes(searchLower) ||
+					gradeLevelName.includes(searchLower) ||
 					sectionName.includes(searchLower) ||
 					schoolYear.includes(searchLower) ||
 					track.includes(searchLower) ||
@@ -106,7 +108,7 @@ export default function StudentsContent({
 								<Search className="absolute left-3 top-1/2 w-4 h-4 text-gray-400 transform -translate-y-1/2" />
 								<Input
 									type="text"
-									placeholder="Search by LRN, name, email, section, track/strand..."
+									placeholder="Search by LRN, name, email, grade level, section, track/strand..."
 									value={searchTerm}
 									onChange={handleSearchChange}
 									className="pl-10 w-full"
@@ -208,6 +210,9 @@ export default function StudentsContent({
 											Email
 										</th>
 										<th className="px-4 py-3 font-medium text-left text-slate-700 dark:text-white">
+											Grade Level
+										</th>
+										<th className="px-4 py-3 font-medium text-left text-slate-700 dark:text-white">
 											Section
 										</th>
 										<th className="px-4 py-3 font-medium text-left text-slate-700 dark:text-white">
@@ -222,21 +227,29 @@ export default function StudentsContent({
 									{paginatedStudents.map((student, index) => (
 										<tr
 											key={student.id}
-											className={`border-b border-slate-100 dark:border-slate-600 ${
+											className={`border-b border-slate-100 dark:border-slate-600 cursor-pointer transition-colors hover:bg-slate-100 dark:hover:bg-slate-600 ${
 												index % 2 === 0
 													? "bg-slate-50 dark:bg-slate-700"
 													: "bg-white dark:bg-slate-700"
 											}`}
+											onClick={() => onEditStudent(student)}
 										>
 											<td className="px-4 py-3 text-sm text-slate-900 dark:text-white">
 												{student.lrn}
 											</td>
 											<td className="px-4 py-3 text-sm text-slate-900 dark:text-white">
-												{student.firstname} {student.middlename}{" "}
-												{student.lastname}
+												<div className="flex justify-between items-center">
+													<span>
+														{student.firstname} {student.middlename}{" "}
+														{student.lastname}
+													</span>
+												</div>
 											</td>
 											<td className="px-4 py-3 text-sm text-slate-900 dark:text-white">
 												{student.email}
+											</td>
+											<td className="px-4 py-3 text-sm text-slate-900 dark:text-white">
+												{student.gradeLevelName || "N/A"}
 											</td>
 											<td className="px-4 py-3 text-sm text-slate-900 dark:text-white">
 												{student.sectionName || "N/A"}

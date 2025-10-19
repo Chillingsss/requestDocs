@@ -1253,15 +1253,18 @@ class User {
                 s.sectionId,
                 s.schoolyearId,
                 s.strandId,
+                s.gradeLevelId,
                 sec.name as sectionName,
                 sy.year as schoolYear,
                 t.name as track,
-                st.name as strand
+                st.name as strand,
+                gl.name as gradeLevelName
               FROM tblstudent s
               LEFT JOIN tblsection sec ON s.sectionId = sec.id
               LEFT JOIN tblschoolyear sy ON s.schoolyearId = sy.id
               LEFT JOIN tblstrand st ON s.strandId = st.id
               LEFT JOIN tbltrack t ON st.trackId = t.id
+              LEFT JOIN tblgradelevel gl ON s.gradeLevelId = gl.id
               WHERE 1=1";
 
       // Add section filter if provided
@@ -1409,15 +1412,34 @@ class User {
 
     $json = json_decode($json, true);
     $userId = $json['userId'];
+    $userType = $json['userType'];
 
     try {
-      $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.email, a.gradeLevelId, a.sectionId, b.name AS userLevel,
-                     gl.name AS gradeLevel, s.name AS sectionName
-              FROM tbluser a
-              INNER JOIN tbluserlevel b ON a.userLevel = b.id
-              LEFT JOIN tblgradelevel gl ON a.gradeLevelId = gl.id
-              LEFT JOIN tblsection s ON a.sectionId = s.id
-              WHERE a.id = :userId";
+      // Determine which table to query based on userType
+      if ($userType === 'student') {
+        $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.email, a.gradeLevelId, a.sectionId, a.lrn, 
+                       a.birthDate, a.age, a.religion, a.completeAddress, a.fatherName, a.motherName, 
+                       a.guardianName, a.guardianRelationship, a.strandId, a.schoolyearId,
+                       b.name AS userLevel, gl.name AS gradeLevel, s.name AS sectionName,
+                       st.name AS strand, t.name AS track, sy.name AS schoolYear
+                FROM tblstudent a
+                INNER JOIN tbluserlevel b ON a.userLevel = b.id
+                LEFT JOIN tblgradelevel gl ON a.gradeLevelId = gl.id
+                LEFT JOIN tblsection s ON a.sectionId = s.id
+                LEFT JOIN tblstrand st ON a.strandId = st.id
+                LEFT JOIN tbltrack t ON st.trackId = t.id
+                LEFT JOIN tblschoolyear sy ON a.schoolyearId = sy.id
+                WHERE a.id = :userId";
+      } else {
+        $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.email, a.gradeLevelId, a.sectionId, b.name AS userLevel,
+                       gl.name AS gradeLevel, s.name AS sectionName
+                FROM tbluser a
+                INNER JOIN tbluserlevel b ON a.userLevel = b.id
+                LEFT JOIN tblgradelevel gl ON a.gradeLevelId = gl.id
+                LEFT JOIN tblsection s ON a.sectionId = s.id
+                WHERE a.id = :userId";
+      }
+      
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':userId', $userId);
       $stmt->execute();
@@ -1437,23 +1459,63 @@ class User {
 
     $json = json_decode($json, true);
     $userId = $json['userId'];
+    $userType = $json['userType'];
     $firstname = $json['firstname'];
-    $middlename = $json['middlename'];
+    $middlename = isset($json['middlename']) ? $json['middlename'] : '';
     $lastname = $json['lastname'];
     $email = $json['email'];
     $gradeLevelId = isset($json['gradeLevelId']) ? $json['gradeLevelId'] : null;
     $sectionId = isset($json['sectionId']) ? $json['sectionId'] : null;
 
     try {
-      $sql = "UPDATE tbluser SET firstname = :firstname, middlename = :middlename, lastname = :lastname, email = :email, gradeLevelId = :gradeLevelId, sectionId = :sectionId WHERE id = :userId";
-      $stmt = $conn->prepare($sql);
-      $stmt->bindParam(':firstname', $firstname);
-      $stmt->bindParam(':middlename', $middlename);
-      $stmt->bindParam(':lastname', $lastname);
-      $stmt->bindParam(':email', $email);
-      $stmt->bindParam(':gradeLevelId', $gradeLevelId);
-      $stmt->bindParam(':sectionId', $sectionId);
-      $stmt->bindParam(':userId', $userId);
+      // Determine which table to update based on userType
+      $table = ($userType === 'student') ? 'tblstudent' : 'tbluser';
+      
+      // Build the SQL query based on userType
+      if ($userType === 'student') {
+        // For students, include additional fields
+        $birthDate = isset($json['birthDate']) ? $json['birthDate'] : null;
+        $age = isset($json['age']) ? $json['age'] : null;
+        $religion = isset($json['religion']) ? $json['religion'] : null;
+        $completeAddress = isset($json['completeAddress']) ? $json['completeAddress'] : null;
+        $fatherName = isset($json['fatherName']) ? $json['fatherName'] : null;
+        $motherName = isset($json['motherName']) ? $json['motherName'] : null;
+        $guardianName = isset($json['guardianName']) ? $json['guardianName'] : null;
+        $guardianRelationship = isset($json['guardianRelationship']) ? $json['guardianRelationship'] : null;
+        
+        $sql = "UPDATE $table SET firstname = :firstname, middlename = :middlename, lastname = :lastname, email = :email, 
+                gradeLevelId = :gradeLevelId, sectionId = :sectionId, birthDate = :birthDate, age = :age, 
+                religion = :religion, completeAddress = :completeAddress, fatherName = :fatherName, 
+                motherName = :motherName, guardianName = :guardianName, guardianRelationship = :guardianRelationship 
+                WHERE id = :userId";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':firstname', $firstname);
+        $stmt->bindParam(':middlename', $middlename);
+        $stmt->bindParam(':lastname', $lastname);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':gradeLevelId', $gradeLevelId);
+        $stmt->bindParam(':sectionId', $sectionId);
+        $stmt->bindParam(':birthDate', $birthDate);
+        $stmt->bindParam(':age', $age);
+        $stmt->bindParam(':religion', $religion);
+        $stmt->bindParam(':completeAddress', $completeAddress);
+        $stmt->bindParam(':fatherName', $fatherName);
+        $stmt->bindParam(':motherName', $motherName);
+        $stmt->bindParam(':guardianName', $guardianName);
+        $stmt->bindParam(':guardianRelationship', $guardianRelationship);
+        $stmt->bindParam(':userId', $userId);
+      } else {
+        // For teachers, admins, and registrars
+        $sql = "UPDATE $table SET firstname = :firstname, middlename = :middlename, lastname = :lastname, email = :email, gradeLevelId = :gradeLevelId, sectionId = :sectionId WHERE id = :userId";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':firstname', $firstname);
+        $stmt->bindParam(':middlename', $middlename);
+        $stmt->bindParam(':lastname', $lastname);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':gradeLevelId', $gradeLevelId);
+        $stmt->bindParam(':sectionId', $sectionId);
+        $stmt->bindParam(':userId', $userId);
+      }
 
       if ($stmt->execute()) {
         return json_encode(['success' => true, 'message' => 'Profile updated successfully']);
