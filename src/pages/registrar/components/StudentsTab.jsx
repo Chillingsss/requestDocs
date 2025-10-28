@@ -672,9 +672,9 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 											<th className="px-3 py-2 font-semibold text-left lg:px-4">
 												Track & Strand
 											</th>
-											<th className="px-3 py-2 font-semibold text-left lg:px-4">
+											{/* <th className="px-3 py-2 font-semibold text-left lg:px-4">
 												Documents
-											</th>
+											</th> */}
 										</tr>
 									</thead>
 									<tbody>
@@ -728,7 +728,7 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 															</div>
 														</div>
 													</td>
-													<td className="px-3 py-3 lg:px-4 lg:py-2">
+													{/* <td className="px-3 py-3 lg:px-4 lg:py-2">
 														<Button
 															onClick={(e) => {
 																e.stopPropagation();
@@ -746,7 +746,7 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 															<FileText className="w-3 h-3" />
 															Documents
 														</Button>
-													</td>
+													</td> */}
 												</tr>
 
 												{/* Expanded Documents Row */}

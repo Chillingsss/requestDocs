@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "../../components/ui/button";
-import { Menu, FileText, LogOut, Plus, User, RefreshCw } from "lucide-react";
+import { Menu, FileText, LogOut, Plus, User, RefreshCw, AlertCircle } from "lucide-react";
 import { getUserRequests, getUserProfile } from "../../utils/student"; // Updated import
 import Cookies from "js-cookie";
 import CryptoJS from "crypto-js";
@@ -118,6 +118,34 @@ export default function StudentDashboard() {
 		// Increment refresh trigger to notify child components
 		setRefreshTrigger((prev) => prev + 1);
 	};
+
+	// Check if profile is incomplete
+	const checkProfileCompleteness = () => {
+		if (!studentProfile) return { isIncomplete: false, missingFields: [] };
+
+		const importantFields = [
+			{ key: 'email', label: 'Email' },
+			{ key: 'birthDate', label: 'Birth Date' },
+			{ key: 'birthPlace', label: 'Birth Place' },
+			{ key: 'contactNo', label: 'Contact Number' },
+			{ key: 'completeAddress', label: 'Complete Address' },
+			{ key: 'fatherName', label: "Father's Name" },
+			{ key: 'motherName', label: "Mother's Name" },
+		];
+
+		const missingFields = importantFields.filter(
+			field => !studentProfile[field.key] || 
+					 studentProfile[field.key] === '' || 
+					 (field.key === 'birthDate' && studentProfile[field.key] === '0000-00-00')
+		);
+
+		return {
+			isIncomplete: missingFields.length > 0,
+			missingFields: missingFields.map(f => f.label)
+		};
+	};
+
+	const profileStatus = checkProfileCompleteness();
 
 	return (
 		<div className="flex min-h-screen bg-gray-50 dark:bg-slate-900">
@@ -235,6 +263,39 @@ export default function StudentDashboard() {
 						</Button>
 					</div>
 				</header>
+
+				{/* Profile Reminder Banner */}
+				{activeTab === "requests" && profileStatus.isIncomplete && (
+					<div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg shadow-sm dark:bg-amber-900/20 dark:border-amber-600">
+						<div className="flex flex-col sm:flex-row items-start gap-2 sm:gap-3">
+							<AlertCircle className="w-5 h-5 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+							<div className="flex-1 w-full">
+								<h3 className="text-sm sm:text-base font-semibold text-amber-900 dark:text-amber-200 mb-1">
+									Complete Your Profile
+								</h3>
+								<p className="text-xs sm:text-sm text-amber-800 dark:text-amber-300 mb-2 leading-relaxed">
+									Please update your profile information before requesting documents. This ensures accurate document processing.
+								</p>
+								<div className="mb-3 p-2 bg-amber-100 dark:bg-amber-900/30 rounded border border-amber-200 dark:border-amber-700">
+									<p className="text-xs text-amber-900 dark:text-amber-300 font-medium mb-1">
+										Missing fields:
+									</p>
+									<p className="text-xs text-amber-800 dark:text-amber-400 break-words">
+										{profileStatus.missingFields.join(', ')}
+									</p>
+								</div>
+								<Button
+									onClick={() => setShowProfileModal(true)}
+									size="sm"
+									className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm py-2 px-4"
+								>
+									<User className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
+									Update Profile
+								</Button>
+							</div>
+						</div>
+					</div>
+				)}
 
 				{/* Enhanced Stats Cards */}
 				{activeTab === "requests" && <StatsCards userRequests={userRequests} />}

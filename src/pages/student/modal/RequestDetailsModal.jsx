@@ -507,184 +507,190 @@ export default function RequestDetailsModal({
 									</div>
 								)}
 
-								{/* Registrar Comments */}
-								<div className="p-4 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700">
-									<div className="flex gap-3 items-center mb-4">
-										<AlertTriangle className="w-5 h-5 text-amber-600" />
-										<h3 className="text-lg font-semibold text-amber-800 dark:text-amber-200">
-											Registrar Comments
-										</h3>
-									</div>
+								{/* Registrar Comments - Hide when status is Release or Completed */}
+								{request.status?.toLowerCase() !== "release" &&
+									request.status?.toLowerCase() !== "completed" && (
+										<div className="p-4 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700">
+											<div className="flex gap-3 items-center mb-4">
+												<AlertTriangle className="w-5 h-5 text-amber-600" />
+												<h3 className="text-lg font-semibold text-amber-800 dark:text-amber-200">
+													Registrar Comments
+												</h3>
+											</div>
 
-									{comments.length === 0 ? (
-										<div className="text-sm text-amber-700 dark:text-amber-300">
-											<p>No comments from registrars yet.</p>
-										</div>
-									) : (
-										<div className="space-y-3">
-											{comments.map((comment) => (
-												<div
-													key={comment.id}
-													className="p-3 bg-white rounded-lg border border-amber-200 dark:bg-slate-800 dark:border-amber-600"
-												>
-													<div className="flex justify-between items-start mb-2">
-														<div className="flex gap-2 items-center">
-															<User className="w-4 h-4 text-amber-600" />
-															<span className="text-sm font-medium text-amber-800 dark:text-amber-200">
-																{comment.registrarFirstName}{" "}
-																{comment.registrarLastName}
-															</span>
-															<span className="text-xs text-amber-600 dark:text-amber-400">
-																{new Date(comment.createdAt).toLocaleString()}
-															</span>
-														</div>
-														<span
-															className={`px-2 py-1 text-xs font-medium rounded-full ${
-																comment.status === "pending"
-																	? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300"
-																	: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
-															}`}
+											{comments.length === 0 ? (
+												<div className="text-sm text-amber-700 dark:text-amber-300">
+													<p>No comments from registrars yet.</p>
+												</div>
+											) : (
+												<div className="space-y-3">
+													{comments.map((comment) => (
+														<div
+															key={comment.id}
+															className="p-3 bg-white rounded-lg border border-amber-200 dark:bg-slate-800 dark:border-amber-600"
 														>
-															{comment.status}
-														</span>
-													</div>
+															<div className="flex justify-between items-start mb-2">
+																<div className="flex gap-2 items-center">
+																	<User className="w-4 h-4 text-amber-600" />
+																	<span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+																		{comment.registrarFirstName}{" "}
+																		{comment.registrarLastName}
+																	</span>
+																	<span className="text-xs text-amber-600 dark:text-amber-400">
+																		{new Date(comment.createdAt).toLocaleString()}
+																	</span>
+																</div>
+																<span
+																	className={`px-2 py-1 text-xs font-medium rounded-full ${
+																		comment.status === "pending"
+																			? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300"
+																			: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+																	}`}
+																>
+																	{comment.status}
+																</span>
+															</div>
 
-													<div className="p-2 mb-2 text-xs text-amber-800 bg-amber-100 rounded dark:bg-amber-900/30 dark:text-amber-200">
-														<span className="font-medium">File:</span>{" "}
-														{comment.filepath}
-														<br />
-														<span className="font-medium">Type:</span>{" "}
-														{comment.requirementType}
-													</div>
+															<div className="p-2 mb-2 text-xs text-amber-800 bg-amber-100 rounded dark:bg-amber-900/30 dark:text-amber-200">
+																<span className="font-medium">File:</span>{" "}
+																{comment.filepath}
+																<br />
+																<span className="font-medium">Type:</span>{" "}
+																{comment.requirementType}
+															</div>
 
-													<div className="text-sm text-amber-700 dark:text-amber-300">
-														{comment.comment}
-													</div>
+															<div className="text-sm text-amber-700 dark:text-amber-300">
+																{comment.comment}
+															</div>
+														</div>
+													))}
 												</div>
-											))}
+											)}
 										</div>
 									)}
-								</div>
 
-								{/* Upload New Requirements */}
-								<div className="p-4 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
-									<div className="flex gap-3 items-center mb-4">
-										<Upload className="w-5 h-5 text-blue-600" />
-										<h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
-											Upload New Requirements
-										</h3>
+								{/* Upload New Requirements - Hide when status is Release or Completed */}
+							{request.status?.toLowerCase() !== "release" &&
+								request.status?.toLowerCase() !== "completed" && (
+									<div className="p-4 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
+										<div className="flex gap-3 items-center mb-4">
+											<Upload className="w-5 h-5 text-blue-600" />
+											<h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
+												Upload New Requirements
+											</h3>
+										</div>
+
+										{!showUploadForm ? (
+											<div className="mb-4 text-sm text-blue-700 dark:text-blue-300">
+												<p>
+													If you need to upload additional requirements or respond
+													to registrar comments, click the button below.
+												</p>
+												{attachments.length > 0 ? (
+													<p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+														Requirement type:{" "}
+														<strong>{attachments[0].requirementType}</strong>
+													</p>
+												) : documentRequirements.length > 0 ? (
+													<p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+														Requirement type:{" "}
+														<strong>
+															{documentRequirements[0].requirementName}
+														</strong>
+													</p>
+												) : (
+													<p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
+														No requirements configured for this document type.
+													</p>
+												)}
+											</div>
+										) : (
+											<div className="space-y-4">
+												{attachments.length > 0 ? (
+													<div className="p-3 bg-blue-100 rounded-md dark:bg-blue-900/30">
+														<p className="text-sm text-blue-800 dark:text-blue-200">
+															<strong>Requirement Type:</strong>{" "}
+															{attachments[0].requirementType}
+														</p>
+														<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+															This will be automatically set based on your
+															original request.
+														</p>
+													</div>
+												) : documentRequirements.length > 0 ? (
+													<div className="p-3 bg-blue-100 rounded-md dark:bg-blue-900/30">
+														<p className="text-sm text-blue-800 dark:text-blue-200">
+															<strong>Requirement Type:</strong>{" "}
+															{documentRequirements[0].requirementName}
+														</p>
+														<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+															This will be automatically set based on your
+															document type.
+														</p>
+													</div>
+												) : (
+													<div className="p-3 bg-orange-100 rounded-md dark:bg-orange-900/30">
+														<p className="text-sm text-orange-800 dark:text-orange-200">
+															<strong>No Requirement Types Available</strong>
+														</p>
+														<p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
+															Please contact support to configure requirement
+															types for this document.
+														</p>
+													</div>
+												)}
+
+												<div>
+													<label className="block mb-2 text-sm font-medium text-blue-800 dark:text-blue-200">
+														File
+													</label>
+													<input
+														type="file"
+														onChange={handleFileChange}
+														accept=".jpg,.jpeg,.png,.gif,.pdf"
+														className="p-2 w-full bg-white rounded-md border border-blue-300 dark:bg-slate-800 text-slate-900 dark:text-white"
+													/>
+													<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+														Max file size: 5MB. Allowed types: JPG, PNG, GIF, PDF
+													</p>
+												</div>
+
+												<div className="flex gap-2">
+													<Button
+														onClick={handleUpload}
+														disabled={!selectedFile || uploading}
+														className="text-white bg-blue-600 hover:bg-blue-700"
+													>
+														{uploading
+															? "Uploading..."
+															: "Upload New Requirement"}
+													</Button>
+													<Button
+														onClick={() => setShowUploadForm(false)}
+														variant="outline"
+														className="text-blue-700 border-blue-300 hover:bg-blue-50"
+													>
+														Cancel
+													</Button>
+												</div>
+											</div>
+										)}
+
+										{!showUploadForm && (
+											<Button
+												onClick={() => setShowUploadForm(true)}
+												disabled={
+													attachments.length === 0 &&
+													documentRequirements.length === 0
+												}
+												className="text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+											>
+												<Upload className="mr-2 w-4 h-4" />
+												Upload New Requirement
+											</Button>
+										)}
 									</div>
-
-									{!showUploadForm ? (
-										<div className="mb-4 text-sm text-blue-700 dark:text-blue-300">
-											<p>
-												If you need to upload additional requirements or respond
-												to registrar comments, click the button below.
-											</p>
-											{attachments.length > 0 ? (
-												<p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-													Requirement type:{" "}
-													<strong>{attachments[0].requirementType}</strong>
-												</p>
-											) : documentRequirements.length > 0 ? (
-												<p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-													Requirement type:{" "}
-													<strong>
-														{documentRequirements[0].requirementName}
-													</strong>
-												</p>
-											) : (
-												<p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
-													No requirements configured for this document type.
-												</p>
-											)}
-										</div>
-									) : (
-										<div className="space-y-4">
-											{attachments.length > 0 ? (
-												<div className="p-3 bg-blue-100 rounded-md dark:bg-blue-900/30">
-													<p className="text-sm text-blue-800 dark:text-blue-200">
-														<strong>Requirement Type:</strong>{" "}
-														{attachments[0].requirementType}
-													</p>
-													<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
-														This will be automatically set based on your
-														original request.
-													</p>
-												</div>
-											) : documentRequirements.length > 0 ? (
-												<div className="p-3 bg-blue-100 rounded-md dark:bg-blue-900/30">
-													<p className="text-sm text-blue-800 dark:text-blue-200">
-														<strong>Requirement Type:</strong>{" "}
-														{documentRequirements[0].requirementName}
-													</p>
-													<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
-														This will be automatically set based on your
-														document type.
-													</p>
-												</div>
-											) : (
-												<div className="p-3 bg-orange-100 rounded-md dark:bg-orange-900/30">
-													<p className="text-sm text-orange-800 dark:text-orange-200">
-														<strong>No Requirement Types Available</strong>
-													</p>
-													<p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
-														Please contact support to configure requirement
-														types for this document.
-													</p>
-												</div>
-											)}
-
-											<div>
-												<label className="block mb-2 text-sm font-medium text-blue-800 dark:text-blue-200">
-													File
-												</label>
-												<input
-													type="file"
-													onChange={handleFileChange}
-													accept=".jpg,.jpeg,.png,.gif,.pdf"
-													className="p-2 w-full bg-white rounded-md border border-blue-300 dark:bg-slate-800 text-slate-900 dark:text-white"
-												/>
-												<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
-													Max file size: 5MB. Allowed types: JPG, PNG, GIF, PDF
-												</p>
-											</div>
-
-											<div className="flex gap-2">
-												<Button
-													onClick={handleUpload}
-													disabled={!selectedFile || uploading}
-													className="text-white bg-blue-600 hover:bg-blue-700"
-												>
-													{uploading
-														? "Uploading..."
-														: "Upload New Requirement"}
-												</Button>
-												<Button
-													onClick={() => setShowUploadForm(false)}
-													variant="outline"
-													className="text-blue-700 border-blue-300 hover:bg-blue-50"
-												>
-													Cancel
-												</Button>
-											</div>
-										</div>
-									)}
-
-									{!showUploadForm && (
-										<Button
-											onClick={() => setShowUploadForm(true)}
-											disabled={
-												attachments.length === 0 &&
-												documentRequirements.length === 0
-											}
-											className="text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-										>
-											<Upload className="mr-2 w-4 h-4" />
-											Upload New Requirement
-										</Button>
-									)}
-								</div>
+								)}
 							</div>
 						)}
 					</div>

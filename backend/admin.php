@@ -709,7 +709,7 @@ class User {
     $sectionId = isset($json['sectionId']) ? $json['sectionId'] : null;
     
     try {
-        $sql = "INSERT INTO tbluser (id, firstname, lastname, email, password, pinCode, userLevel, gradeLevelId, sectionId) VALUES (:id, :firstname, :lastname, :email, :password, :pinCode, :userLevel, :gradeLevelId, :sectionId)";
+        $sql = "INSERT INTO tbluser (id, firstname, lastname, email, password, pinCode, userLevel, gradeLevelId, sectionId, isActive) VALUES (:id, :firstname, :lastname, :email, :password, :pinCode, :userLevel, :gradeLevelId, :sectionId, 1)";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':id', $json['id']);
         $stmt->bindParam(':firstname', $json['firstname']);
