@@ -1421,7 +1421,7 @@ class User {
                        a.birthDate, a.age, a.religion, a.completeAddress, a.fatherName, a.motherName, 
                        a.guardianName, a.guardianRelationship, a.strandId, a.schoolyearId,
                        b.name AS userLevel, gl.name AS gradeLevel, s.name AS sectionName,
-                       st.name AS strand, t.name AS track, sy.name AS schoolYear
+                       st.name AS strand, t.name AS track, sy.year AS schoolYear
                 FROM tblstudent a
                 INNER JOIN tbluserlevel b ON a.userLevel = b.id
                 LEFT JOIN tblgradelevel gl ON a.gradeLevelId = gl.id

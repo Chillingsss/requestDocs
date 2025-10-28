@@ -115,6 +115,7 @@ export default function CavTemplate({
 		page4Purposes: [],
 	});
 
+
 	const [strands, setStrands] = useState([]);
 
 	useEffect(() => {
@@ -1900,9 +1901,36 @@ export default function CavTemplate({
 
 									<div className="flex items-center space-x-2">
 										<span className="font-bold">DATE & PLACE OF BIRTH:</span>
-										<span className="flex-1 border-b border-gray-400">
-											_________________________________
-										</span>
+										{isEditing ? (
+											<div className="flex flex-1 gap-2">
+												<Input
+													value={certificateData.birthDate}
+													onChange={(e) =>
+														handleInputChange("birthDate", e.target.value)
+													}
+													className="flex-1 text-gray-900 bg-transparent border-b-2 border-blue-400"
+													placeholder="Birth Date"
+												/>
+												<Input
+													value={certificateData.birthPlace}
+													onChange={(e) =>
+														handleInputChange("birthPlace", e.target.value)
+													}
+													className="flex-1 text-gray-900 bg-transparent border-b-2 border-blue-400"
+													placeholder="Birth Place"
+												/>
+											</div>
+										) : (
+											<span className="flex-1 border-b border-gray-400">
+												{certificateData.birthDate
+													? `${certificateData.birthDate}${
+															certificateData.birthPlace
+																? `, ${certificateData.birthPlace}`
+																: ""
+													  }`
+													: "_________________________________"}
+											</span>
+										)}
 									</div>
 
 									<div className="flex items-center space-x-2">
@@ -1929,9 +1957,20 @@ export default function CavTemplate({
 
 									<div className="flex items-center space-x-2">
 										<span className="font-bold">CONTACT NO.:</span>
-										<span className="border-b border-gray-400">
-											{certificateData.page4ContactNo || "____________________"}
-										</span>
+										{isEditing ? (
+											<Input
+												value={certificateData.page4ContactNo}
+												onChange={(e) =>
+													handleInputChange("page4ContactNo", e.target.value)
+												}
+												className="inline-block mx-1 w-48 text-gray-900 bg-transparent border-b-2 border-blue-400"
+												placeholder="Contact Number"
+											/>
+										) : (
+											<span className="border-b border-gray-400">
+												{certificateData.page4ContactNo || "____________________"}
+											</span>
+										)}
 									</div>
 
 									{/* Purposes Section */}
