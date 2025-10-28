@@ -4,6 +4,19 @@ import { Input } from "../../../components/ui/input";
 import { Search, X } from "lucide-react";
 import toast from "react-hot-toast";
 
+// Helper function to format date in human-readable format
+const formatDate = (dateString) => {
+	if (!dateString) return "N/A";
+	const date = new Date(dateString);
+	// Check if date is invalid
+	if (isNaN(date.getTime())) return "N/A";
+	return date.toLocaleDateString("en-US", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	});
+};
+
 export default function ProcessLrnModal({
 	isOpen,
 	onClose,
@@ -32,11 +45,31 @@ export default function ProcessLrnModal({
 
 		setLoadingType("searching");
 
-		// Filter students locally
+		// Filter students by name and birthdate
 		const searchTerms = term.toLowerCase().split(" ");
 		const results = students.filter((student) => {
 			const fullName = `${student.firstname} ${student.lastname}`.toLowerCase();
-			return searchTerms.every((term) => fullName.includes(term));
+			const birthDate = student.birthdate
+				? new Date(student.birthdate).toLocaleDateString().toLowerCase()
+				: "";
+
+			// Check if request birthdate matches student birthdate
+			const requestBirthDate = request?.birthDate
+				? new Date(request.birthDate).toLocaleDateString()
+				: null;
+			const studentBirthDate = student.birthdate
+				? new Date(student.birthdate).toLocaleDateString()
+				: null;
+
+			const birthDateMatches =
+				requestBirthDate && studentBirthDate
+					? requestBirthDate === studentBirthDate
+					: true; // If no birthdate to compare, don't filter by it
+
+			// Match by name and birthdate
+			const nameMatches = searchTerms.every((term) => fullName.includes(term));
+
+			return nameMatches && birthDateMatches;
 		});
 
 		setSearchResults(results.slice(0, 10)); // Limit to 10 results
@@ -99,9 +132,12 @@ export default function ProcessLrnModal({
 								<span className="font-medium">Email:</span> {request?.email}
 							</p>
 							<p>
+								<span className="font-medium">Birth Date:</span>{" "}
+								{formatDate(request?.birthDate)}
+							</p>
+							<p>
 								<span className="font-medium">Requested:</span>{" "}
-								{request?.created_at &&
-									new Date(request.created_at).toLocaleDateString()}
+								{formatDate(request?.created_at)}
 							</p>
 						</div>
 					</div>
@@ -148,6 +184,9 @@ export default function ProcessLrnModal({
 												Name
 											</th>
 											<th className="px-4 py-2 font-semibold text-left text-slate-900 dark:text-white">
+												Birth Date
+											</th>
+											<th className="px-4 py-2 font-semibold text-left text-slate-900 dark:text-white">
 												LRN
 											</th>
 											<th className="px-4 py-2 font-semibold text-left text-slate-900 dark:text-white">
@@ -163,6 +202,9 @@ export default function ProcessLrnModal({
 											>
 												<td className="px-4 py-2">
 													{student.firstname} {student.lastname}
+												</td>
+												<td className="px-4 py-2">
+													{formatDate(student.birthDate)}
 												</td>
 												<td className="px-4 py-2">{student.lrn}</td>
 												<td className="px-4 py-2">

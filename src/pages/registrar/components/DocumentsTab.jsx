@@ -281,21 +281,21 @@ export default function DocumentsTab() {
 						<div className="text-lg font-semibold text-slate-900 dark:text-white">
 							Student Files ({filteredDocuments.length})
 						</div>
-						<Button
+						{/* <Button
 							onClick={() => setShowUploadModal(true)}
 							className="flex gap-2 items-center text-white bg-green-600 hover:bg-green-700"
 						>
 							<Upload className="w-4 h-4" /> Upload Documents
-						</Button>
+						</Button> */}
 					</div>
 
 					{/* Filter Controls */}
-					<div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center">
+					<div className="relative z-10 flex flex-col gap-4 mb-6 sm:flex-row sm:items-center">
 						{/* Search Input */}
 						<div className="flex gap-2 items-center">
 							<input
 								type="text"
-								placeholder="Search by name, LRN, file name, or document type..."
+								placeholder="Search by name, LRN, grade level, file name, or document type..."
 								value={searchTerm}
 								onChange={(e) => setSearchTerm(e.target.value)}
 								className="px-3 py-2 text-sm bg-white dark:bg-slate-800 rounded-md border border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white min-w-[250px]"

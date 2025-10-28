@@ -62,28 +62,36 @@ export default function ReportsPage() {
 	const calculateDatesFromPreset = (preset) => {
 		const today = new Date();
 		let from = null;
-		let to = today;
+		let to = new Date();
 
 		switch (preset) {
 			case "today":
-				from = today;
+				from = new Date();
+				to = new Date();
 				break;
 			case "last7days":
-				from = new Date(today.setDate(today.getDate() - 6));
+				from = new Date();
+				from.setDate(from.getDate() - 6);
+				to = new Date();
 				break;
 			case "last30days":
-				from = new Date(today.setDate(today.getDate() - 29));
+				from = new Date();
+				from.setDate(from.getDate() - 29);
+				to = new Date();
 				break;
 			case "thismonth":
 				from = new Date(today.getFullYear(), today.getMonth(), 1);
+				to = new Date();
 				break;
 			case "lastmonth":
 				from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 				to = new Date(today.getFullYear(), today.getMonth(), 0);
 				break;
 			case "yesterday":
-				from = new Date(today.setDate(today.getDate() - 1));
-				to = from;
+				from = new Date();
+				from.setDate(from.getDate() - 1);
+				to = new Date();
+				to.setDate(to.getDate() - 1);
 				break;
 			default:
 				// Custom range, do nothing here, dates are set by inputs
@@ -147,6 +155,14 @@ export default function ReportsPage() {
 		if (effectiveDateFrom || effectiveDateTo) {
 			const fromDate = effectiveDateFrom ? parseISO(effectiveDateFrom) : null;
 			const toDate = effectiveDateTo ? parseISO(effectiveDateTo) : null;
+
+			// Set time to start/end of day for accurate comparisons
+			if (fromDate) {
+				fromDate.setHours(0, 0, 0, 0);
+			}
+			if (toDate) {
+				toDate.setHours(23, 59, 59, 999);
+			}
 
 			filtered = filtered.filter((request) => {
 				// Use statusDate for filtering when looking at status history

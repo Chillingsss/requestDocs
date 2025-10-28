@@ -8,6 +8,19 @@ import {
 import toast from "react-hot-toast";
 import ProcessLrnModal from "./ProcessLrnModal";
 
+// Helper function to format date in human-readable format
+const formatDate = (dateString) => {
+	if (!dateString) return "N/A";
+	const date = new Date(dateString);
+	// Check if date is invalid
+	if (isNaN(date.getTime())) return "N/A";
+	return date.toLocaleDateString("en-US", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	});
+};
+
 export default function LrnRequestsTab({ userId, students }) {
 	const [requests, setRequests] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -94,6 +107,7 @@ export default function LrnRequestsTab({ userId, students }) {
 								<tr className="border-b dark:border-slate-700">
 									<th className="px-4 py-2 text-left">Name</th>
 									<th className="px-4 py-2 text-left">Email</th>
+									<th className="px-4 py-2 text-left">Birth Date</th>
 									<th className="px-4 py-2 text-left">Status</th>
 									<th className="px-4 py-2 text-left">Requested</th>
 								</tr>
@@ -116,6 +130,9 @@ export default function LrnRequestsTab({ userId, students }) {
 										</td>
 										<td className="px-4 py-2">{request.email}</td>
 										<td className="px-4 py-2">
+											{formatDate(request.birthDate)}
+										</td>
+										<td className="px-4 py-2">
 											{request.is_processed ? (
 												<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900/20 dark:text-green-400">
 													Processed
@@ -127,7 +144,7 @@ export default function LrnRequestsTab({ userId, students }) {
 											)}
 										</td>
 										<td className="px-4 py-2">
-											{new Date(request.created_at).toLocaleDateString()}
+											{formatDate(request.created_at)}
 										</td>
 									</tr>
 								))}

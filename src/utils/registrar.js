@@ -243,6 +243,25 @@ export async function uploadStudentDocuments(formData) {
 	}
 }
 
+export async function uploadSingleStudentDocument(studentId, documentType, gradeLevelId, file) {
+	const apiUrl = getDecryptedApiUrl();
+	const formData = new FormData();
+	formData.append("operation", "uploadSingleStudentDocument");
+	formData.append("studentId", studentId);
+	formData.append("documentType", documentType);
+	formData.append("gradeLevelId", gradeLevelId);
+	formData.append("document", file);
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 export async function getStrands() {
 	const formData = new FormData();
 	formData.append("operation", "getStrands");
@@ -424,10 +443,10 @@ export async function getReleaseSchedule(requestId) {
 }
 
 // Add to registrar.js
-export async function addForgotLrnRequest(firstname, lastname, email) {
+export async function addForgotLrnRequest(firstname, lastname, email, birthDate) {
 	const formData = new FormData();
 	formData.append("operation", "addForgotLrnRequest");
-	formData.append("json", JSON.stringify({ firstname, lastname, email }));
+	formData.append("json", JSON.stringify({ firstname, lastname, email, birthDate }));
 
 	const apiUrl = getDecryptedApiUrl();
 

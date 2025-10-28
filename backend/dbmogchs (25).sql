@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 12, 2025 at 03:44 AM
+-- Generation Time: Oct 28, 2025 at 09:31 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -115,18 +115,12 @@ CREATE TABLE `tblforgotlrn` (
   `firstname` varchar(50) NOT NULL,
   `lastname` varchar(50) NOT NULL,
   `email` varchar(100) NOT NULL,
+  `birthDate` date DEFAULT NULL,
   `is_processed` tinyint(1) NOT NULL DEFAULT 0,
   `processed_by` varchar(50) DEFAULT NULL,
   `processed_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `tblforgotlrn`
---
-
-INSERT INTO `tblforgotlrn` (`id`, `firstname`, `lastname`, `email`, `is_processed`, `processed_by`, `processed_at`, `created_at`) VALUES
-(1, 'patty', 'aspiras', 'ralp.pelino11@gmail.com', 1, '02-1819-01500', '2025-10-02 12:10:57', '2025-10-02 12:10:10');
 
 -- --------------------------------------------------------
 
@@ -174,7 +168,22 @@ CREATE TABLE `tblloginlogs` (
 
 INSERT INTO `tblloginlogs` (`id`, `userId`, `userLevelId`, `loginTime`, `ipAddress`, `userAgent`, `loginStatus`, `failureReason`) VALUES
 (2, '33333333', 4, '2025-10-12 09:37:43', '::1', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36', 'success', NULL),
-(4, '33333333', NULL, '2025-10-12 09:42:48', '::1', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36', 'failed', 'Invalid credentials');
+(4, '33333333', NULL, '2025-10-12 09:42:48', '::1', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36', 'failed', 'Invalid credentials'),
+(5, '02-1819-01509', NULL, '2025-10-12 10:03:05', '::1', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36', 'failed', 'Invalid credentials'),
+(6, '02-1819-01509', 2, '2025-10-12 10:03:15', '::1', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36', 'success', NULL),
+(7, '111111', 1, '2025-10-12 10:11:50', '::1', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36', 'blocked', 'Account deactivated'),
+(8, '03132001', NULL, '2025-10-17 09:26:39', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(9, '02-1819-01509', NULL, '2025-10-17 09:27:42', '::1', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36', 'failed', 'Invalid credentials'),
+(10, '02-1819-01509', 2, '2025-10-17 09:27:55', '::1', 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36', 'success', NULL),
+(11, '02-1819-01509', NULL, '2025-10-19 15:55:58', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(12, '02-1819-01509', 2, '2025-10-19 15:56:12', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(13, '02-1819-01500', 1, '2025-10-19 16:39:19', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(14, '4771833', 3, '2025-10-19 17:03:05', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(15, '47718333', NULL, '2025-10-19 17:04:27', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(16, '47718333', 3, '2025-10-19 17:04:35', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(17, '4771830', 3, '2025-10-19 17:05:05', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(18, '02-1819-01509', NULL, '2025-10-19 17:06:19', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(19, '02-1819-01509', 2, '2025-10-19 17:06:29', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL);
 
 -- --------------------------------------------------------
 
@@ -709,7 +718,7 @@ INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, 
 ('405176150009', 'BRAD', 'LUNA', 'PADERANGA', NULL, NULL, '$2y$10$IKa07rDnOnyyDRgU9Pld8.ax4NvtqJlrJOAZf2fu455/SfagePJei', 4, '405176150009', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
 ('405241150066', 'ARJAY', 'PALMARES', 'REYES', NULL, NULL, '$2y$10$BTcS0XTgogiC8zaYkwIi7uquX/Vjq/LKBlZa5.NHzS/tWjh5ZWvOe', 4, '405241150066', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('510062400004', 'JOHAYVER', 'CALIPAPA', 'MAKI', NULL, NULL, '$2y$10$GsuBHsmmAM5M8uZkjrzrCuxhzuK5FE4ppVUDu1t5D/BGMmh2qsfnu', 4, '510062400004', 2, '0000-00-00', '', 18, 'Islam', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('99999', 'Edmarlen', '', 'Catid', 'pattyaspiras@gmail.com', NULL, '$2y$10$Uaa8DoxJGgwn5nXusRp1LuS0MpAfqNWVj2kOc978/bl093Vf85tz2', 4, '99999', 1, '0000-00-00', '', 0, '', '', '', '', '', '', 14, 4, 3, 0, '2025-08-31 14:00:03', '2025-10-05 05:20:35');
+('99999', 'Edmarlen', '', 'Catid', 'pattyaspiras@gmail.com', '', '$2y$10$Uaa8DoxJGgwn5nXusRp1LuS0MpAfqNWVj2kOc978/bl093Vf85tz2', 4, '99999', 1, '0000-00-00', '', 0, '', '', '', '', '', '', 14, 4, 3, 0, '2025-08-31 14:00:03', '2025-10-19 08:59:34');
 
 -- --------------------------------------------------------
 
@@ -787,7 +796,7 @@ INSERT INTO `tbluser` (`id`, `firstname`, `lastname`, `middlename`, `email`, `pa
 ('02-1819-01509', 'Patty', 'Aspiras', 'wew', 'patty@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL, NULL, 1, NULL),
 ('111111', 'hehe', 'huhu', '', 'rape.gallegos.coc@phinmaed.com', '$2y$10$G1WANLkrMr6VXSs5LF.ng.NfsB1Xv2rF.rem5hq6InsTfX5YeBvXu', 1, '$2y$10$hIvaUDm9IuIZpIVEPGoUvulXzIj46DC/4CHh7GnxXcYSRDmSY5m4e', NULL, NULL, NULL, 0, NULL),
 ('4771830', 'Maribelle', 'Acas', '', 'aspiraspat13@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 3, NULL, 1, NULL),
-('4771833', 'Alexis', 'Gonzaga', '', 'alex@gmail.com', '$2y$10$JooVcuK3ntZQdiPGcAhvle9y1Q9z0vKeeDJWui0ybvjLgXYcZboNq', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 2, 10, 2, 1, NULL),
+('4771833', 'Alexis', 'Gonzaga', 'shesh', 'alex@gmail.com', '$2y$10$JooVcuK3ntZQdiPGcAhvle9y1Q9z0vKeeDJWui0ybvjLgXYcZboNq', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 2, 9, 2, 1, NULL),
 ('47718333', 'Mary', 'Aspiras', 'wew', 'rape.gallegos.coc1@phinmaed.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$hJexLGVB8PmW0khOWYKkA..pBOSB9dYyp34862M8zTk381Zf1vD32', 2, 9, 3, 1, NULL);
 
 -- --------------------------------------------------------
@@ -1059,7 +1068,7 @@ ALTER TABLE `tblgradelevel`
 -- AUTO_INCREMENT for table `tblloginlogs`
 --
 ALTER TABLE `tblloginlogs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `tblpurpose`

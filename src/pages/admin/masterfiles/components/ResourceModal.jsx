@@ -36,6 +36,8 @@ export default function ResourceModal({
 				return `${action} Section`;
 			case "academicType":
 				return `${action} Academic Type`;
+			case "schoolYear":
+				return `${action} School Year`;
 			default:
 				return `${action} Item`;
 		}
@@ -53,6 +55,8 @@ export default function ResourceModal({
 				return "Section Name";
 			case "academicType":
 				return "Academic Type Name";
+			case "schoolYear":
+				return "School Year";
 			default:
 				return "Name";
 		}
@@ -70,6 +74,8 @@ export default function ResourceModal({
 				return "Enter section name";
 			case "academicType":
 				return "Enter academic type name";
+			case "schoolYear":
+				return "Enter school year (e.g., 2024-2025)";
 			default:
 				return "Enter name";
 		}
@@ -181,7 +187,7 @@ export default function ResourceModal({
 							type="button"
 							variant="outline"
 							onClick={onCancel}
-							className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+							className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
 						>
 							Cancel
 						</Button>

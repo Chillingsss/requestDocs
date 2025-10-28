@@ -12,20 +12,21 @@ export default function ForgotLRN({ onBackToLogin }) {
 	const [firstname, setFirstname] = useState("");
 	const [lastname, setLastname] = useState("");
 	const [email, setEmail] = useState("");
+	const [birthDate, setBirthDate] = useState("");
 	const [error, setError] = useState("");
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		setError("");
 
-		if (!firstname.trim() || !lastname.trim() || !email.trim()) {
+		if (!firstname.trim() || !lastname.trim() || !email.trim() || !birthDate.trim()) {
 			setError("Please fill in all fields");
 			return;
 		}
 
 		setIsLoading(true);
 		try {
-			const response = await addForgotLrnRequest(firstname, lastname, email);
+			const response = await addForgotLrnRequest(firstname, lastname, email, birthDate);
 			if (response.success) {
 				toast.success(
 					"Request submitted successfully. Please check your email."
@@ -112,6 +113,19 @@ export default function ForgotLRN({ onBackToLogin }) {
 							/>
 						</div>
 
+						<div>
+							<Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+								Birth Date
+							</Label>
+							<Input
+								type="date"
+								value={birthDate}
+								onChange={(e) => setBirthDate(e.target.value)}
+								className="mt-1"
+								required
+							/>
+						</div>
+
 						<div className="text-center">
 							<Button
 								type="submit"
@@ -119,7 +133,8 @@ export default function ForgotLRN({ onBackToLogin }) {
 									isLoading ||
 									!firstname.trim() ||
 									!lastname.trim() ||
-									!email.trim()
+									!email.trim() ||
+									!birthDate.trim()
 								}
 								className="w-full"
 							>

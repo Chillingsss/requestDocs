@@ -24,6 +24,7 @@ import {
 	getSection,
 	getStrands,
 	getSchoolYear,
+	uploadSingleStudentDocument,
 } from "../../../utils/registrar";
 import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
@@ -45,6 +46,12 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 	const [showEditModal, setShowEditModal] = useState(false);
 	const [selectedStudent, setSelectedStudent] = useState(null);
 
+	// Document upload state
+	const [sf10DocumentId, setSf10DocumentId] = useState(null);
+	const [gradeLevels, setGradeLevels] = useState([]);
+	const [uploadingDocuments, setUploadingDocuments] = useState({});
+	const [showUploadForm, setShowUploadForm] = useState({});
+
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
 	const [studentsPerPage] = useState(10);
@@ -63,6 +70,8 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 		fetchSections();
 		fetchStrands();
 		fetchSchoolYears();
+		fetchSf10DocumentId();
+		fetchGradeLevels();
 	}, []);
 
 	// Refresh data when refreshTrigger changes
@@ -183,6 +192,110 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 		} catch (error) {
 			console.error("Error fetching school years:", error);
 			toast.error("Failed to load school years");
+		}
+	};
+
+	const fetchSf10DocumentId = async () => {
+		try {
+			const apiUrl = getDecryptedApiUrl();
+			const formData = new FormData();
+			formData.append("operation", "getSf10DocumentId");
+			const response = await fetch(`${apiUrl}/registrar.php`, {
+				method: "POST",
+				body: formData,
+			});
+			const data = await response.json();
+			if (data.success && data.documentId) {
+				setSf10DocumentId(data.documentId);
+			} else {
+				console.error("SF10 document type not found");
+				toast.error("SF10 document type not found in database");
+			}
+		} catch (error) {
+			console.error("Error fetching SF10 document ID:", error);
+			toast.error("Failed to load SF10 document type");
+		}
+	};
+
+	const fetchGradeLevels = async () => {
+		try {
+			const apiUrl = getDecryptedApiUrl();
+			const formData = new FormData();
+			formData.append("operation", "getGradeLevels");
+			const response = await fetch(`${apiUrl}/registrar.php`, {
+				method: "POST",
+				body: formData,
+			});
+			const data = await response.json();
+			let gradeLevelsArray = data;
+			if (typeof data === "string") {
+				try {
+					gradeLevelsArray = JSON.parse(data);
+				} catch (e) {
+					gradeLevelsArray = [];
+				}
+			}
+			setGradeLevels(Array.isArray(gradeLevelsArray) ? gradeLevelsArray : []);
+		} catch (error) {
+			console.error("Error fetching grade levels:", error);
+			toast.error("Failed to load grade levels");
+		}
+	};
+
+	const toggleUploadForm = (studentId) => {
+		setShowUploadForm((prev) => ({
+			...prev,
+			[studentId]: !prev[studentId],
+		}));
+	};
+
+	const handleDocumentUpload = async (studentId, gradeLevelId, file) => {
+		// Validate file type
+		if (file.type !== "application/pdf") {
+			toast.error("Only PDF files are allowed");
+			return;
+		}
+
+		// Validate file size (10MB)
+		if (file.size > 10 * 1024 * 1024) {
+			toast.error("File size must be less than 10MB");
+			return;
+		}
+
+		if (!sf10DocumentId) {
+			toast.error("SF10 document type not loaded");
+			return;
+		}
+
+		if (!gradeLevelId) {
+			toast.error("Please select a grade level");
+			return;
+		}
+
+		setUploadingDocuments((prev) => ({ ...prev, [studentId]: true }));
+
+		try {
+			const result = await uploadSingleStudentDocument(
+				studentId,
+				sf10DocumentId,
+				gradeLevelId,
+				file
+			);
+
+			if (result.success) {
+				toast.success("Document uploaded successfully");
+				// Refresh student data to show the new document
+				await fetchStudents();
+				// Hide the upload form after successful upload
+				setShowUploadForm((prev) => ({ ...prev, [studentId]: false }));
+			} else {
+				toast.error(result.message || "Failed to upload document");
+			}
+		} catch (error) {
+			console.error("Error uploading document:", error);
+			toast.error("Failed to upload document");
+		} finally {
+			setUploadingDocuments((prev) => ({ ...prev, [studentId]: false }));
 		}
 	};
 
@@ -415,14 +528,14 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 								<UserPlus className="w-4 h-4" />
 								<span className="sm:inline">Add Student</span>
 							</Button>
-							<Button
+							{/* <Button
 								onClick={() => setShowImportModal(true)}
 								className="flex gap-2 justify-center items-center w-full text-white bg-green-600 hover:bg-green-700 sm:w-auto"
 								size="sm"
 							>
 								<Upload className="w-4 h-4" />
 								<span className="sm:inline">Import Students</span>
-							</Button>
+							</Button> */}
 						</div>
 					</div>
 
@@ -636,72 +749,171 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 												{expandedStudents.has(student.id) && (
 													<tr className="bg-slate-50 dark:bg-slate-800">
 														<td colSpan="7" className="px-3 py-4 lg:px-4">
-															{studentDocuments[student.id]?.length > 0 ? (
-																<div className="space-y-2">
-																	<h4 className="text-sm font-medium text-slate-900 dark:text-white">
-																		Student Documents:
-																	</h4>
-																	<div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-																		{studentDocuments[student.id]
-																			.sort((a, b) => b.id - a.id)
-																			.map((doc) => (
-																				<div
-																					key={doc.id}
-																					className="flex justify-between items-center p-3 bg-white rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+															<div className="space-y-4">
+																{(studentDocuments[student.id]?.length === 0 ||
+																	!studentDocuments[student.id] ||
+																	showUploadForm[student.id]) && (
+																	<div className="p-3 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+																		<div className="flex justify-between items-center mb-2">
+																			<h4 className="text-sm font-medium text-slate-900 dark:text-white">
+																				Upload SF10 Document (PDF only):
+																			</h4>
+																			{studentDocuments[student.id]?.length > 0 && (
+																				<Button
+																					onClick={() => toggleUploadForm(student.id)}
+																					size="sm"
+																					variant="ghost"
+																					className="h-6 px-2 text-xs"
 																				>
-																					<div className="flex-1 min-w-0">
-																						<div className="flex gap-2 items-center">
-																							<FileText className="flex-shrink-0 w-4 h-4 text-blue-600 dark:text-blue-400" />
-																							<div className="min-w-0">
-																								<p className="text-xs font-medium truncate text-slate-900 dark:text-white">
-																									{doc.documentType}
-																								</p>
-																								<p className="text-xs truncate text-slate-500 dark:text-slate-400">
-																									{doc.gradeLevelName} •{" "}
-																									{new Date(
-																										doc.createdAt
-																									).toLocaleDateString()}
-																								</p>
+																					Cancel
+																				</Button>
+																			)}
+																		</div>
+																		<div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+																			<div className="flex-1">
+																				<label className="block mb-1 text-xs text-slate-600 dark:text-slate-400">
+																					Grade Level
+																				</label>
+																				<select
+																					id={`gradeLevel-${student.id}`}
+																					className="px-3 py-2 w-full text-sm rounded-md border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+																				>
+																					<option value="">Select grade level</option>
+																					{gradeLevels.map((level) => (
+																						<option key={level.id} value={level.id}>
+																							{level.name}
+																						</option>
+																					))}
+																				</select>
+																			</div>
+																			<div className="flex-1">
+																				<label className="block mb-1 text-xs text-slate-600 dark:text-slate-400">
+																					Select SF10 PDF File
+																				</label>
+																				<input
+																					type="file"
+																					id={`fileInput-${student.id}`}
+																					accept=".pdf"
+																					className="px-3 py-2 w-full text-xs rounded-md border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+																				/>
+																			</div>
+																			<Button
+																				onClick={() => {
+																					const gradeLevelSelect = document.getElementById(
+																						`gradeLevel-${student.id}`
+																					);
+																					const fileInput = document.getElementById(
+																						`fileInput-${student.id}`
+																					);
+																					const gradeLevelId = gradeLevelSelect.value;
+																					const file = fileInput.files[0];
+
+																					if (!gradeLevelId) {
+																						toast.error("Please select a grade level");
+																						return;
+																					}
+																					if (!file) {
+																						toast.error("Please select a PDF file");
+																						return;
+																					}
+
+																					handleDocumentUpload(
+																						student.id,
+																						gradeLevelId,
+																						file
+																					);
+
+																					// Reset inputs
+																					gradeLevelSelect.value = "";
+																					fileInput.value = "";
+																				}}
+																				size="sm"
+																				disabled={uploadingDocuments[student.id]}
+																				className="flex gap-1 items-center"
+																			>
+																				<Upload className="w-3 h-3" />
+																				{uploadingDocuments[student.id]
+																					? "Uploading..."
+																					: "Upload SF10"}
+																			</Button>
+																		</div>
+																	</div>
+																)}
+
+																{/* Existing Documents List */}
+																{studentDocuments[student.id]?.length > 0 ? (
+																	<div className="space-y-2">
+																		<div className="flex justify-between items-center">
+																			<h4 className="text-sm font-medium text-slate-900 dark:text-white">
+																				Student Documents:
+																			</h4>
+																			{!showUploadForm[student.id] && (
+																				<Button
+																					onClick={() => toggleUploadForm(student.id)}
+																					size="sm"
+																					className="flex gap-1 items-center h-7 text-xs"
+																				>
+																					<Upload className="w-3 h-3" />
+																					Add Document
+																				</Button>
+																			)}
+																		</div>
+																		<div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+																			{studentDocuments[student.id]
+																				.sort((a, b) => b.id - a.id)
+																				.map((doc) => (
+																					<div
+																						key={doc.id}
+																						className="flex justify-between items-center p-3 bg-white rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+																					>
+																						<div className="flex-1 min-w-0">
+																							<div className="flex gap-2 items-center">
+																								<FileText className="flex-shrink-0 w-4 h-4 text-blue-600 dark:text-blue-400" />
+																								<div className="min-w-0">
+																									<p className="text-xs font-medium truncate text-slate-900 dark:text-white">
+																										{doc.documentType}
+																									</p>
+																									<p className="text-xs truncate text-slate-500 dark:text-slate-400">
+																										{doc.gradeLevelName} •{" "}
+																										{new Date(
+																											doc.createdAt
+																										).toLocaleDateString()}
+																									</p>
+																								</div>
 																							</div>
 																						</div>
-																					</div>
-																					<div className="flex gap-1 ml-2">
-																						{isViewableFile(doc.fileName) && (
+																						<div className="flex gap-1 ml-2">
+																							{isViewableFile(doc.fileName) && (
+																								<Button
+																									onClick={() =>
+																										handleViewDocument(doc)
+																									}
+																									size="sm"
+																									variant="outline"
+																									className="p-1 w-7 h-7"
+																									title="View in Modal"
+																								>
+																									<Eye className="w-3 h-3" />
+																								</Button>
+																							)}
 																							<Button
 																								onClick={() =>
-																									handleViewDocument(doc)
+																									handleDownloadDocument(doc)
 																								}
 																								size="sm"
 																								variant="outline"
-																								className="p-1 w-7 h-7"
-																								title="View in Modal"
+																								className="p-1 w-7 h-7 text-green-600 bg-green-50 border-green-200 hover:bg-green-100"
+																								title="Download Document"
 																							>
-																								<Eye className="w-3 h-3" />
+																								<Download className="w-3 h-3" />
 																							</Button>
-																						)}
-																						<Button
-																							onClick={() =>
-																								handleDownloadDocument(doc)
-																							}
-																							size="sm"
-																							variant="outline"
-																							className="p-1 w-7 h-7 text-green-600 bg-green-50 border-green-200 hover:bg-green-100"
-																							title="Download Document"
-																						>
-																							<Download className="w-3 h-3" />
-																						</Button>
+																						</div>
 																					</div>
-																				</div>
-																			))}
+																				))}
+																		</div>
 																	</div>
-																</div>
-															) : (
-																<div className="py-4 text-center">
-																	<p className="text-sm text-slate-500 dark:text-slate-400">
-																		No documents found for this student.
-																	</p>
-																</div>
-															)}
+																) : null}
+															</div>
 														</td>
 													</tr>
 												)}

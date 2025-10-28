@@ -984,6 +984,109 @@ class User {
     }
   }
 
+  function uploadSingleStudentDocument() {
+    include "connection.php";
+    try {
+      $studentId = $_POST['studentId'];
+      $documentType = $_POST['documentType'];
+      $gradeLevelId = $_POST['gradeLevelId'];
+      $uploadDir = 'documents/';
+      
+      if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+      }
+
+      if (!isset($_FILES['document']) || $_FILES['document']['error'] !== UPLOAD_ERR_OK) {
+        return json_encode([
+          'success' => false,
+          'message' => 'No file uploaded or upload error occurred'
+        ]);
+      }
+
+      $fileName = $_FILES['document']['name'];
+      $fileTmpName = $_FILES['document']['tmp_name'];
+      $fileSize = $_FILES['document']['size'];
+
+      // Validate file type - only PDF
+      $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+      if (strtolower($fileExtension) !== 'pdf') {
+        return json_encode([
+          'success' => false,
+          'message' => 'Invalid file type. Only PDF files are allowed.'
+        ]);
+      }
+
+      // Check file size (max 10MB)
+      if ($fileSize > 10 * 1024 * 1024) {
+        return json_encode([
+          'success' => false,
+          'message' => 'File size too large. Maximum size is 10MB.'
+        ]);
+      }
+
+      // Get student lastname
+      $studentSql = "SELECT lastname FROM tblstudent WHERE id = :studentId";
+      $studentStmt = $conn->prepare($studentSql);
+      $studentStmt->bindParam(':studentId', $studentId);
+      $studentStmt->execute();
+      $studentData = $studentStmt->fetch(PDO::FETCH_ASSOC);
+      $studentLastname = $studentData ? str_replace(' ', '', $studentData['lastname']) : 'Unknown';
+      
+      // Get selected grade level name
+      $gradeLevelSql = "SELECT name FROM tblgradelevel WHERE id = :gradeLevelId";
+      $gradeLevelStmt = $conn->prepare($gradeLevelSql);
+      $gradeLevelStmt->bindParam(':gradeLevelId', $gradeLevelId);
+      $gradeLevelStmt->execute();
+      $gradeLevelData = $gradeLevelStmt->fetch(PDO::FETCH_ASSOC);
+      $gradeLevelName = $gradeLevelData ? str_replace(' ', '', $gradeLevelData['name']) : 'Unknown';
+
+      // Generate filename with format: LRN-GradeLevel-Lastname.pdf (same as teacher.php)
+      $uniqueId = str_pad($studentId, 8, '0', STR_PAD_LEFT);
+      $uniqueFileName = $uniqueId . '-' . $gradeLevelName . '-' . $studentLastname . '.' . $fileExtension;
+      $filePath = $uploadDir . $uniqueFileName;
+
+      if (move_uploaded_file($fileTmpName, $filePath)) {
+        // Use the provided grade level ID from the form
+        
+        // Insert document record with grade level
+        $insertSql = "INSERT INTO tblstudentdocument (studentId, documentId, fileName, gradeLevelId, createdAt) 
+                     VALUES (:studentId, :documentId, :fileName, :gradeLevelId, NOW())";
+        $insertStmt = $conn->prepare($insertSql);
+        $insertStmt->bindParam(':studentId', $studentId);
+        $insertStmt->bindParam(':documentId', $documentType);
+        $insertStmt->bindParam(':fileName', $uniqueFileName);
+        $insertStmt->bindParam(':gradeLevelId', $gradeLevelId);
+
+        if ($insertStmt->execute()) {
+          return json_encode([
+            'success' => true,
+            'message' => 'Document uploaded successfully',
+            'fileName' => $uniqueFileName,
+            'studentId' => $studentId,
+            'gradeLevelId' => $gradeLevelId
+          ]);
+        } else {
+          unlink($filePath);
+          return json_encode([
+            'success' => false,
+            'message' => 'Database error while saving document record'
+          ]);
+        }
+      } else {
+        return json_encode([
+          'success' => false,
+          'message' => 'Failed to upload file to server'
+        ]);
+      }
+
+    } catch (Exception $e) {
+      return json_encode([
+        'success' => false,
+        'message' => 'Upload failed: ' . $e->getMessage()
+      ]);
+    }
+  }
+
   function getStrands() {
     include "connection.php";
     $sql = "SELECT s.id, s.name, t.id as trackId, t.name as trackName FROM tblstrand s INNER JOIN tbltrack t ON s.trackId = t.id";
@@ -1522,15 +1625,17 @@ function addForgotLrnRequest($json)
   $firstname = $json['firstname'];
   $lastname = $json['lastname'];
   $email = $json['email'];
+  $birthDate = $json['birthDate'];
   
   try {
-    $sql = "INSERT INTO tblforgotlrn (firstname, lastname, email) 
-            VALUES (:firstname, :lastname, :email)";
+    $sql = "INSERT INTO tblforgotlrn (firstname, lastname, email, birthDate) 
+            VALUES (:firstname, :lastname, :email, :birthDate)";
     
     $stmt = $conn->prepare($sql);
     $stmt->bindParam(':firstname', $firstname);
     $stmt->bindParam(':lastname', $lastname);
     $stmt->bindParam(':email', $email);
+    $stmt->bindParam(':birthDate', $birthDate);
     
     if ($stmt->execute()) {
       return json_encode(['success' => true, 'message' => 'Request submitted successfully']);
@@ -2277,6 +2382,9 @@ switch ($operation) {
     break;
   case "uploadStudentDocuments":
     echo $user->uploadStudentDocuments();
+    break;
+  case "uploadSingleStudentDocument":
+    echo $user->uploadSingleStudentDocument();
     break;
   case "getStrands":
     echo $user->getStrands();

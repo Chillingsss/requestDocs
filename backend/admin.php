@@ -2599,6 +2599,132 @@ class User {
     }
    }
 
+   // School Year management functions
+   function getSchoolYears()
+   {
+    include "connection.php";
+
+    try {
+        $sql = "SELECT 
+                    id,
+                    year
+                FROM tblschoolyear
+                ORDER BY year DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $schoolYears = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return json_encode($schoolYears);
+        }
+        return json_encode([]);
+    } catch (PDOException $e) {
+        return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+    }
+   }
+
+   function addSchoolYear($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        // Check if school year already exists
+        $checkSql = "SELECT COUNT(*) as count FROM tblschoolyear WHERE year = :year";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':year', $json['name']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'School year already exists']);
+        }
+        
+        $sql = "INSERT INTO tblschoolyear (year) VALUES (:year)";
+        $stmt = $conn->prepare($sql);
+        
+        $year = $json['name'];
+        
+        $stmt->bindParam(':year', $year);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'School year added successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to add school year']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function updateSchoolYear($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        // Check if school year already exists (excluding current record)
+        $checkSql = "SELECT COUNT(*) as count FROM tblschoolyear WHERE year = :year AND id != :id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':year', $json['name']);
+        $checkStmt->bindParam(':id', $json['id']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'School year already exists']);
+        }
+        
+        $sql = "UPDATE tblschoolyear SET year = :year WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        
+        $year = $json['name'];
+        $id = $json['id'];
+        
+        $stmt->bindParam(':year', $year);
+        $stmt->bindParam(':id', $id);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'School year updated successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to update school year']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
+   function deleteSchoolYear($json)
+   {
+    include "connection.php";
+    $json = json_decode($json, true);
+    
+    try {
+        // Check if school year is being used in students
+        $checkSql = "SELECT COUNT(*) as count FROM tblstudent WHERE schoolyearId = :id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':id', $json['id']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($checkResult['count'] > 0) {
+            return json_encode(['status' => 'error', 'message' => 'Cannot delete school year. It is being used by students.']);
+        }
+        
+        $sql = "DELETE FROM tblschoolyear WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $json['id']);
+        
+        if ($stmt->execute()) {
+            return json_encode(['status' => 'success', 'message' => 'School year deleted successfully']);
+        } else {
+            return json_encode(['status' => 'error', 'message' => 'Failed to delete school year']);
+        }
+    } catch (PDOException $e) {
+        return json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+   }
+
    function exportRequestAnalytics($json)
    {
     include "connection.php";
@@ -3125,6 +3251,18 @@ switch ($operation) {
     break;
   case "deleteStrand":
     echo $user->deleteStrand($json);
+    break;
+  case "getSchoolYears":
+    echo $user->getSchoolYears();
+    break;
+  case "addSchoolYear":
+    echo $user->addSchoolYear($json);
+    break;
+  case "updateSchoolYear":
+    echo $user->updateSchoolYear($json);
+    break;
+  case "deleteSchoolYear":
+    echo $user->deleteSchoolYear($json);
     break;
   case "getLoginLogs":
     echo $user->getLoginLogs($json);

@@ -16,6 +16,7 @@ import AcademicTypesTab from "./components/AcademicTypesTab";
 import AcademicTypeModal from "./components/AcademicTypeModal";
 import StrandsTab from "./components/StrandsTab";
 import StrandModal from "./components/StrandModal";
+import SchoolYearsTab from "./components/SchoolYearsTab";
 
 export default function ResourcesContent() {
 	const [activeTab, setActiveTab] = useState("documents");
@@ -29,6 +30,7 @@ export default function ResourcesContent() {
 		academicTypes,
 		tracks,
 		strands,
+		schoolYears,
 		loading,
 		showAddModal,
 		showEditModal,
@@ -186,6 +188,16 @@ export default function ResourcesContent() {
 						>
 							Strands
 						</button>
+						<button
+							onClick={() => setActiveTab("school-years")}
+							className={`py-2 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap flex-shrink-0 ${
+								activeTab === "school-years"
+									? "border-blue-500 text-blue-600 dark:text-blue-400"
+									: "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
+							}`}
+						>
+							School Years
+						</button>
 					</nav>
 				</div>
 
@@ -263,6 +275,16 @@ export default function ResourcesContent() {
 					{activeTab === "strands" && (
 						<StrandsTab
 							strands={strands}
+							tracks={tracks}
+							loading={loading}
+							onAdd={handleAdd}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+						/>
+					)}
+					{activeTab === "school-years" && (
+						<SchoolYearsTab
+							schoolYears={schoolYears}
 							loading={loading}
 							onAdd={handleAdd}
 							onEdit={handleEdit}

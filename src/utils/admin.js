@@ -1247,6 +1247,74 @@ export async function deleteStrand(strandId) {
 	}
 }
 
+// School Year management functions
+export async function getSchoolYears() {
+	const formData = new FormData();
+	formData.append("operation", "getSchoolYears");
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addSchoolYear(schoolYearData) {
+	const formData = new FormData();
+	formData.append("operation", "addSchoolYear");
+	formData.append("json", JSON.stringify(schoolYearData));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateSchoolYear(schoolYearId, schoolYearData) {
+	const formData = new FormData();
+	formData.append("operation", "updateSchoolYear");
+	formData.append("json", JSON.stringify({ id: schoolYearId, ...schoolYearData }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deleteSchoolYear(schoolYearId) {
+	const formData = new FormData();
+	formData.append("operation", "deleteSchoolYear");
+	formData.append("json", JSON.stringify({ id: schoolYearId }));
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/admin.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 // Login Logs management functions
 export async function getLoginLogs(filters = {}) {
 	const formData = new FormData();

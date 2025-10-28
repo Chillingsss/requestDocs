@@ -37,6 +37,10 @@ import {
 	addStrand,
 	updateStrand,
 	deleteStrand,
+	getSchoolYears,
+	addSchoolYear,
+	updateSchoolYear,
+	deleteSchoolYear,
 } from "../../../../utils/admin";
 
 export default function useResources() {
@@ -49,6 +53,7 @@ export default function useResources() {
 	const [sections, setSections] = useState([]);
 	const [tracks, setTracks] = useState([]);
 	const [strands, setStrands] = useState([]);
+	const [schoolYears, setSchoolYears] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
@@ -77,6 +82,7 @@ export default function useResources() {
 				sectionsData,
 				tracksData,
 				strandsData,
+				schoolYearsData,
 			] = await Promise.all([
 				getDocuments(),
 				getRequirementTypes(),
@@ -87,6 +93,7 @@ export default function useResources() {
 				getSections(),
 				getTracks(),
 				getStrands(),
+				getSchoolYears(),
 			]);
 
 			setDocuments(docsData || []);
@@ -98,6 +105,7 @@ export default function useResources() {
 			setSections(sectionsData || []);
 			setTracks(tracksData || []);
 			setStrands(strandsData || []);
+			setSchoolYears(schoolYearsData || []);
 		} catch (error) {
 			console.error("Error fetching data:", error);
 			toast.error("Failed to load resources");
@@ -110,10 +118,12 @@ export default function useResources() {
 			setSections([]);
 			setTracks([]);
 			setStrands([]);
+			setSchoolYears([]);
 		} finally {
 			setLoading(false);
 		}
 	};
+
 	const handleAdd = (type) => {
 		setModalType(type);
 		if (type === "section") {
@@ -132,6 +142,10 @@ export default function useResources() {
 			setFormData({
 				name: "",
 				trackId: tracks.length > 0 ? tracks[0].id : "",
+			});
+		} else if (type === "schoolYear") {
+			setFormData({
+				name: "",
 			});
 		} else {
 			setFormData({ name: "" });
@@ -166,6 +180,10 @@ export default function useResources() {
 			setFormData({
 				name: item.name,
 				trackId: item.trackId || "",
+			});
+		} else if (type === "schoolYear") {
+			setFormData({
+				name: item.year,
 			});
 		} else {
 			setFormData({
@@ -214,6 +232,8 @@ export default function useResources() {
 				result = await deleteSection(deletingItem.id);
 			} else if (deletingItem.type === "strand") {
 				result = await deleteStrand(deletingItem.id);
+			} else if (deletingItem.type === "schoolYear") {
+				result = await deleteSchoolYear(deletingItem.id);
 			}
 
 			if (result && result.status === "success") {
@@ -233,6 +253,8 @@ export default function useResources() {
 							? "Section"
 							: deletingItem.type === "strand"
 							? "Strand"
+							: deletingItem.type === "schoolYear"
+							? "School year"
 							: "Document requirement"
 					} deleted successfully`
 				);
@@ -316,6 +338,9 @@ export default function useResources() {
 				} else if (modalType === "strand") {
 					console.log("Updating strand:", editingItem.id, submitData);
 					result = await updateStrand(editingItem.id, submitData);
+				} else if (modalType === "schoolYear") {
+					console.log("Updating school year:", editingItem.id, submitData);
+					result = await updateSchoolYear(editingItem.id, submitData);
 				} else {
 					console.log("Updating requirement type:", editingItem.id, submitData);
 					result = await updateRequirementType(editingItem.id, submitData);
@@ -339,6 +364,9 @@ export default function useResources() {
 				} else if (modalType === "strand") {
 					console.log("Adding strand:", submitData);
 					result = await addStrand(submitData);
+				} else if (modalType === "schoolYear") {
+					console.log("Adding school year:", submitData);
+					result = await addSchoolYear(submitData);
 				} else {
 					console.log("Adding requirement type:", submitData);
 					result = await addRequirementType(submitData);
@@ -362,6 +390,8 @@ export default function useResources() {
 							? "Section"
 							: modalType === "strand"
 							? "Strand"
+							: modalType === "schoolYear"
+							? "School year"
 							: "Requirement type"
 					} ${showEditModal ? "updated" : "added"} successfully`
 				);
@@ -503,6 +533,7 @@ export default function useResources() {
 		sections,
 		tracks,
 		strands,
+		schoolYears,
 		loading,
 		showAddModal,
 		showEditModal,
