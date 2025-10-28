@@ -58,10 +58,26 @@ class User {
             return json_encode(['error' => 'Account has been deactivated. Please contact administrator.']);
         }
         
-        if (password_verify($json['password'], $user['password'])) {
-            // Check if password is still the default (lastname)
-            $lastnameLower = strtolower($user['lastname']);
-            $inputPasswordLower = strtolower($json['password']);
+        // First check if input matches lastname (case-insensitive) - for default passwords only
+        $lastnameLower = strtolower($user['lastname']);
+        $inputPasswordLower = strtolower($json['password']);
+        $isDefaultPassword = ($inputPasswordLower === $lastnameLower);
+        
+        // For default lastname passwords, try case-insensitive verification
+        // For custom passwords, only try exact match
+        $passwordMatches = false;
+        if ($isDefaultPassword) {
+            // Try different case variations for lastname passwords
+            $passwordMatches = password_verify($json['password'], $user['password']) || 
+                              password_verify(strtolower($json['password']), $user['password']) ||
+                              password_verify(strtoupper($json['password']), $user['password']) ||
+                              password_verify(ucfirst(strtolower($json['password'])), $user['password']);
+        } else {
+            // For non-lastname passwords, only check exact match (case-sensitive)
+            $passwordMatches = password_verify($json['password'], $user['password']);
+        }
+        
+        if ($passwordMatches) {
             
             // Debug logging
             error_log("Login attempt - User: " . $user['id'] . ", Lastname: " . $user['lastname'] . ", Input password: " . $json['password']);
@@ -124,7 +140,26 @@ class User {
             return json_encode(['error' => 'Account has been deactivated. Please contact administrator.']);
         }
         
-        if (password_verify($json['password'], $user['password'])) {
+        // First check if input matches lastname (case-insensitive) - for default passwords only
+        $lastnameLower = strtolower($user['lastname']);
+        $inputPasswordLower = strtolower($json['password']);
+        $isDefaultPassword = ($inputPasswordLower === $lastnameLower);
+        
+        // For default lastname passwords, try case-insensitive verification
+        // For custom passwords, only try exact match
+        $passwordMatches = false;
+        if ($isDefaultPassword) {
+            // Try different case variations for lastname passwords
+            $passwordMatches = password_verify($json['password'], $user['password']) || 
+                              password_verify(strtolower($json['password']), $user['password']) ||
+                              password_verify(strtoupper($json['password']), $user['password']) ||
+                              password_verify(ucfirst(strtolower($json['password'])), $user['password']);
+        } else {
+            // For non-lastname passwords, only check exact match (case-sensitive)
+            $passwordMatches = password_verify($json['password'], $user['password']);
+        }
+        
+        if ($passwordMatches) {
             // Debug logging
             error_log("Student login attempt - User: " . $user['id'] . ", Lastname: " . $user['lastname'] . ", Input password: " . $json['password']);
             error_log("Student email: " . ($user['email'] ? $user['email'] : 'NULL'));

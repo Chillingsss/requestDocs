@@ -658,9 +658,10 @@ export default function AddStudentModal({
 											</select>
 										</div>
 										<div>
-											<Label htmlFor={`sectionId-${index}`}>
-												Section (optional)
-											</Label>
+											<Label htmlFor={`sectionId-${index}`}>Section</Label>
+											<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+												Select grade level first to view available sections
+											</p>
 											<select
 												id={`sectionId-${index}`}
 												value={student.sectionId}

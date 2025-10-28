@@ -191,9 +191,14 @@ export default function LoginPage() {
 		const inputPasswordLower = password.toLowerCase();
 
 		if (inputPasswordLower === lastnameLower) {
-			// Password matches lastname, needs reset
+			// Password matches lastname, needs reset (students only need password reset, no PIN)
 			console.log("Password matches lastname, proceeding to password reset");
-			setPendingUser(updatedUser);
+			const userForReset = {
+				...updatedUser,
+				needsPasswordReset: true,
+				needsPinReset: false, // Students don't need PIN reset
+			};
+			setPendingUser(userForReset);
 			setShowPasswordReset(true);
 			toast.success("Email verified! Now please reset your password.");
 		} else {
@@ -286,7 +291,11 @@ export default function LoginPage() {
 				setShowEmailSetup(true);
 				setIsLoading(false);
 				toast.success("Please set up your email address to continue.");
-			} else if (user && user.userLevel !== "Student" && (user.needsPasswordReset || user.needsPinReset)) {
+			} else if (
+				user &&
+				user.userLevel !== "Student" &&
+				(user.needsPasswordReset || user.needsPinReset)
+			) {
 				// Non-student users need password or PIN reset
 				console.log("User needs password/PIN reset");
 				setPendingUser(user);
@@ -295,7 +304,11 @@ export default function LoginPage() {
 				toast.success(
 					"Password/PIN reset required. Please check your email for OTP."
 				);
-			} else if (user && user.userLevel === "Student" && user.needsPasswordReset) {
+			} else if (
+				user &&
+				user.userLevel === "Student" &&
+				user.needsPasswordReset
+			) {
 				// Student only needs password reset (no PIN)
 				console.log("Student needs password reset");
 				setPendingUser(user);
