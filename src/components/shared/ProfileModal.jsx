@@ -748,10 +748,10 @@ export default function ProfileModal({ isOpen, onClose, userId, userType }) {
 				</div>
 
 				{/* Change Password and PIN Buttons */}
-				<div className="flex gap-4 justify-center mt-6">
+				<div className="flex flex-col gap-3 justify-center mt-6 sm:flex-row">
 					<Button
 						onClick={handleChangePasswordClick}
-						className="flex items-center space-x-2 text-white bg-red-600 hover:bg-red-700"
+						className="flex justify-center items-center space-x-2 w-full text-white bg-red-600 sm:w-auto hover:bg-red-700"
 					>
 						<LockKeyhole className="w-4 h-4" />
 						<span>Change Password</span>
@@ -760,7 +760,7 @@ export default function ProfileModal({ isOpen, onClose, userId, userType }) {
 					{userType !== "student" && (
 						<Button
 							onClick={handleChangePinClick}
-							className="flex items-center space-x-2 text-white bg-orange-600 hover:bg-orange-700"
+							className="flex justify-center items-center space-x-2 w-full text-white bg-orange-600 sm:w-auto hover:bg-orange-700"
 						>
 							<Shield className="w-4 h-4" />
 							<span>Change PIN</span>
@@ -1297,20 +1297,20 @@ export default function ProfileModal({ isOpen, onClose, userId, userType }) {
 				<Button
 					onClick={handleBackToProfile}
 					variant="ghost"
-					className="flex items-center space-x-2"
+					className="flex items-center px-3 py-2 space-x-2 text-sm sm:text-base"
 				>
 					<ArrowLeft className="w-4 h-4" />
-					<span>Back to Profile</span>
+					<span className="hidden sm:inline">Back to Profile</span>
 				</Button>
 			);
 		} else if (!isEditing) {
 			return (
 				<Button
 					onClick={handleEdit}
-					className="flex items-center space-x-2 text-white bg-blue-600 hover:bg-blue-700"
+					className="flex items-center px-3 py-2 space-x-2 text-sm text-white bg-blue-600 sm:text-base hover:bg-blue-700"
 				>
 					<Edit className="w-4 h-4" />
-					<span>Edit Profile</span>
+					<span className="hidden sm:inline">Edit Profile</span>
 				</Button>
 			);
 		} else {
@@ -1319,18 +1319,20 @@ export default function ProfileModal({ isOpen, onClose, userId, userType }) {
 					<Button
 						onClick={handleCancel}
 						variant="outline"
-						className="flex items-center space-x-2"
+						className="flex items-center px-3 py-2 space-x-2 text-sm sm:text-base"
 					>
 						<XCircle className="w-4 h-4" />
-						<span>Cancel</span>
+						<span className="hidden sm:inline">Cancel</span>
 					</Button>
 					<Button
 						onClick={handleSave}
 						disabled={saving}
-						className="flex items-center space-x-2 text-white bg-green-600 hover:bg-green-700"
+						className="flex items-center px-3 py-2 space-x-2 text-sm text-white bg-green-600 sm:text-base hover:bg-green-700"
 					>
 						<Save className="w-4 h-4" />
-						<span>{saving ? "Saving..." : "Save Changes"}</span>
+						<span className="hidden sm:inline">
+							{saving ? "Saving..." : "Save Changes"}
+						</span>
 					</Button>
 				</>
 			);
@@ -1348,7 +1350,7 @@ export default function ProfileModal({ isOpen, onClose, userId, userType }) {
 			/>
 
 			{/* Modal */}
-			<div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden transform transition-all duration-300 scale-100 dark:bg-gray-800">
+			<div className="relative bg-white rounded-none sm:rounded-2xl shadow-2xl w-full sm:max-w-4xl h-[100svh] sm:h-auto sm:max-h-[95vh] overflow-hidden transform transition-all duration-300 scale-100 dark:bg-gray-800">
 				{/* Header */}
 				<div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
 					<div className="flex items-center space-x-3">
@@ -1357,11 +1359,11 @@ export default function ProfileModal({ isOpen, onClose, userId, userType }) {
 							{modalTitle}
 						</h2>
 					</div>
-					<div className="flex items-center space-x-2">
+					<div className="flex gap-2 items-center ml-auto">
 						{renderHeaderButtons()}
 						<button
 							onClick={onClose}
-							className="p-2 text-gray-400 rounded-full transition-colors hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+							className="p-2 w-9 h-9 text-gray-400 rounded-full transition-colors hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
 						>
 							<X className="w-5 h-5" />
 						</button>
