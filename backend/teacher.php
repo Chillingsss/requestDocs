@@ -16,7 +16,7 @@ class User {
 
     try {
       // First, get all students
-      $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.lrn, a.email, a.password, a.userLevel, a.birthDate, a.age, a.religion, a.completeAddress, a.fatherName, a.motherName, a.guardianName, a.guardianRelationship, a.sectionId, a.schoolyearId, a.gradeLevelId, b.name as sectionName, s.name as strand, t.name as track, a.strandId, sy.year as schoolYear, gl.name as gradeLevelName
+      $sql = "SELECT a.id, a.firstname, a.middlename, a.lastname, a.lrn, a.email, a.password, a.userLevel, a.birthDate, a.age, a.religion, a.completeAddress, a.fatherName, a.motherName, a.guardianName, a.guardianRelationship, a.sectionId, a.schoolyearId, a.contactNo, a.gradeLevelId, b.name as sectionName, s.name as strand, t.name as track, a.strandId, sy.year as schoolYear, gl.name as gradeLevelName
       FROM tblstudent a
       LEFT JOIN tblsection b ON a.sectionId = b.id
       LEFT JOIN tblstrand s ON a.strandId = s.id
