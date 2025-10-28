@@ -193,11 +193,14 @@ export default function LoginPage() {
 		if (inputPasswordLower === lastnameLower) {
 			// Password matches lastname, needs reset (students only need password reset, no PIN)
 			console.log("Password matches lastname, proceeding to password reset");
+			// Create clean user object for password reset - explicitly remove any PIN-related flags
+			const { needsEmailSetup, needsPinReset, ...cleanUser } = updatedUser;
 			const userForReset = {
-				...updatedUser,
+				...cleanUser,
 				needsPasswordReset: true,
-				needsPinReset: false, // Students don't need PIN reset
+				needsPinReset: false, // Explicitly set to false for students
 			};
+			console.log("User object for password reset:", userForReset);
 			setPendingUser(userForReset);
 			setShowPasswordReset(true);
 			toast.success("Email verified! Now please reset your password.");
