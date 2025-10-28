@@ -24,7 +24,7 @@ import {
 	getSection,
 	getStrands,
 	getSchoolYear,
-	uploadSingleStudentDocument,
+	// uploadSingleStudentDocument, // Commented out - upload functionality disabled
 } from "../../../utils/registrar";
 import { getDecryptedApiUrl } from "../../../utils/apiConfig";
 
@@ -46,11 +46,11 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 	const [showEditModal, setShowEditModal] = useState(false);
 	const [selectedStudent, setSelectedStudent] = useState(null);
 
-	// Document upload state
-	const [sf10DocumentId, setSf10DocumentId] = useState(null);
-	const [gradeLevels, setGradeLevels] = useState([]);
-	const [uploadingDocuments, setUploadingDocuments] = useState({});
-	const [showUploadForm, setShowUploadForm] = useState({});
+	// Document upload state - COMMENTED OUT (upload functionality disabled)
+	// const [sf10DocumentId, setSf10DocumentId] = useState(null);
+	// const [gradeLevels, setGradeLevels] = useState([]);
+	// const [uploadingDocuments, setUploadingDocuments] = useState({});
+	// const [showUploadForm, setShowUploadForm] = useState({});
 
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
@@ -70,8 +70,8 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 		fetchSections();
 		fetchStrands();
 		fetchSchoolYears();
-		fetchSf10DocumentId();
-		fetchGradeLevels();
+		// fetchSf10DocumentId(); // Commented out - upload functionality disabled
+		// fetchGradeLevels(); // Commented out - upload functionality disabled
 	}, []);
 
 	// Refresh data when refreshTrigger changes
@@ -195,109 +195,113 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 		}
 	};
 
-	const fetchSf10DocumentId = async () => {
-		try {
-			const apiUrl = getDecryptedApiUrl();
-			const formData = new FormData();
-			formData.append("operation", "getSf10DocumentId");
-			const response = await fetch(`${apiUrl}/registrar.php`, {
-				method: "POST",
-				body: formData,
-			});
-			const data = await response.json();
-			if (data.success && data.documentId) {
-				setSf10DocumentId(data.documentId);
-			} else {
-				console.error("SF10 document type not found");
-				toast.error("SF10 document type not found in database");
-			}
-		} catch (error) {
-			console.error("Error fetching SF10 document ID:", error);
-			toast.error("Failed to load SF10 document type");
-		}
-	};
+	// COMMENTED OUT - Upload functionality disabled
+	// const fetchSf10DocumentId = async () => {
+	// 	try {
+	// 		const apiUrl = getDecryptedApiUrl();
+	// 		const formData = new FormData();
+	// 		formData.append("operation", "getSf10DocumentId");
+	// 		const response = await fetch(`${apiUrl}/registrar.php`, {
+	// 			method: "POST",
+	// 			body: formData,
+	// 		});
+	// 		const data = await response.json();
+	// 		if (data.success && data.documentId) {
+	// 			setSf10DocumentId(data.documentId);
+	// 		} else {
+	// 			console.error("SF10 document type not found");
+	// 			toast.error("SF10 document type not found in database");
+	// 		}
+	// 	} catch (error) {
+	// 		console.error("Error fetching SF10 document ID:", error);
+	// 		toast.error("Failed to load SF10 document type");
+	// 	}
+	// };
 
-	const fetchGradeLevels = async () => {
-		try {
-			const apiUrl = getDecryptedApiUrl();
-			const formData = new FormData();
-			formData.append("operation", "getGradeLevels");
-			const response = await fetch(`${apiUrl}/registrar.php`, {
-				method: "POST",
-				body: formData,
-			});
-			const data = await response.json();
-			let gradeLevelsArray = data;
-			if (typeof data === "string") {
-				try {
-					gradeLevelsArray = JSON.parse(data);
-				} catch (e) {
-					gradeLevelsArray = [];
-				}
-			}
-			setGradeLevels(Array.isArray(gradeLevelsArray) ? gradeLevelsArray : []);
-		} catch (error) {
-			console.error("Error fetching grade levels:", error);
-			toast.error("Failed to load grade levels");
-		}
-	};
+	// COMMENTED OUT - Upload functionality disabled
+	// const fetchGradeLevels = async () => {
+	// 	try {
+	// 		const apiUrl = getDecryptedApiUrl();
+	// 		const formData = new FormData();
+	// 		formData.append("operation", "getGradeLevels");
+	// 		const response = await fetch(`${apiUrl}/registrar.php`, {
+	// 			method: "POST",
+	// 			body: formData,
+	// 		});
+	// 		const data = await response.json();
+	// 		let gradeLevelsArray = data;
+	// 		if (typeof data === "string") {
+	// 			try {
+	// 				gradeLevelsArray = JSON.parse(data);
+	// 			} catch (e) {
+	// 				gradeLevelsArray = [];
+	// 			}
+	// 		}
+	// 		setGradeLevels(Array.isArray(gradeLevelsArray) ? gradeLevelsArray : []);
+	// 	} catch (error) {
+	// 		console.error("Error fetching grade levels:", error);
+	// 		toast.error("Failed to load grade levels");
+	// 	}
+	// };
 
-	const toggleUploadForm = (studentId) => {
-		setShowUploadForm((prev) => ({
-			...prev,
-			[studentId]: !prev[studentId],
-		}));
-	};
+	// COMMENTED OUT - Upload functionality disabled
+	// const toggleUploadForm = (studentId) => {
+	// 	setShowUploadForm((prev) => ({
+	// 		...prev,
+	// 		[studentId]: !prev[studentId],
+	// 	}));
+	// };
 
-	const handleDocumentUpload = async (studentId, gradeLevelId, file) => {
-		// Validate file type
-		if (file.type !== "application/pdf") {
-			toast.error("Only PDF files are allowed");
-			return;
-		}
+	// COMMENTED OUT - Upload functionality disabled
+	// const handleDocumentUpload = async (studentId, gradeLevelId, file) => {
+	// 	// Validate file type
+	// 	if (file.type !== "application/pdf") {
+	// 		toast.error("Only PDF files are allowed");
+	// 		return;
+	// 	}
 
-		// Validate file size (10MB)
-		if (file.size > 10 * 1024 * 1024) {
-			toast.error("File size must be less than 10MB");
-			return;
-		}
+	// 	// Validate file size (10MB)
+	// 	if (file.size > 10 * 1024 * 1024) {
+	// 		toast.error("File size must be less than 10MB");
+	// 		return;
+	// 	}
 
-		if (!sf10DocumentId) {
-			toast.error("SF10 document type not loaded");
-			return;
-		}
+	// 	if (!sf10DocumentId) {
+	// 		toast.error("SF10 document type not loaded");
+	// 		return;
+	// 	}
 
-		if (!gradeLevelId) {
-			toast.error("Please select a grade level");
-			return;
-		}
+	// 	if (!gradeLevelId) {
+	// 		toast.error("Please select a grade level");
+	// 		return;
+	// 	}
 
-		setUploadingDocuments((prev) => ({ ...prev, [studentId]: true }));
+	// 	setUploadingDocuments((prev) => ({ ...prev, [studentId]: true }));
 
-		try {
-			const result = await uploadSingleStudentDocument(
-				studentId,
-				sf10DocumentId,
-				gradeLevelId,
-				file
-			);
+	// 	try {
+	// 		const result = await uploadSingleStudentDocument(
+	// 			studentId,
+	// 			sf10DocumentId,
+	// 			gradeLevelId,
+	// 			file
+	// 		);
 
-			if (result.success) {
-				toast.success("Document uploaded successfully");
-				// Refresh student data to show the new document
-				await fetchStudents();
-				// Hide the upload form after successful upload
-				setShowUploadForm((prev) => ({ ...prev, [studentId]: false }));
-			} else {
-				toast.error(result.message || "Failed to upload document");
-			}
-		} catch (error) {
-			console.error("Error uploading document:", error);
-			toast.error("Failed to upload document");
-		} finally {
-			setUploadingDocuments((prev) => ({ ...prev, [studentId]: false }));
-		}
-	};
+	// 		if (result.success) {
+	// 			toast.success("Document uploaded successfully");
+	// 			// Refresh student data to show the new document
+	// 			await fetchStudents();
+	// 			// Hide the upload form after successful upload
+	// 			setShowUploadForm((prev) => ({ ...prev, [studentId]: false }));
+	// 		} else {
+	// 			toast.error(result.message || "Failed to upload document");
+	// 		}
+	// 	} catch (error) {
+	// 		console.error("Error uploading document:", error);
+	// 		toast.error("Failed to upload document");
+	// 	} finally {
+	// 		setUploadingDocuments((prev) => ({ ...prev, [studentId]: false }));
+	// 	}
+	// };
 
 	const applyFilters = () => {
 		let filtered = [...students];
@@ -750,114 +754,12 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 													<tr className="bg-slate-50 dark:bg-slate-800">
 														<td colSpan="7" className="px-3 py-4 lg:px-4">
 															<div className="space-y-4">
-																{(studentDocuments[student.id]?.length === 0 ||
-																	!studentDocuments[student.id] ||
-																	showUploadForm[student.id]) && (
-																	<div className="p-3 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
-																		<div className="flex justify-between items-center mb-2">
-																			<h4 className="text-sm font-medium text-slate-900 dark:text-white">
-																				Upload SF10 Document (PDF only):
-																			</h4>
-																			{studentDocuments[student.id]?.length > 0 && (
-																				<Button
-																					onClick={() => toggleUploadForm(student.id)}
-																					size="sm"
-																					variant="ghost"
-																					className="h-6 px-2 text-xs"
-																				>
-																					Cancel
-																				</Button>
-																			)}
-																		</div>
-																		<div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-																			<div className="flex-1">
-																				<label className="block mb-1 text-xs text-slate-600 dark:text-slate-400">
-																					Grade Level
-																				</label>
-																				<select
-																					id={`gradeLevel-${student.id}`}
-																					className="px-3 py-2 w-full text-sm rounded-md border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-																				>
-																					<option value="">Select grade level</option>
-																					{gradeLevels.map((level) => (
-																						<option key={level.id} value={level.id}>
-																							{level.name}
-																						</option>
-																					))}
-																				</select>
-																			</div>
-																			<div className="flex-1">
-																				<label className="block mb-1 text-xs text-slate-600 dark:text-slate-400">
-																					Select SF10 PDF File
-																				</label>
-																				<input
-																					type="file"
-																					id={`fileInput-${student.id}`}
-																					accept=".pdf"
-																					className="px-3 py-2 w-full text-xs rounded-md border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-																				/>
-																			</div>
-																			<Button
-																				onClick={() => {
-																					const gradeLevelSelect = document.getElementById(
-																						`gradeLevel-${student.id}`
-																					);
-																					const fileInput = document.getElementById(
-																						`fileInput-${student.id}`
-																					);
-																					const gradeLevelId = gradeLevelSelect.value;
-																					const file = fileInput.files[0];
-
-																					if (!gradeLevelId) {
-																						toast.error("Please select a grade level");
-																						return;
-																					}
-																					if (!file) {
-																						toast.error("Please select a PDF file");
-																						return;
-																					}
-
-																					handleDocumentUpload(
-																						student.id,
-																						gradeLevelId,
-																						file
-																					);
-
-																					// Reset inputs
-																					gradeLevelSelect.value = "";
-																					fileInput.value = "";
-																				}}
-																				size="sm"
-																				disabled={uploadingDocuments[student.id]}
-																				className="flex gap-1 items-center"
-																			>
-																				<Upload className="w-3 h-3" />
-																				{uploadingDocuments[student.id]
-																					? "Uploading..."
-																					: "Upload SF10"}
-																			</Button>
-																		</div>
-																	</div>
-																)}
-
-																{/* Existing Documents List */}
+																{/* Documents List or No Document message */}
 																{studentDocuments[student.id]?.length > 0 ? (
 																	<div className="space-y-2">
-																		<div className="flex justify-between items-center">
-																			<h4 className="text-sm font-medium text-slate-900 dark:text-white">
-																				Student Documents:
-																			</h4>
-																			{!showUploadForm[student.id] && (
-																				<Button
-																					onClick={() => toggleUploadForm(student.id)}
-																					size="sm"
-																					className="flex gap-1 items-center h-7 text-xs"
-																				>
-																					<Upload className="w-3 h-3" />
-																					Add Document
-																				</Button>
-																			)}
-																		</div>
+																		<h4 className="text-sm font-medium text-slate-900 dark:text-white">
+																			Student Documents:
+																		</h4>
 																		<div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
 																			{studentDocuments[student.id]
 																				.sort((a, b) => b.id - a.id)
@@ -912,7 +814,13 @@ export default function StudentsTab({ refreshTrigger, userId }) {
 																				))}
 																		</div>
 																	</div>
-																) : null}
+																) : (
+																	<div className="p-4 text-center bg-slate-100 rounded-lg dark:bg-slate-700">
+																		<p className="text-sm text-slate-600 dark:text-slate-400">
+																			No Document
+																		</p>
+																	</div>
+																)}
 															</div>
 														</td>
 													</tr>
