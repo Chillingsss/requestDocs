@@ -668,8 +668,16 @@ export default function RegistrarDashboard() {
 																</div>
 															</td>
 															<td className="px-3 py-3 lg:px-4 lg:py-2">
-																<div className="truncate max-w-[120px] lg:max-w-none">
-																	{req.document}
+																<div className="max-w-[120px] lg:max-w-none">
+																	<div className="truncate">
+																		{req.document}
+																	</div>
+																	{/* Show additional info for multiple document requests */}
+																	{req.isMultipleDocument && (
+																		<div className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+																			📋 Multiple ({req.documentCount} types, {req.totalCopies} copies)
+																		</div>
+																	)}
 																</div>
 																{/* Expected Release Date and Countdown - Hide for Cancelled status */}
 																{req.expectedReleaseDateFormatted &&

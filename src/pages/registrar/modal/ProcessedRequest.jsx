@@ -117,15 +117,27 @@ export default function ProcessedRequest({
 	};
 
 	const fetchStudentInfo = async () => {
+		console.log("fetchStudentInfo called for request:", currentRequest?.id);
+		console.log("Document type:", currentRequest?.document);
+		console.log("Is certificate request:", isCertificateRequest());
+		
 		if (isDiplomaRequest() || isCertificateRequest() || isCavRequest()) {
 			try {
+				console.log("Fetching student info for request ID:", currentRequest.id);
 				const studentData = await getStudentInfo(currentRequest.id);
+				console.log("Student data received:", studentData);
+				
 				if (studentData && !studentData.error) {
 					setStudentInfo(studentData);
+					console.log("Student info set successfully:", studentData);
+				} else {
+					console.log("Student data has error or is empty:", studentData);
 				}
 			} catch (error) {
 				console.error("Failed to fetch student info:", error);
 			}
+		} else {
+			console.log("Not a diploma/certificate/CAV request, skipping student info fetch");
 		}
 	};
 
@@ -268,12 +280,107 @@ export default function ProcessedRequest({
 		}
 	}, [isOpen, currentRequest]);
 
-	// Re-run detection when data changes
-	useEffect(() => {
-		if (isOpen) {
-			detectCombinedCavDiploma();
+	const handlePrint = () => {
+		if (!currentRequest) return;
+
+		// Create a new window for printing
+		const printWindow = window.open('', '_blank');
+		
+		// Get document information
+		const documentInfo = currentRequest.isMultipleDocument 
+			? `Documents: ${currentRequest.document} (Total: ${currentRequest.totalCopies} copies)`
+			: `Document: ${currentRequest.document}`;
+		
+		// Calculate how many times to repeat the content based on total copies
+		const totalCopies = currentRequest.totalCopies || 1;
+		
+		// Generate print content
+		let printContent = '';
+		for (let i = 1; i <= totalCopies; i++) {
+			printContent += `
+				<div class="print-page" style="page-break-after: ${i < totalCopies ? 'always' : 'auto'}; padding: 20px; margin-bottom: 20px;">
+					<div style="text-align: center; margin-bottom: 30px;">
+						<h1 style="margin: 0; font-size: 24px; color: #333;">Document Request</h1>
+						<p style="margin: 5px 0; color: #666;">Copy ${i} of ${totalCopies}</p>
+					</div>
+					
+					<div style="border: 2px solid #333; padding: 20px; margin: 20px 0;">
+						<table style="width: 100%; border-collapse: collapse;">
+							<tr>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold; width: 30%;">Student:</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${currentRequest.student}</td>
+							</tr>
+							<tr>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">Document(s):</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${currentRequest.document}</td>
+							</tr>
+							<tr>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">Purpose:</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${currentRequest.displayPurpose || currentRequest.purpose || 'Not specified'}</td>
+							</tr>
+							<tr>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">Date Requested:</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${new Date(currentRequest.dateRequested).toLocaleDateString()}</td>
+							</tr>
+							<tr>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">Status:</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${currentRequest.status}</td>
+							</tr>
+							<tr>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">Request ID:</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">#${currentRequest.id}</td>
+							</tr>
+						</table>
+					</div>
+					
+					<div style="margin-top: 40px; text-align: center;">
+						<p style="margin: 0; color: #666; font-size: 12px;">
+							Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
+						</p>
+					</div>
+				</div>
+			`;
 		}
-	}, [isOpen, currentRequest, attachments, studentInfo]);
+
+		// Write the HTML content to the print window
+		printWindow.document.write(`
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<title>Print Document Request - ${currentRequest.student}</title>
+				<style>
+					body { 
+						font-family: Arial, sans-serif; 
+						margin: 0; 
+						padding: 0; 
+					}
+					@media print {
+						.print-page {
+							page-break-after: always;
+						}
+						.print-page:last-child {
+							page-break-after: auto;
+						}
+					}
+				</style>
+			</head>
+			<body>
+				${printContent}
+			</body>
+			</html>
+		`);
+		
+		printWindow.document.close();
+		
+		// Wait a bit for content to load, then print
+		setTimeout(() => {
+			printWindow.print();
+			printWindow.close();
+		}, 500);
+		
+		// Show success message
+		toast.success(`Print dialog opened for ${totalCopies} ${totalCopies === 1 ? 'copy' : 'copies'}`);
+	};
 
 	const handleProcess = async () => {
 		setProcessing(true);
@@ -805,17 +912,26 @@ export default function ProcessedRequest({
 									</p>
 								</div>
 
-								{/* Document Info */}
+								{/* Document */}
 								<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
 									<div className="flex gap-3 items-center mb-3">
 										<FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
 										<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-											Document
+											{currentRequest.isMultipleDocument ? "Documents Requested" : "Document"}
 										</span>
 									</div>
-									<p className="text-lg font-semibold break-words text-slate-900 dark:text-white">
-										{currentRequest.document}
-									</p>
+									<div className="space-y-2">
+										<p className="text-lg font-semibold break-words text-slate-900 dark:text-white">
+											{currentRequest.document}
+										</p>
+										{currentRequest.isMultipleDocument && (
+											<div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+												<span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+													📋 {currentRequest.documentCount} types, {currentRequest.totalCopies} total copies
+												</span>
+											</div>
+										)}
+									</div>
 								</div>
 
 								{/* Date Requested */}
@@ -1023,9 +1139,9 @@ export default function ProcessedRequest({
 									</div>
 								)}
 
-							{/* Release Schedule Information - Hide for Completed status since we show actual completion date above */}
+							{/* Release Schedule Information - Only show for Release status */}
 							{releaseSchedule &&
-								currentRequest?.status?.toLowerCase() !== "completed" && (
+								currentRequest?.status?.toLowerCase() === "release" && (
 									<div className="p-4 bg-green-50 rounded-lg border-2 border-green-200 dark:bg-green-900/20 dark:border-green-700">
 										<div className="flex gap-3 items-center mb-3">
 											<Clock className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -1287,6 +1403,17 @@ export default function ProcessedRequest({
 						)}
 
 						<div className="flex flex-col gap-3 w-full sm:flex-row">
+							{/* Print Button - Show for processed, signatory, release, or completed status */}
+							{currentRequest?.status && 
+								["processed", "signatory", "release", "completed"].includes(currentRequest.status.toLowerCase()) && (
+								<Button
+									onClick={() => handlePrint()}
+									className="w-full sm:w-auto py-3 text-base font-medium text-white bg-purple-600 hover:bg-purple-700"
+								>
+									🖨️ Print {currentRequest.isMultipleDocument ? `(${currentRequest.totalCopies} copies)` : "Document"}
+								</Button>
+							)}
+							
 							<Button
 								onClick={handleProcess}
 								disabled={buttonConfig.disabled}

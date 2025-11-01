@@ -200,6 +200,12 @@ export default function RequestsTable({
 										<div className="text-sm font-medium text-slate-900 dark:text-white">
 											{request.document}
 										</div>
+										{/* Show additional info for multiple document requests */}
+										{request.isMultipleDocument && (
+											<div className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+												📋 Multiple Documents ({request.documentCount} types, {request.totalCopies} total copies)
+											</div>
+										)}
 										{/* Release Date (if officially scheduled) - Hide for Completed status since we show actual completion date below */}
 										{request.releaseDate &&
 											request.status?.toLowerCase() !== "completed" && (

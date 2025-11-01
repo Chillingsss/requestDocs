@@ -18,8 +18,6 @@ import ThemeToggle from "../components/ThemeToggle";
 import EmailSetup from "../components/EmailSetup";
 import { useSecurity } from "../contexts/SecurityContext";
 import toast, { Toaster } from "react-hot-toast";
-import axios from "axios";
-import { getDecryptedApiUrl } from "../utils/apiConfig";
 
 const COOKIE_KEY = "mogchs_user";
 const SECRET_KEY = "mogchs_secret_key";
@@ -266,11 +264,28 @@ export default function LoginPage() {
 			const user = await loginUser(username, password);
 			console.log("user", user);
 
-			// Debug logging
-			console.log("Login response:", user);
-			console.log("needsPasswordReset:", user?.needsPasswordReset);
-			console.log("needsEmailSetup:", user?.needsEmailSetup);
-			console.log("userLevel:", user?.userLevel);
+			// Handle account lockout
+			if (user && user.status === 'locked') {
+				setError(user.message);
+				toast.error("Account Locked", {
+					description: user.message,
+					duration: 10000,
+				});
+				setIsLoading(false);
+				return;
+			}
+
+			// Handle other errors (including remaining attempts)
+			if (user && user.error) {
+				let errorMessage = user.error;
+				if (user.remaining_attempts !== undefined) {
+					errorMessage += ` (${user.remaining_attempts} attempts remaining)`;
+				}
+				setError(errorMessage);
+				toast.error(errorMessage);
+				setIsLoading(false);
+				return;
+			}
 
 			// Check for account deactivation error
 			if (user && user.error && user.error.includes("deactivated")) {

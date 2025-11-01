@@ -229,10 +229,35 @@ const StudentImport = ({
 						row.some((cell) => cell && cell.toString().trim() !== "")
 				);
 
-			// Clean up LRN values by removing trailing dots
+			// Define columns to exclude from preview (using partial matching)
+			const excludedColumns = [
+				"COMPLETE ADDRESS",
+				"CONTACT NUMBER",
+				"LEARNING MODALITY",
+				"REMARKS",
+				"GUARDIAN",
+				"PARENTS",
+			];
+
+			// Find indices of columns to keep
+			const columnsToKeep = header
+				.map((h, index) => {
+					const headerText = h ? h.toString().trim().toUpperCase() : "";
+					const shouldExclude = excludedColumns.some((excluded) => {
+						// Check if header contains the excluded term
+						return headerText.includes(excluded);
+					});
+					return shouldExclude ? -1 : index;
+				})
+				.filter((index) => index !== -1);
+
+			// Filter headers to keep only desired columns
+			const filteredHeaders = columnsToKeep.map((index) => header[index]);
+
+			// Clean up LRN values by removing trailing dots and filter columns
 			const cleanedDataRows = dataRows.map((row) => {
 				const cleanedRow = [...row];
-				// Find LRN column index
+				// Find LRN column index in original header
 				const lrnColumnIndex = header.findIndex(
 					(h) => h && h.toString().toUpperCase().includes("LRN")
 				);
@@ -244,10 +269,11 @@ const StudentImport = ({
 						.replace(/\.+$/, "");
 				}
 
-				return cleanedRow;
+				// Filter row to keep only desired columns
+				return columnsToKeep.map((index) => cleanedRow[index]);
 			});
 
-			setHeaders(header);
+			setHeaders(filteredHeaders);
 			setPreviewData(cleanedDataRows);
 			setIsParsing(false);
 		};

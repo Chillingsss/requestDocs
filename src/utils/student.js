@@ -136,6 +136,52 @@ export async function getUserRequests(userId) {
 		const response = await axios.post(`${apiUrl}/student.php`, formData, {
 			headers: { "Content-Type": "multipart/form-data" },
 		});
+
+		console.log("response", response.data);
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function addMultipleDocumentRequest({
+	userId,
+	documentIds,
+	documentQuantities,
+	purpose,
+	purposeIds,
+	attachments = [],
+	typeIds = [],
+}) {
+	const formData = new FormData();
+	formData.append("operation", "addMultipleDocumentRequest");
+	formData.append(
+		"json",
+		JSON.stringify({
+			userId,
+			documentIds,
+			documentQuantities,
+			purpose,
+			purposeIds,
+			typeIds,
+		})
+	);
+
+	// Add multiple file attachments if provided
+	if (attachments && attachments.length > 0) {
+		attachments.forEach((file, index) => {
+			formData.append(`attachments[${index}]`, file);
+		});
+	}
+
+	// Get the encrypted API URL from session storage
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/student.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		console.log("response", response.data);
 		return response.data;
 	} catch (error) {
 		throw error;

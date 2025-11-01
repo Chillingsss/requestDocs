@@ -174,7 +174,8 @@ if ($operation === 'savePreviewedStudents') {
             
             $lrn = findHeader($rowAssoc, ['LRN']);
             $fullName = findHeader($rowAssoc, ['NAME']);
-            $birthDate = findHeader($rowAssoc, ['BIRTH DATE']);
+            $birthDateRaw = findHeader($rowAssoc, ['BIRTH DATE']);
+            $birthDate = $importer->parseDate($birthDateRaw); // Convert to YYYY-MM-DD format
             $age = findHeader($rowAssoc, ['AGE']);
             $religion = findHeader($rowAssoc, ['RELIGIOUS']);
             $completeAddress = findHeader($rowAssoc, ['HOUSE', 'ADDRESS']);

@@ -267,6 +267,81 @@ export default function CertificateTemplate({
 	};
 
 	const handlePrint = () => {
+		// Calculate number of copies needed
+		const getCertificateCopies = () => {
+			if (!request) return 1;
+			
+			// For multiple document requests, find certificate quantity
+			if (request.isMultipleDocument && request.documents) {
+				for (const docName of request.documents) {
+					if (docName.toLowerCase().includes('certificate')) {
+						// Extract quantity from format like "Certificate (2 copies)"
+						const match = docName.match(/\((\d+)\s+copies?\)/);
+						return match ? parseInt(match[1]) : 1;
+					}
+				}
+			}
+			
+			// For single document requests or if no specific quantity found
+			return 1;
+		};
+
+		const totalCopies = getCertificateCopies();
+		
+		// Create the certificate content template
+		const createCertificateContent = (copyNumber) => `
+			<div class="certificate-container">
+				${copyNumber > 1 ? `<div class="copy-indicator">Copy ${copyNumber} of ${totalCopies}</div>` : ''}
+				<div class="header">
+					<img class="logo-img" src="/images/logo.png" alt="MOGCHS" />
+					<div class="republic">Republic of the Philippines</div>
+					<div class="department">Department of Education</div>
+					<div class="region">REGION - X NORTHERN MINDANAO</div>
+					<div class="school-division">SCHOOLS DIVISION OF MISAMIS ORIENTAL</div>
+					<div class="school-name">MISAMIS ORIENTAL GENERAL COMPREHENSIVE HIGH SCHOOL</div>
+				</div>
+
+				<div class="office">Office of the School Principal</div>
+				<div class="office-line"></div>
+
+				<div class="title">CERTIFICATION</div>
+
+				<div class="content">
+					<p>To whom it may concern:</p>
+					<p class="indent">This is to certify that <span class="student-name">${certificateData.firstname} ${certificateData.middlename ? certificateData.middlename + ' ' : ''}${certificateData.lastname}</span> with <span class="lrn-label">Learner's Reference Number (LRN)</span> <span class="lrn">${certificateData.lrn}</span> is officially enrolled as a Senior High School <span class="grade-level">${certificateData.gradeLevel}</span> learner under the <span class="strand">${certificateData.strand}</span> track of this institution for the <span class="semester">${certificateData.semester}</span> of the School Year <span class="school-year">${certificateData.schoolYear}</span>.</p>
+					<p class="indent">This further certifies that the aforementioned learner has exhibited good moral character and exemplified a role model of this institution.</p>
+					<p class="indent">Given this ${certificateData.dateIssued}, at Misamis Oriental General Comprehensive High School, Don Apolinar Velez St. Cagayan de Oro City, Philippines to the request of the interested party for ${certificateData.purpose}.</p>
+				</div>
+
+				<div class="signature">
+					<div class="signature-name">${certificateData.principalName}</div>
+					<div class="signature-title">${certificateData.principalTitle}</div>
+				</div>
+
+				<div class="not-valid">Not Valid Without<br>School Dry Seal</div>
+
+				<div class="footer-line"></div>
+				<div class="footer">
+					<div class="deped-logo">
+						<img class="matatag-logo" src="/images/depedMatatag.png" alt="DepEd Matatag" />
+						<img class="mogchs-logo" src="/images/mogchs.jpg" alt="MOGCHS" />
+					</div>
+					<div class="contact-info">
+						Address: Velez Street, Brgy. 29, Cagayan de Oro City 9000<br>
+						Telephone Nos.: (088) 856-3202<br>
+						Website: www.depedmisor.com<br>
+						Email: 304091@deped.gov.ph
+					</div>
+				</div>
+			</div>
+		`;
+
+		// Generate all copies
+		let allCertificates = '';
+		for (let i = 1; i <= totalCopies; i++) {
+			allCertificates += createCertificateContent(i);
+		}
+
 		const printWindow = window.open("", "_blank");
 		printWindow.document.write(`
 			<!DOCTYPE html>
@@ -274,7 +349,7 @@ export default function CertificateTemplate({
 			<head>
 				<meta charset="UTF-8">
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
-				<title>Certificate of Enrollment</title>
+				<title>Certificate of Enrollment - ${totalCopies} ${totalCopies === 1 ? 'Copy' : 'Copies'}</title>
 				<style>
 					* { margin: 0; padding: 0; box-sizing: border-box; }
 					@page { size: A4; margin: 0 !important; }
@@ -294,6 +369,17 @@ export default function CertificateTemplate({
 						padding: 18mm 18mm 16mm 18mm; /* top, right, bottom, left */
 						position: relative;
 						page-break-after: always;
+					}
+					.certificate-container:last-child {
+						page-break-after: auto;
+					}
+					.copy-indicator {
+						position: absolute;
+						top: 5mm;
+						right: 5mm;
+						font-size: 8pt;
+						color: #666;
+						z-index: 10;
 					}
 					.header { text-align: center; margin-bottom: 8mm; }
 					.logo-img { width: 70px; height: 70px; object-fit: contain; margin: 0 auto 6px; display: block; }
@@ -327,49 +413,7 @@ export default function CertificateTemplate({
 				</style>
 			</head>
 			<body>
-				<div class="certificate-container">
-					<div class="header">
-						<img class="logo-img" src="/images/logo.png" alt="MOGCHS" />
-						<div class="republic">Republic of the Philippines</div>
-						<div class="department">Department of Education</div>
-						<div class="region">REGION - X NORTHERN MINDANAO</div>
-						<div class="school-division">SCHOOLS DIVISION OF MISAMIS ORIENTAL</div>
-						<div class="school-name">MISAMIS ORIENTAL GENERAL COMPREHENSIVE HIGH SCHOOL</div>
-					</div>
-
-					<div class="office">Office of the School Principal</div>
-					<div class="office-line"></div>
-
-					<div class="title">CERTIFICATION</div>
-
-					<div class="content">
-						<p>To whom it may concern:</p>
-						<p class="indent">This is to certify that <span class="student-name">${certificateData.fullName}</span> with <span class="lrn-label">Learner's Reference Number (LRN)</span> <span class="lrn">${certificateData.lrn}</span> is officially enrolled as a Senior High School <span class="grade-level">${certificateData.gradeLevel}</span> learner under the <span class="strand">${certificateData.strand}</span> track of this institution for the <span class="semester">${certificateData.semester}</span> of the School Year <span class="school-year">${certificateData.schoolYear}</span>.</p>
-						<p class="indent">This further certifies that the aforementioned learner has exhibited good moral character and exemplified a role model of this institution.</p>
-						<p class="indent">Given this ${certificateData.dateIssued}, at Misamis Oriental General Comprehensive High School, Don Apolinar Velez St. Cagayan de Oro City, Philippines to the request of the interested party for ${certificateData.purpose}.</p>
-					</div>
-
-					<div class="signature">
-						<div class="signature-name">${certificateData.principalName}</div>
-						<div class="signature-title">${certificateData.principalTitle}</div>
-					</div>
-
-					<div class="not-valid">Not Valid Without<br>School Dry Seal</div>
-
-					<div class="footer-line"></div>
-					<div class="footer">
-						<div class="deped-logo">
-							<img class="matatag-logo" src="/images/depedMatatag.png" alt="DepEd Matatag" />
-							<img class="mogchs-logo" src="/images/mogchs.jpg" alt="MOGCHS" />
-						</div>
-						<div class="contact-info">
-							Address: Velez Street, Brgy. 29, Cagayan de Oro City 9000<br>
-							Telephone Nos.: (088) 856-3202<br>
-							Website: www.depedmisor.com<br>
-							Email: 304091@deped.gov.ph
-						</div>
-					</div>
-				</div>
+				${allCertificates}
 			</body>
 			</html>
 		`);

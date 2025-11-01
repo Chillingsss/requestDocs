@@ -45,6 +45,7 @@ export default function DiplomaTemplateModal({
 							onCancel={onClose}
 							isEditable={true}
 							fetchStudentInfo={fetchStudentInfo}
+							request={request}
 						/>
 					</div>
 				</div>

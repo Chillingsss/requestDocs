@@ -2,6 +2,126 @@
 include "headers.php";
 
 class User {
+  function checkLoginAttempts($userId) {
+      include "connection.php";
+      
+      // Set timezone to Asia/Manila
+      date_default_timezone_set('Asia/Manila');
+      $currentTime = date('Y-m-d H:i:s');
+      
+      $stmt = $conn->prepare("
+          SELECT attempts, is_locked, lock_until
+          FROM login_attempts 
+          WHERE user_id = ?
+      ");
+      $stmt->bindParam(1, $userId);
+      $stmt->execute();
+      
+      if ($stmt->rowCount() > 0) {
+          $row = $stmt->fetch(PDO::FETCH_ASSOC);
+          
+          if ($row['is_locked'] && $row['lock_until']) {
+              // Check if lock time has expired using Manila timezone
+              if ($currentTime < $row['lock_until']) {
+                  // Still locked
+                  $timeLeft = strtotime($row['lock_until']) - strtotime($currentTime);
+                  $minutesLeft = ceil($timeLeft / 60);
+                  return [
+                      'status' => 'locked',
+                      'message' => "Account locked. Please try again in $minutesLeft minutes.",
+                      'lock_until' => $row['lock_until']
+                  ];
+              } else {
+                  // Lock has expired, reset attempts
+                  $this->resetLoginAttempts($userId);
+              }
+          }
+      }
+      
+      return ['status' => 'ok'];
+  }
+
+  function recordFailedAttempt($userId) {
+      include "connection.php";
+      $maxAttempts = 5;
+      $lockTimeMinutes = 10;
+      
+      // Set timezone to Asia/Manila
+      date_default_timezone_set('Asia/Manila');
+      $currentTime = date('Y-m-d H:i:s');
+      
+      $stmt = $conn->prepare("SELECT * FROM login_attempts WHERE user_id = ?");
+      $stmt->bindParam(1, $userId);
+      $stmt->execute();
+      
+      if ($stmt->rowCount() > 0) {
+          $row = $stmt->fetch(PDO::FETCH_ASSOC);
+          $newAttempts = $row['attempts'] + 1;
+          $isLocked = ($newAttempts >= $maxAttempts) ? 1 : 0;
+          $lockUntil = $isLocked ? date('Y-m-d H:i:s', strtotime("+$lockTimeMinutes minutes")) : null;
+          
+          $update = $conn->prepare("
+              UPDATE login_attempts 
+              SET attempts = ?, 
+                  last_attempt = ?, 
+                  is_locked = ?,
+                  lock_until = ?
+              WHERE user_id = ?
+          ");
+          $update->bindParam(1, $newAttempts);
+          $update->bindParam(2, $currentTime);
+          $update->bindParam(3, $isLocked);
+          $update->bindParam(4, $lockUntil);
+          $update->bindParam(5, $userId);
+          $update->execute();
+          
+          $remainingAttempts = $maxAttempts - $newAttempts;
+          
+          return [
+              'status' => $isLocked ? 'locked' : 'failed',
+              'attempts' => $newAttempts,
+              'remaining_attempts' => $remainingAttempts >= 0 ? $remainingAttempts : 0,
+              'lock_until' => $lockUntil,
+              'message' => $isLocked ? 
+                  "Account locked. Please try again in $lockTimeMinutes minutes." : 
+                  "Invalid credentials. $remainingAttempts attempts remaining."
+          ];
+      } else {
+          $insert = $conn->prepare("
+              INSERT INTO login_attempts (user_id, attempts, last_attempt, is_locked, lock_until)
+              VALUES (?, 1, ?, 0, NULL)
+          ");
+          $insert->bindParam(1, $userId);
+          $insert->bindParam(2, $currentTime);
+          $insert->execute();
+          
+          $remainingAttempts = $maxAttempts - 1;
+          return [
+              'status' => 'failed',
+              'attempts' => 1,
+              'remaining_attempts' => $remainingAttempts,
+              'message' => "Invalid credentials. $remainingAttempts attempts remaining."
+          ];
+      }
+  }
+
+  function resetLoginAttempts($userId) {
+      include "connection.php";
+      
+      // Set timezone to Asia/Manila
+      date_default_timezone_set('Asia/Manila');
+      
+      $stmt = $conn->prepare("
+          UPDATE login_attempts 
+          SET attempts = 0, 
+              is_locked = 0,
+              lock_until = NULL
+          WHERE user_id = ?
+      ");
+      $stmt->bindParam(1, $userId);
+      $stmt->execute();
+  }
+
   private function logLoginAttempt($userId, $userLevelId, $status, $failureReason = null) {
     include "connection.php";
     
@@ -38,6 +158,17 @@ class User {
     include "connection.php";
 
     $json = json_decode($json, true);
+    $username = $json['username'];
+
+    // Check if account is locked
+    $lockCheck = $this->checkLoginAttempts($username);
+    if ($lockCheck['status'] === 'locked') {
+        $this->logLoginAttempt($username, null, 'blocked', 'Account locked due to too many failed attempts');
+        return json_encode([
+            'status' => 'locked',
+            'message' => $lockCheck['message']
+        ]);
+    }
 
     // Check in tbluser
     $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.pinCode, a.gradeLevelId, a.sectionId, a.isActive, a.userLevel as userLevelId, b.name AS userLevel, d.id AS academicTypeId FROM tbluser a
@@ -46,7 +177,7 @@ class User {
             LEFT JOIN tblacademictype d ON c.academicTId = d.id
             WHERE BINARY a.id = :username";
     $stmt = $conn->prepare($sql);
-    $stmt->bindParam(':username', $json['username']);
+    $stmt->bindParam(':username', $username);
     $stmt->execute();
 
     if ($stmt->rowCount() > 0) {
@@ -54,7 +185,7 @@ class User {
         
         // Check if account is active
         if (!$user['isActive']) {
-            $this->logLoginAttempt($json['username'], $user['userLevelId'], 'blocked', 'Account deactivated');
+            $this->logLoginAttempt($username, $user['userLevelId'], 'blocked', 'Account deactivated');
             return json_encode(['error' => 'Account has been deactivated. Please contact administrator.']);
         }
         
@@ -78,57 +209,69 @@ class User {
         }
         
         if ($passwordMatches) {
+            // Reset login attempts on successful login
+            $this->resetLoginAttempts($username);
             
-            // Debug logging
-            error_log("Login attempt - User: " . $user['id'] . ", Lastname: " . $user['lastname'] . ", Input password: " . $json['password']);
-            error_log("Password comparison - Lastname lower: " . $lastnameLower . ", Input lower: " . $inputPasswordLower);
+            // Log successful login
+            $this->logLoginAttempt($username, $user['userLevelId'], 'success');
             
-            // Check if password matches lastname (case-insensitive) and if PIN matches last 4 digits of ID
-            $lastFourDigits = substr($user['id'], -4);
-            $needsPasswordReset = $inputPasswordLower === $lastnameLower;
+            // Check if user needs password reset (default lastname password)
+            $needsPasswordReset = $isDefaultPassword;
             
-            // Check if PIN matches last 4 digits of ID using password_verify
-            $needsPinReset = password_verify($lastFourDigits, $user['pinCode']);
-            error_log("PIN verification - Last 4 digits: " . $lastFourDigits . ", Needs Reset: " . ($needsPinReset ? "Yes" : "No"));
-            
-            if ($needsPasswordReset || $needsPinReset) {
-                error_log("Password/PIN reset required for user: " . $user['id'] . ", Password Reset: " . ($needsPasswordReset ? "Yes" : "No") . ", PIN Reset: " . ($needsPinReset ? "Yes" : "No"));
-                $this->logLoginAttempt($user['id'], $user['userLevelId'], 'success', 'Password/PIN reset required');
-                return json_encode([
-                    'id' => $user['id'],
-                    'userLevel' => $user['userLevel'],
-                    'firstname' => $user['firstname'],
-                    'lastname' => $user['lastname'],
-                    'email' => $user['email'],
-                    'gradeLevelId' => $user['gradeLevelId'],
-                    'sectionId' => $user['sectionId'],
-                    'needsPasswordReset' => $needsPasswordReset,
-                    'needsPinReset' => $needsPinReset,
-                    'academicTypeId' => $user['academicTypeId'],
-                ]);
+            // Check if user needs PIN reset (for non-students)
+            $needsPinReset = false;
+            if ($user['userLevel'] !== 'Student' && empty($user['pinCode'])) {
+                $needsPinReset = true;
             }
-            error_log("Normal login for user: " . $user['id']);
-            $this->logLoginAttempt($user['id'], $user['userLevelId'], 'success');
+            
+            // Check if student needs email setup
+            $needsEmailSetup = false;
+            if ($user['userLevel'] === 'Student' && empty($user['email'])) {
+                $needsEmailSetup = true;
+            }
+            
             return json_encode([
                 'id' => $user['id'],
-                'userLevel' => $user['userLevel'],
                 'firstname' => $user['firstname'],
                 'lastname' => $user['lastname'],
                 'email' => $user['email'],
+                'userLevel' => $user['userLevel'],
+                'userLevelId' => $user['userLevelId'],
                 'gradeLevelId' => $user['gradeLevelId'],
                 'sectionId' => $user['sectionId'],
                 'academicTypeId' => $user['academicTypeId'],
+                'needsPasswordReset' => $needsPasswordReset,
+                'needsPinReset' => $needsPinReset,
+                'needsEmailSetup' => $needsEmailSetup,
+                'isActive' => $user['isActive']
+            ]);
+            
+        } else {
+            // Record failed attempt
+            $attemptInfo = $this->recordFailedAttempt($username);
+            $this->logLoginAttempt($username, $user['userLevelId'] ?? null, 'failed', 'Invalid credentials');
+            
+            if ($attemptInfo['status'] === 'locked') {
+                return json_encode([
+                    'status' => 'locked',
+                    'message' => $attemptInfo['message'],
+                    'lock_until' => $attemptInfo['lock_until']
+                ]);
+            }
+            
+            return json_encode([
+                'error' => $attemptInfo['message'],
+                'remaining_attempts' => $attemptInfo['remaining_attempts']
             ]);
         }
     }
-
 
     // Check in tblstudent
     $sql = "SELECT a.id, a.firstname, a.lastname, a.email, a.password, a.isActive, a.userLevel as userLevelId, b.name AS userLevel FROM tblstudent a
             INNER JOIN tbluserlevel b ON a.userLevel = b.id
             WHERE BINARY a.id = :username";
     $stmt = $conn->prepare($sql);
-    $stmt->bindParam(':username', $json['username']);
+    $stmt->bindParam(':username', $username);
     $stmt->execute();
 
     if ($stmt->rowCount() > 0) {
@@ -136,7 +279,7 @@ class User {
         
         // Check if account is active
         if (!$user['isActive']) {
-            $this->logLoginAttempt($json['username'], $user['userLevelId'], 'blocked', 'Account deactivated');
+            $this->logLoginAttempt($username, $user['userLevelId'], 'blocked', 'Account deactivated');
             return json_encode(['error' => 'Account has been deactivated. Please contact administrator.']);
         }
         
@@ -160,6 +303,9 @@ class User {
         }
         
         if ($passwordMatches) {
+            // Reset login attempts on successful login
+            $this->resetLoginAttempts($username);
+            
             // Debug logging
             error_log("Student login attempt - User: " . $user['id'] . ", Lastname: " . $user['lastname'] . ", Input password: " . $json['password']);
             error_log("Student email: " . ($user['email'] ? $user['email'] : 'NULL'));
@@ -207,13 +353,43 @@ class User {
                 'email' => $user['email'],
                 'userLevel' => $user['userLevel']
             ]);
+        } else {
+            // Record failed attempt
+            $attemptInfo = $this->recordFailedAttempt($username);
+            $this->logLoginAttempt($username, $user['userLevelId'] ?? null, 'failed', 'Invalid credentials');
+            
+            if ($attemptInfo['status'] === 'locked') {
+                return json_encode([
+                    'status' => 'locked',
+                    'message' => $attemptInfo['message'],
+                    'lock_until' => $attemptInfo['lock_until']
+                ]);
+            }
+            
+            return json_encode([
+                'error' => $attemptInfo['message'],
+                'remaining_attempts' => $attemptInfo['remaining_attempts']
+            ]);
         }
     }
 
-    // Log failed login attempt
-    $this->logLoginAttempt($json['username'], null, 'failed', 'Invalid credentials');
-    return json_encode(['error' => 'Invalid credentials']);
-  }
+    // Log failed login attempt - user not found in either table
+    $attemptInfo = $this->recordFailedAttempt($username);
+    $this->logLoginAttempt($username, null, 'failed', 'Invalid credentials');
+    
+    if ($attemptInfo['status'] === 'locked') {
+        return json_encode([
+            'status' => 'locked',
+            'message' => $attemptInfo['message'],
+            'lock_until' => $attemptInfo['lock_until']
+        ]);
+    }
+    
+    return json_encode([
+        'error' => $attemptInfo['message'],
+        'remaining_attempts' => $attemptInfo['remaining_attempts']
+    ]);
+}
 
    function checkEmailExists($json)
    {

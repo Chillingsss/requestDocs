@@ -27,7 +27,6 @@ class User {
     try {
       $sql = "SELECT 
                 r.id,
-                d.name as document,
                 r.purpose,
                 DATE(r.createdAt) as dateRequested,
                 s.name as status,
@@ -42,7 +41,6 @@ class User {
                   ELSE 'No purpose specified'
                 END as displayPurpose
               FROM tblrequest r
-              INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
               INNER JOIN tblstatus s ON rs.statusId = s.id
               WHERE r.studentId = :userId
@@ -59,6 +57,37 @@ class User {
 
       if ($stmt->rowCount() > 0) {
         $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // For each request, get the associated documents from tblrequestdocument
+        foreach ($requests as &$request) {
+          $docSql = "SELECT d.name, COUNT(*) as quantity 
+                    FROM tblrequestdocument rd 
+                    INNER JOIN tbldocument d ON rd.documentId = d.id 
+                    WHERE rd.requestId = :requestId 
+                    GROUP BY d.id, d.name 
+                    ORDER BY d.name";
+          $docStmt = $conn->prepare($docSql);
+          $docStmt->bindParam(':requestId', $request['id']);
+          $docStmt->execute();
+          
+          if ($docStmt->rowCount() > 0) {
+            $documents = $docStmt->fetchAll(PDO::FETCH_ASSOC);
+            $documentNames = [];
+            
+            foreach ($documents as $doc) {
+              if ($doc['quantity'] > 1) {
+                $documentNames[] = $doc['name'] . ' (' . $doc['quantity'] . ' copies)';
+              } else {
+                $documentNames[] = $doc['name'];
+              }
+            }
+            
+            $request['document'] = implode(', ', $documentNames);
+          } else {
+            $request['document'] = 'Unknown Document';
+          }
+        }
+        
         return json_encode($requests);
       }
       return json_encode([]);
@@ -76,7 +105,6 @@ class User {
       $sql = "SELECT 
                 r.id,
                 CONCAT(u.firstname, ' ', u.lastname) as student,
-                d.name as document,
                 r.purpose,
                 DATE(r.createdAt) as dateRequested,
                 r.createdAt as dateRequestedFull,
@@ -94,16 +122,18 @@ class User {
                   ELSE 'No purpose specified'
                 END as displayPurpose,
                 -- Calculate expected release date and days remaining
-                -- For completed requests, show actual completion date; otherwise show expected release date
+                -- For completed requests, show actual completion date
+                -- For release status, use scheduled date if available
+                -- For other statuses, calculate from request date
                 CASE 
                   WHEN s.name = 'Completed' THEN DATE(rs.createdAt)
-                  WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
+                  WHEN s.name = 'Release' AND rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
                   ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
                 END as expectedReleaseDate,
                 DATE_FORMAT(
                   CASE 
                     WHEN s.name = 'Completed' THEN DATE(rs.createdAt)
-                    WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
+                    WHEN s.name = 'Release' AND rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
                     ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
                   END, 
                   '%M %d, %Y'
@@ -113,7 +143,7 @@ class User {
                   WHEN s.name = 'Completed' THEN NULL
                   ELSE DATEDIFF(
                     CASE 
-                      WHEN rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
+                      WHEN s.name = 'Release' AND rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
                       ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
                     END,
                     CURDATE()
@@ -131,7 +161,6 @@ class User {
                  WHERE rs_owner.requestId = r.id AND rs_owner.userId IS NOT NULL 
                  ORDER BY rs_owner.id ASC LIMIT 1) as processedBy
               FROM tblrequest r
-              INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
               INNER JOIN tblstatus s ON rs.statusId = s.id
               INNER JOIN tblstudent u ON r.studentId = u.id
@@ -149,6 +178,48 @@ class User {
 
       if ($stmt->rowCount() > 0) {
         $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // For each request, get the associated documents from tblrequestdocument
+        foreach ($requests as &$request) {
+          // Get documents from tblrequestdocument (works for both single and multiple document requests)
+          $docSql = "SELECT d.name, COUNT(*) as quantity 
+                    FROM tblrequestdocument rd 
+                    INNER JOIN tbldocument d ON rd.documentId = d.id 
+                    WHERE rd.requestId = :requestId 
+                    GROUP BY d.id, d.name 
+                    ORDER BY d.name";
+          $docStmt = $conn->prepare($docSql);
+          $docStmt->bindParam(':requestId', $request['id']);
+          $docStmt->execute();
+          
+          if ($docStmt->rowCount() > 0) {
+            $documents = $docStmt->fetchAll(PDO::FETCH_ASSOC);
+            $documentNames = [];
+            $totalCopies = 0;
+            
+            foreach ($documents as $doc) {
+              if ($doc['quantity'] > 1) {
+                $documentNames[] = $doc['name'] . ' (' . $doc['quantity'] . ' copies)';
+              } else {
+                $documentNames[] = $doc['name'];
+              }
+              $totalCopies += $doc['quantity'];
+            }
+            
+            $request['document'] = implode(', ', $documentNames); // For display
+            $request['documents'] = $documentNames; // Array format
+            $request['documentCount'] = count($documents);
+            $request['totalCopies'] = $totalCopies;
+            $request['isMultipleDocument'] = count($documents) > 1 || $totalCopies > count($documents);
+          } else {
+            $request['document'] = 'Unknown Document';
+            $request['documents'] = ['Unknown Document'];
+            $request['documentCount'] = 0;
+            $request['totalCopies'] = 0;
+            $request['isMultipleDocument'] = false;
+          }
+        }
+        
         return json_encode($requests);
       }
       return json_encode([]);
@@ -374,10 +445,9 @@ class User {
     $requestId = $json['requestId'];
 
     try {
-      // First get the student ID, document ID, and student's current grade level directly from tblstudent
-      $studentSql = "SELECT r.studentId, r.documentId, d.name as requestedDocumentType, s.gradeLevelId as currentGradeLevelId
+      // First get the student ID and current grade level
+      $studentSql = "SELECT r.studentId, s.gradeLevelId as currentGradeLevelId
                      FROM tblrequest r
-                     INNER JOIN tbldocument d ON r.documentId = d.id
                      INNER JOIN tblstudent s ON r.studentId = s.id
                      WHERE r.id = :requestId";
       $studentStmt = $conn->prepare($studentSql);
@@ -390,34 +460,68 @@ class User {
       
       $requestData = $studentStmt->fetch(PDO::FETCH_ASSOC);
       $studentId = $requestData['studentId'];
-      $documentId = $requestData['documentId'];
       $currentGradeLevelId = $requestData['currentGradeLevelId'];
 
-      // Check if this is an SF10 document request
-      $isSf10Request = strtolower($requestData['requestedDocumentType']) === 'sf10';
+      // Get all documents for this request from tblrequestdocument
+      $docSql = "SELECT rd.documentId, d.name as requestedDocumentType
+                 FROM tblrequestdocument rd
+                 INNER JOIN tbldocument d ON rd.documentId = d.id
+                 WHERE rd.requestId = :requestId";
+      $docStmt = $conn->prepare($docSql);
+      $docStmt->bindParam(':requestId', $requestId);
+      $docStmt->execute();
+      
+      if ($docStmt->rowCount() == 0) {
+        return json_encode(['error' => 'No documents found for this request']);
+      }
+      
+      $requestDocuments = $docStmt->fetchAll(PDO::FETCH_ASSOC);
+      $allStudentDocuments = [];
+      
+      // Process each document type in the request
+      foreach ($requestDocuments as $reqDoc) {
+        $documentId = $reqDoc['documentId'];
+        $isSf10Request = strtolower($reqDoc['requestedDocumentType']) === 'sf10';
 
-      // Build the SQL query based on document type
-      if ($isSf10Request) {
-        // For SF10 documents, show documents that match the student's current grade level
-        // If currentGradeLevelId is null, show all SF10 documents for this student
-        if ($currentGradeLevelId) {
-          $sql = "SELECT 
-                    sd.id,
-                    sd.documentId,
-                    sd.fileName,
-                    sd.createdAt,
-                    sd.gradeLevelId,
-                    d.name as documentType,
-                    gl.name as gradeLevelName
-                  FROM tblstudentdocument sd
-                  LEFT JOIN tbldocument d ON sd.documentId = d.id
-                  LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
-                  WHERE sd.studentId = :studentId 
-                  AND sd.documentId = :documentId
-                  AND sd.gradeLevelId = :currentGradeLevelId
-                  ORDER BY sd.id DESC";
+        // Build the SQL query based on document type
+        if ($isSf10Request) {
+          // For SF10 documents, show documents that match the student's current grade level
+          // If currentGradeLevelId is null, show all SF10 documents for this student
+          if ($currentGradeLevelId) {
+            $sql = "SELECT 
+                      sd.id,
+                      sd.documentId,
+                      sd.fileName,
+                      sd.createdAt,
+                      sd.gradeLevelId,
+                      d.name as documentType,
+                      gl.name as gradeLevelName
+                    FROM tblstudentdocument sd
+                    LEFT JOIN tbldocument d ON sd.documentId = d.id
+                    LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
+                    WHERE sd.studentId = :studentId 
+                    AND sd.documentId = :documentId
+                    AND sd.gradeLevelId = :currentGradeLevelId
+                    ORDER BY sd.id DESC";
+          } else {
+            // If student doesn't have a grade level set, show all SF10 documents
+            $sql = "SELECT 
+                      sd.id,
+                      sd.documentId,
+                      sd.fileName,
+                      sd.createdAt,
+                      sd.gradeLevelId,
+                      d.name as documentType,
+                      gl.name as gradeLevelName
+                    FROM tblstudentdocument sd
+                    LEFT JOIN tbldocument d ON sd.documentId = d.id
+                    LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
+                    WHERE sd.studentId = :studentId 
+                    AND sd.documentId = :documentId
+                    ORDER BY sd.gradeLevelId ASC, sd.createdAt DESC";
+          }
         } else {
-          // If student doesn't have a grade level set, show all SF10 documents
+          // For other document types, show all documents of that type
           $sql = "SELECT 
                     sd.id,
                     sd.documentId,
@@ -433,49 +537,35 @@ class User {
                   AND sd.documentId = :documentId
                   ORDER BY sd.gradeLevelId ASC, sd.createdAt DESC";
         }
-      } else {
-        // For other document types, show all documents of that type
-        $sql = "SELECT 
-                  sd.id,
-                  sd.documentId,
-                  sd.fileName,
-                  sd.createdAt,
-                  sd.gradeLevelId,
-                  d.name as documentType,
-                  gl.name as gradeLevelName
-                FROM tblstudentdocument sd
-                LEFT JOIN tbldocument d ON sd.documentId = d.id
-                LEFT JOIN tblgradelevel gl ON sd.gradeLevelId = gl.id
-                WHERE sd.studentId = :studentId 
-                AND sd.documentId = :documentId
-                ORDER BY sd.gradeLevelId ASC, sd.createdAt DESC";
-      }
-      
-      $stmt = $conn->prepare($sql);
-      $stmt->bindParam(':studentId', $studentId);
-      $stmt->bindParam(':documentId', $documentId);
-      
-      if ($isSf10Request && $currentGradeLevelId) {
-        $stmt->bindParam(':currentGradeLevelId', $currentGradeLevelId);
-      }
-      
-      $stmt->execute();
-
-      if ($stmt->rowCount() > 0) {
-        $documents = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Filter documents to only include those that actually exist in the filesystem
-        $validDocuments = [];
-        foreach ($documents as $document) {
-          $filePath = __DIR__ . '/documents/' . $document['fileName'];
-          if (file_exists($filePath)) {
-            $validDocuments[] = $document;
-          }
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':studentId', $studentId);
+        $stmt->bindParam(':documentId', $documentId);
+        
+        if ($isSf10Request && $currentGradeLevelId) {
+          $stmt->bindParam(':currentGradeLevelId', $currentGradeLevelId);
         }
         
-        return json_encode($validDocuments);
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0) {
+          $documents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+          
+          // Filter documents to only include those that actually exist in the filesystem
+          $validDocuments = [];
+          foreach ($documents as $document) {
+            $filePath = __DIR__ . '/documents/' . $document['fileName'];
+            if (file_exists($filePath)) {
+              $validDocuments[] = $document;
+            }
+          }
+          
+          // Add these documents to the overall collection
+          $allStudentDocuments = array_merge($allStudentDocuments, $validDocuments);
+        }
       }
-      return json_encode([]);
+      
+      return json_encode($allStudentDocuments);
 
     } catch (PDOException $e) {
       return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
@@ -497,14 +587,15 @@ class User {
                 s.sectionId,
                 sec.gradeLevelId as studentGradeLevel,
                 gl.name as studentGradeLevelName,
-                d.name as requestedDocument,
+                GROUP_CONCAT(DISTINCT d.name) as requestedDocuments,
                 GROUP_CONCAT(DISTINCT sd.gradeLevelId) as documentGradeLevels,
                 GROUP_CONCAT(DISTINCT sd.fileName) as documentFiles
               FROM tblrequest r
               INNER JOIN tblstudent s ON r.studentId = s.id
               LEFT JOIN tblsection sec ON s.sectionId = sec.id
               LEFT JOIN tblgradelevel gl ON sec.gradeLevelId = gl.id
-              INNER JOIN tbldocument d ON r.documentId = d.id
+              LEFT JOIN tblrequestdocument rd ON r.id = rd.requestId
+              LEFT JOIN tbldocument d ON rd.documentId = d.id
               LEFT JOIN tblstudentdocument sd ON sd.studentId = s.id AND sd.documentId = d.id
               WHERE r.id = :requestId
               GROUP BY r.id";
@@ -551,8 +642,7 @@ class User {
                 sec.gradeLevelId,
                 gl.name as gradeLevel,
                 sy.year as schoolYear,
-                r.id as requestId,
-                r.documentId
+                r.id as requestId
               FROM tblrequest r
               INNER JOIN tblstudent s ON r.studentId = s.id
               LEFT JOIN tblstrand st ON s.strandId = st.id
@@ -568,13 +658,24 @@ class User {
       if ($stmt->rowCount() > 0) {
         $studentInfo = $stmt->fetch(PDO::FETCH_ASSOC);
         
+        // Get documents from tblrequestdocument (works for both single and multiple document requests)
+        $docSql = "SELECT rd.documentId FROM tblrequestdocument rd WHERE rd.requestId = :requestId";
+        $docStmt = $conn->prepare($docSql);
+        $docStmt->bindParam(':requestId', $requestId);
+        $docStmt->execute();
+        $documents = $docStmt->fetchAll(PDO::FETCH_COLUMN);
+        $studentInfo['documentIds'] = $documents;
+        
         // Get control number for CAV documents (count of completed CAV requests)
-        if ($studentInfo['documentId'] == 7) { // 7 is CAV document ID
+        $isCavRequest = in_array(7, $documents); // 7 is CAV document ID
+        
+        if ($isCavRequest) {
           $controlSql = "SELECT COUNT(*) as controlNo 
                         FROM tblrequest r
+                        INNER JOIN tblrequestdocument rd ON r.id = rd.requestId
                         INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
                         INNER JOIN tblstatus st ON rs.statusId = st.id
-                        WHERE r.documentId = 7 AND st.name = 'Completed' AND r.id <= :requestId
+                        WHERE rd.documentId = 7 AND st.name = 'Completed' AND r.id <= :requestId
                         ORDER BY r.id";
           $controlStmt = $conn->prepare($controlSql);
           $controlStmt->bindParam(':requestId', $requestId);
@@ -1467,7 +1568,6 @@ class User {
                       r.id,
                       r.studentId,
                       r.purpose,
-                      d.name as documentName,
                       s.firstname,
                       s.lastname,
                       s.email,
@@ -1482,7 +1582,6 @@ class User {
                         ELSE 'No purpose specified'
                       END as displayPurpose
                     FROM tblrequest r
-                    INNER JOIN tbldocument d ON r.documentId = d.id
                     INNER JOIN tblstudent s ON r.studentId = s.id
                     WHERE r.id = :requestId";
       
@@ -1765,7 +1864,6 @@ function processLrnRequest($json)
       // Get student information for email
       $studentSql = "SELECT 
                       s.firstname, s.lastname, s.email, s.middlename,
-                      d.name as documentName,
                       r.purpose,
                       CASE 
                         WHEN r.purpose IS NOT NULL THEN r.purpose
@@ -1777,7 +1875,6 @@ function processLrnRequest($json)
                         ELSE 'No purpose specified'
                       END as displayPurpose
                     FROM tblrequest r
-                    INNER JOIN tbldocument d ON r.documentId = d.id
                     INNER JOIN tblstudent s ON r.studentId = s.id
                     WHERE r.id = :requestId";
       

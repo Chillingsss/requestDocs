@@ -72,12 +72,24 @@ export default function RequestDetailsModal({
 				setComments(commentsData);
 			}
 
-			// Fetch document requirements
-			const documentRequirementsData = await getDocumentRequirements(
-				request.documentId
-			);
-			if (Array.isArray(documentRequirementsData)) {
-				setDocumentRequirements(documentRequirementsData);
+			// Fetch document requirements for multiple documents
+			if (request.isMultipleDocument && request.documents) {
+				// For multiple document requests, we'll get requirements for all documents
+				// But for now, we'll use a general approach since requirements are typically shared
+				setDocumentRequirements([]);
+			} else {
+				// For backward compatibility with old single document requests
+				if (request.documentId) {
+					const documentRequirementsData = await getDocumentRequirements(
+						request.documentId
+					);
+					if (Array.isArray(documentRequirementsData)) {
+						setDocumentRequirements(documentRequirementsData);
+					}
+				} else {
+					// New structure - requirements are handled differently for multiple documents
+					setDocumentRequirements([]);
+				}
 			}
 		} catch (error) {
 			console.error("Failed to fetch request details:", error);
@@ -259,7 +271,14 @@ export default function RequestDetailsModal({
 					<div className="flex justify-between items-center px-6 py-4 text-white bg-blue-600 rounded-t-lg">
 						<div className="flex gap-3 items-center">
 							<FileText className="w-6 h-6" />
-							<h2 className="text-xl font-semibold">Request Details</h2>
+							<div>
+								<h2 className="text-xl font-semibold">Request Details</h2>
+								{request.isMultipleDocument && (
+									<p className="text-sm text-blue-100">
+										Multiple Document Request (ID: {request.id})
+									</p>
+								)}
+							</div>
 						</div>
 						<button
 							onClick={onClose}
@@ -281,14 +300,23 @@ export default function RequestDetailsModal({
 								<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 									<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
 										<div className="flex gap-3 items-center mb-3">
-											<User className="w-5 h-5 text-blue-600" />
+											<FileText className="w-5 h-5 text-blue-600" />
 											<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-												Document
+												{request.isMultipleDocument ? "Documents Requested" : "Document"}
 											</span>
 										</div>
-										<p className="text-lg font-semibold text-slate-900 dark:text-white">
-											{request.document}
-										</p>
+										<div className="space-y-2">
+											<p className="text-lg font-semibold text-slate-900 dark:text-white">
+												{request.document}
+											</p>
+											{request.isMultipleDocument && (
+												<div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+													<span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+														📋 {request.documentCount} types, {request.totalCopies} total copies
+													</span>
+												</div>
+											)}
+										</div>
 									</div>
 
 									<div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700">

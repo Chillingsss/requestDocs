@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 28, 2025 at 09:31 AM
+-- Generation Time: Nov 01, 2025 at 02:14 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,28 @@ SET time_zone = "+00:00";
 --
 -- Database: `dbmogchs`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `login_attempts`
+--
+
+CREATE TABLE `login_attempts` (
+  `id` int(11) NOT NULL,
+  `user_id` varchar(50) NOT NULL,
+  `attempts` int(11) NOT NULL DEFAULT 0,
+  `last_attempt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `is_locked` tinyint(1) NOT NULL DEFAULT 0,
+  `lock_until` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Tracks user login attempts and account lock status';
+
+--
+-- Dumping data for table `login_attempts`
+--
+
+INSERT INTO `login_attempts` (`id`, `user_id`, `attempts`, `last_attempt`, `is_locked`, `lock_until`) VALUES
+(1, '4771830', 5, '2025-11-01 08:13:13', 1, '2025-11-01 08:23:13');
 
 -- --------------------------------------------------------
 
@@ -77,15 +99,6 @@ CREATE TABLE `tbldocumentrequirement` (
   `createdAt` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `tbldocumentrequirement`
---
-
-INSERT INTO `tbldocumentrequirement` (`id`, `documentId`, `requirementTId`, `userId`, `createdAt`) VALUES
-(1, 7, 1, '02-1819-01509', '2025-08-20 11:19:15'),
-(2, 6, 2, '02-1819-01509', '2025-08-20 11:19:15'),
-(7, 5, 3, '02-1819-01509', '2025-08-26 21:40:09');
-
 -- --------------------------------------------------------
 
 --
@@ -121,6 +134,13 @@ CREATE TABLE `tblforgotlrn` (
   `processed_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblforgotlrn`
+--
+
+INSERT INTO `tblforgotlrn` (`id`, `firstname`, `lastname`, `email`, `birthDate`, `is_processed`, `processed_by`, `processed_at`, `created_at`) VALUES
+(2, 'Ralph', 'Gallegos', 'ralp.pelino11@gmail.com', '2001-01-02', 0, NULL, NULL, '2025-10-28 16:38:00');
 
 -- --------------------------------------------------------
 
@@ -183,7 +203,48 @@ INSERT INTO `tblloginlogs` (`id`, `userId`, `userLevelId`, `loginTime`, `ipAddre
 (16, '47718333', 3, '2025-10-19 17:04:35', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
 (17, '4771830', 3, '2025-10-19 17:05:05', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
 (18, '02-1819-01509', NULL, '2025-10-19 17:06:19', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
-(19, '02-1819-01509', 2, '2025-10-19 17:06:29', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL);
+(19, '02-1819-01509', 2, '2025-10-19 17:06:29', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(20, '02-1819-01500', NULL, '2025-10-28 16:38:16', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(21, '02-1819-01500', 1, '2025-10-28 16:38:31', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'success', NULL),
+(22, '02-1819-01500', 1, '2025-10-28 17:17:34', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'success', NULL),
+(23, '99999', 4, '2025-10-28 18:02:16', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'blocked', 'Account deactivated'),
+(24, '99999', 4, '2025-10-28 18:02:20', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'blocked', 'Account deactivated'),
+(25, '99999', 4, '2025-10-28 18:02:33', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'blocked', 'Account deactivated'),
+(26, '99999', 4, '2025-10-28 18:03:14', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'blocked', 'Account deactivated'),
+(27, '99999', 4, '2025-10-28 18:03:45', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(28, '02-1819-01509', NULL, '2025-10-28 18:07:55', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(29, '02-1819-01509', 2, '2025-10-28 18:08:07', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(30, '02-1819-01509', NULL, '2025-10-28 19:52:36', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(31, '02-1819-01509', 2, '2025-10-28 19:52:48', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(32, '02-1819-01500', NULL, '2025-10-28 20:10:22', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(33, '02-1819-01500', 1, '2025-10-28 20:10:44', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(34, '126905140061', 4, '2025-10-28 22:10:15', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'blocked', 'Account deactivated'),
+(35, '126905140061', 4, '2025-10-28 22:10:17', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'blocked', 'Account deactivated'),
+(36, '126905140061', 4, '2025-10-28 22:10:43', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'success', 'Email setup required'),
+(37, '02-1819-01500', 1, '2025-10-28 22:12:40', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'success', NULL),
+(38, '99999', 4, '2025-10-28 22:14:56', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(39, '02-1819-01509', NULL, '2025-10-28 22:29:29', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(40, '02-1819-01509', 2, '2025-10-28 22:29:40', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(41, '0222240755', 3, '2025-10-28 22:31:01', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'blocked', 'Account deactivated'),
+(42, '02-1819-01509', 2, '2025-10-28 22:31:48', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'success', NULL),
+(43, '123123123', 3, '2025-10-28 22:34:19', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', 'Password/PIN reset required'),
+(44, '33333333', 4, '2025-10-28 22:42:36', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'success', NULL),
+(45, '4771830', NULL, '2025-10-28 22:58:08', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(46, '4771830', 3, '2025-10-28 22:58:19', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'success', NULL),
+(47, '4771830', 3, '2025-11-01 13:18:08', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'success', NULL),
+(48, '4771830', 3, '2025-11-01 13:45:52', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'success', NULL),
+(49, '4771830', 3, '2025-11-01 16:09:41', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(50, '4771830', 3, '2025-11-01 16:09:55', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(51, '4771830', 3, '2025-11-01 16:09:58', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(52, '4771830', 3, '2025-11-01 16:10:01', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(53, '4771830', 3, '2025-11-01 16:10:03', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(54, '4771830', 3, '2025-11-01 16:10:24', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(55, '4771830', 3, '2025-11-01 16:13:05', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(56, '4771830', 3, '2025-11-01 16:13:08', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(57, '4771830', 3, '2025-11-01 16:13:11', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(58, '4771830', 3, '2025-11-01 16:13:13', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'failed', 'Invalid credentials'),
+(59, '4771830', NULL, '2025-11-01 16:13:33', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'blocked', 'Account locked due to too many failed attempts'),
+(60, '4771830', NULL, '2025-11-01 16:14:38', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'blocked', 'Account locked due to too many failed attempts');
 
 -- --------------------------------------------------------
 
@@ -235,7 +296,8 @@ CREATE TABLE `tblreleaseschedule` (
 INSERT INTO `tblreleaseschedule` (`id`, `requestId`, `userId`, `dateSchedule`, `createdAt`) VALUES
 (1, 1, '02-1819-01500', '2025-10-01', '2025-09-25 09:48:34'),
 (4, 2, '02-1819-01500', '2025-10-03', '2025-09-30 10:50:54'),
-(5, 3, '02-1819-01500', '2025-10-10', '2025-10-05 22:35:10');
+(5, 3, '02-1819-01500', '2025-10-10', '2025-10-05 22:35:10'),
+(6, 6, '02-1819-01500', '2025-10-30', '2025-10-28 22:13:54');
 
 -- --------------------------------------------------------
 
@@ -251,16 +313,17 @@ CREATE TABLE `tblrequest` (
   `createdAt` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
 --
--- Dumping data for table `tblrequest`
+-- Table structure for table `tblrequestdocument`
 --
 
-INSERT INTO `tblrequest` (`id`, `studentId`, `documentId`, `purpose`, `createdAt`) VALUES
-(1, '33333333', 5, 'enrollment college', '2025-09-14 03:09:20'),
-(2, '33333333', 6, 'working', '2025-09-25 10:30:09'),
-(3, '33333333', 7, NULL, '2025-10-05 10:33:49'),
-(4, '33333333', 5, 'test lang', '2025-10-08 05:48:38'),
-(5, '33333333', 8, 'shesh', '2025-10-08 07:04:54');
+CREATE TABLE `tblrequestdocument` (
+  `reqD_id` int(11) NOT NULL,
+  `requestId` int(11) NOT NULL,
+  `documentId` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -273,14 +336,6 @@ CREATE TABLE `tblrequestpurpose` (
   `requestId` int(11) NOT NULL,
   `purposeId` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `tblrequestpurpose`
---
-
-INSERT INTO `tblrequestpurpose` (`id`, `requestId`, `purposeId`) VALUES
-(1, 3, 6),
-(2, 3, 1);
 
 -- --------------------------------------------------------
 
@@ -295,30 +350,6 @@ CREATE TABLE `tblrequeststatus` (
   `userId` varchar(50) DEFAULT NULL,
   `createdAt` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `tblrequeststatus`
---
-
-INSERT INTO `tblrequeststatus` (`id`, `requestId`, `statusId`, `userId`, `createdAt`) VALUES
-(1, 1, 1, NULL, '2025-09-14 03:09:20'),
-(2, 1, 2, NULL, '2025-09-25 09:48:24'),
-(3, 1, 3, NULL, '2025-09-25 09:48:25'),
-(4, 1, 4, NULL, '2025-09-25 09:48:38'),
-(5, 1, 5, NULL, '2025-09-25 09:48:40'),
-(6, 2, 1, NULL, '2025-09-25 10:30:09'),
-(12, 2, 2, '02-1819-01500', '2025-09-25 11:32:24'),
-(13, 2, 3, '02-1819-01500', '2025-09-25 12:39:01'),
-(16, 2, 4, '02-1819-01500', '2025-09-30 10:50:57'),
-(17, 2, 5, '02-1819-01500', '2025-10-02 12:21:03'),
-(18, 3, 1, NULL, '2025-10-05 10:33:49'),
-(19, 3, 2, '02-1819-01500', '2025-10-05 10:34:55'),
-(20, 3, 3, '02-1819-01500', '2025-10-05 10:35:00'),
-(21, 3, 4, '02-1819-01500', '2025-10-05 10:35:10'),
-(22, 3, 5, '02-1819-01500', '2025-10-05 10:35:33'),
-(23, 4, 1, NULL, '2025-10-08 05:48:38'),
-(35, 4, 2, '02-1819-01500', '2025-10-08 06:25:33'),
-(36, 5, 1, NULL, '2025-10-08 07:04:54');
 
 -- --------------------------------------------------------
 
@@ -458,9 +489,9 @@ CREATE TABLE `tblsfrecord` (
 
 INSERT INTO `tblsfrecord` (`id`, `fileName`, `studentId`, `gradeLevelId`, `userId`, `createdAt`) VALUES
 (119, '33333333-Grade11-Aspirass.xlsx', '33333333', 1, '4771830', '2025-08-20 16:06:01'),
-(120, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '128164140135', 1, '4771830', '2025-08-20 22:21:31'),
-(121, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127964120138', 1, '4771830', '2025-08-20 22:21:31'),
-(122, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127940140437', 1, '4771830', '2025-08-20 22:21:31'),
+(120, '128164140135-Grade11-ACAPULCO.xlsx', '128164140135', 1, '4771830', '2025-08-20 22:21:31'),
+(121, '127964120138-Grade11-ALFANTE.xlsx', '127964120138', 1, '4771830', '2025-08-20 22:21:31'),
+(122, '127940140437-Grade11-AMPER.xlsx', '127940140437', 1, '4771830', '2025-08-20 22:21:31'),
 (123, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127940120016', 1, '4771830', '2025-08-20 22:21:31'),
 (124, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '127940140219', 1, '4771830', '2025-08-20 22:21:31'),
 (125, 'SF-10-SHS-Senior-High-School-Student-Permanent-Record.xlsx', '133218140022', 1, '4771830', '2025-08-20 22:21:31'),
@@ -634,60 +665,60 @@ CREATE TABLE `tblstudent` (
 
 INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, `contactNo`, `password`, `userLevel`, `lrn`, `strandId`, `birthDate`, `birthPlace`, `age`, `religion`, `completeAddress`, `fatherName`, `motherName`, `guardianName`, `guardianRelationship`, `sectionId`, `schoolyearId`, `gradeLevelId`, `isActive`, `createdAt`, `updatedAt`) VALUES
 ('117851130016', 'STEPHEN', 'CABALLERO', 'JOHNSON', NULL, NULL, '$2y$10$XxnfSYDm7EYTCrIi5qgH7eB.fu4BcBX16yjn0r3nxB4WMmvx0f7WW', 4, '117851130016', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('119453140027', 'MARTIN', 'NICOLE TAYO', 'HABONITA', NULL, NULL, '$2y$10$TQ.LhjaTOTie8kXpd/1NguGaEIoobnnqlcNUAruZ/f77LbLDi9NCq', 4, '119453140027', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
-('126277140066', 'CHELLIE', 'ASHLY AMANTE', 'BADBAD', NULL, NULL, '$2y$10$aDnaqsKTFz3LF7MZ10iui.kRIlTL2Jl1jh29mnLHZ5ujvqrcdwm5.', 4, '126277140066', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
-('126340130018', 'KIRBY', 'KATE NEPOMUCINO', 'REPUELA', NULL, NULL, '$2y$10$mhJdQmUIFFiFd6KRjf8Zjuy0zP/jpE9Oju8lmQP41R/2n9KvOQHnS', 4, '126340130018', 3, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:52', '2025-08-20 14:34:52'),
-('126462140017', 'DONNA', 'FATE PAÑA', 'BAGUHIN', NULL, NULL, '$2y$10$nw3XUsHb3K0PXF8ODj2geu7SEgroRe9HtsFDv.rp1V0.VA.yNDjJS', 4, '126462140017', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
+('119453140027', 'MARTIN', 'NICOLE TAYO', 'HABONITA', NULL, NULL, '$2y$10$TQ.LhjaTOTie8kXpd/1NguGaEIoobnnqlcNUAruZ/f77LbLDi9NCq', 4, '119453140027', 2, '2008-11-22', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
+('126277140066', 'CHELLIE', 'ASHLY AMANTE', 'BADBAD', NULL, NULL, '$2y$10$aDnaqsKTFz3LF7MZ10iui.kRIlTL2Jl1jh29mnLHZ5ujvqrcdwm5.', 4, '126277140066', 2, '2009-03-03', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
+('126340130018', 'KIRBY', 'KATE NEPOMUCINO', 'REPUELA', NULL, NULL, '$2y$10$mhJdQmUIFFiFd6KRjf8Zjuy0zP/jpE9Oju8lmQP41R/2n9KvOQHnS', 4, '126340130018', 2, '2008-06-30', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:52', '2025-11-01 05:44:26'),
+('126462140017', 'DONNA', 'FATE PAÑA', 'BAGUHIN', NULL, NULL, '$2y$10$nw3XUsHb3K0PXF8ODj2geu7SEgroRe9HtsFDv.rp1V0.VA.yNDjJS', 4, '126462140017', 2, '2009-04-19', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
 ('126577140110', 'JELYN', 'ORONG', 'GUINLAMON', NULL, NULL, '$2y$10$qgLI4pxI8feSWPdnhL3fx.VQCPqy0REYU6LolQOvl0gEoeuiOhu2y', 4, '126577140110', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
-('126905140061', 'RICHYLEN', 'FABIAÑA', 'TARDE', NULL, NULL, '$2y$10$3SMo/q3IiwsJ3KTJgHVF.uFZRuc3HlRi8QwI9BFJLrmHV6wzOvjhK', 4, '126905140061', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:52', '2025-08-20 14:34:52'),
+('126905140061', 'RICHYLEN', 'FABIAÑA', 'TARDE', 'ralphjangallegos@gmail.com', NULL, '$2y$10$Z6XDX5RrBCdmB0rF6Mi09OHpvZUrpS.CTDj90DmU8VbayH689akia', 4, '126905140061', 2, '2008-12-07', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 1, '2025-08-20 14:34:52', '2025-11-01 05:44:26'),
 ('126917140008', 'JHANSSEN', 'DEMETERIO', 'GONZALES', NULL, NULL, '$2y$10$yUV/sgRSy82qNXvt8ay4ie6i2U5hTnNl7JNuEWy2GYiqW97UXoCa.', 4, '126917140008', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('127591140053', 'JASSEL', 'QUITOS', 'HINDOY', NULL, NULL, '$2y$10$a4FO47xsWAi7Vw.pgrD63.pBjWSFQeNjoK1tGa7R4O7kUPwlff14i', 4, '127591140053', 3, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
-('127620110113', 'JADE', 'ETOR', 'PETALCORIN', NULL, NULL, '$2y$10$oYPWBOGOz62MPZtlEoaVqePLWkxr4l6pABL4ydikzq1oV5kG.Qpte', 4, '127620110113', 3, '0000-00-00', '', 18, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
+('127591140053', 'JASSEL', 'QUITOS', 'HINDOY', NULL, NULL, '$2y$10$a4FO47xsWAi7Vw.pgrD63.pBjWSFQeNjoK1tGa7R4O7kUPwlff14i', 4, '127591140053', 2, '2009-07-15', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
+('127620110113', 'JADE', 'ETOR', 'PETALCORIN', NULL, NULL, '$2y$10$oYPWBOGOz62MPZtlEoaVqePLWkxr4l6pABL4ydikzq1oV5kG.Qpte', 4, '127620110113', 2, '2007-01-13', '', 18, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:25'),
 ('127739130002', 'ZACHARY', 'JOFER MONTEJO', 'JUELE', NULL, NULL, '$2y$10$L4tOSF8H534cVHqOCwmbXuAUZYvW0Q7fEqeBZgIFTy/DkT32EK9Ke', 4, '127739130002', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('127842140143', 'LEXTER', 'ANDO', 'OYAO', NULL, NULL, '$2y$10$fyy8.8G213j5mZbQEVbUtuYCgHHn7LmKHa791I/JtzYD2Il4bXNgS', 4, '127842140143', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
+('127842140143', 'LEXTER', 'ANDO', 'OYAO', NULL, NULL, '$2y$10$fyy8.8G213j5mZbQEVbUtuYCgHHn7LmKHa791I/JtzYD2Il4bXNgS', 4, '127842140143', 2, '2009-04-01', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:25'),
 ('127867140141', 'PRINCESS', 'NICOLE UNABIA', 'SARANGA', NULL, NULL, '$2y$10$32cJ4.vd5tVAqSyYbpm0w.d.3TLvtGfDchkos9AvpOHq4yATSEbNW', 4, '127867140141', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
 ('127940120016', 'JHON', 'ELMER CAILING', 'BALDONADE', NULL, NULL, '$2y$10$J.2ux.gQOJObk16EFjpRiO1jB8O26MMdRbN3re9SQO2tHdI8vv2hC', 4, '127940120016', 2, '0000-00-00', '', 18, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
 ('127940120831', 'AVA', 'KRISTA MARCELINO', 'CABAYACRUZ', NULL, NULL, '$2y$10$2kz9MbfvY3NHGyOEInKbXev.AIMptHyxMG3n/cOfaBJHqnI9PDgQK', 4, '127940120831', 2, '0000-00-00', '', 19, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('127940140193', 'LOUISE', 'MIGUEL SUMAMPONG', 'KUIZON', NULL, NULL, '$2y$10$gYCNU6Tp289jHkSXr6KfU.fwEGhqaeu6uyblCZlX0/i7Hl4sQaaTa', 4, '127940140193', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('127940140219', 'ALJADE', 'METODA', 'CABAÑEROS', NULL, NULL, '$2y$10$FIT9CYhhsMSk00ppLwkiU.5aiCjYjo.XGApJwxn.VCbCqZBE8xn3C', 4, '127940140219', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
-('127940140258', 'DIONESIO', 'JR EMBALZADO', 'BALIGA', NULL, NULL, '$2y$10$cvxnMv0cEkZ0iOjt/q63xeCFVO/o37ZEuuB7.PS2zIss8h1yYlLiW', 4, '127940140258', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
+('127940140258', 'DIONESIO', 'JR EMBALZADO', 'BALIGA', NULL, NULL, '$2y$10$cvxnMv0cEkZ0iOjt/q63xeCFVO/o37ZEuuB7.PS2zIss8h1yYlLiW', 4, '127940140258', 2, '2008-11-11', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
 ('127940140437', 'JOEL', 'CUTANDA', 'AMPER', NULL, NULL, '$2y$10$Uzk5.MmPZOHsb50AnrTMNeYLBRQQmKwcnx4jTIlnZ0YLlgAoRkzQC', 4, '127940140437', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
-('127940140472', 'SOPHIA', 'YVONNE BARON', 'MINISTER', NULL, NULL, '$2y$10$N/B/HEFejSmsPv081QpV4OzvZ0W3ny4xTcP/j/xtyE3HBODZ1L8vK', 4, '127940140472', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
-('127940140510', 'JOHN', 'LOYD PEPITO', 'GUZMANA', NULL, NULL, '$2y$10$OofTxq71eBDn87/Oi.JjAu3TO3RXxCifL0Rp7kYr80knO3N6xYdVe', 4, '127940140510', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
-('127940140528', 'ZANDRA', 'ROLLON', 'DIZON', NULL, NULL, '$2y$10$/0oIy0iklAJKEeTd0qZHmOVcdiF4Xy9ONR/qhEId4QcWfbvj7Zu52', 4, '127940140528', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
-('127940140683', 'ELLAJOY', 'LOPEZ', 'NAPONE', NULL, NULL, '$2y$10$NxGW8qdf8LGQioJ1S9tpT..j/S5rG0RCWRKJgdx0.G7JJ77tWcKTi', 4, '127940140683', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
+('127940140472', 'SOPHIA', 'YVONNE BARON', 'MINISTER', NULL, NULL, '$2y$10$N/B/HEFejSmsPv081QpV4OzvZ0W3ny4xTcP/j/xtyE3HBODZ1L8vK', 4, '127940140472', 2, '2009-06-19', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:26'),
+('127940140510', 'JOHN', 'LOYD PEPITO', 'GUZMANA', NULL, NULL, '$2y$10$OofTxq71eBDn87/Oi.JjAu3TO3RXxCifL0Rp7kYr80knO3N6xYdVe', 4, '127940140510', 2, '2009-01-24', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
+('127940140528', 'ZANDRA', 'ROLLON', 'DIZON', NULL, NULL, '$2y$10$/0oIy0iklAJKEeTd0qZHmOVcdiF4Xy9ONR/qhEId4QcWfbvj7Zu52', 4, '127940140528', 2, '2008-09-04', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
+('127940140683', 'ELLAJOY', 'LOPEZ', 'NAPONE', NULL, NULL, '$2y$10$NxGW8qdf8LGQioJ1S9tpT..j/S5rG0RCWRKJgdx0.G7JJ77tWcKTi', 4, '127940140683', 2, '2009-06-15', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:26'),
 ('127940140743', 'JENNIFER', 'GONZAGA', 'OCLARIT', NULL, NULL, '$2y$10$v5yh6DZHlCl5J0csSvMYZu6YM7Jvmov8EzQZpgDP8X2xB9YhRKeH.', 4, '127940140743', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
 ('127940140983', 'SANTINO', 'RHYNE CAW-IT', 'LONGGAKIT', NULL, NULL, '$2y$10$MpG11BuDtwoQ0XyQX5WGBer/tEBu/kAlnyqZ38cTi8P0SRsxaUubq', 4, '127940140983', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('127940141023', 'HUNLEY', 'GEMILLA', 'PADIÑO', NULL, NULL, '$2y$10$YPsubVWNstJGoikU7.eI2eYaPuExsafy/pqjEPUhvZtQRP6C4CTHi', 4, '127940141023', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('127940141288', 'ARVIN', 'JHON RECIPIDA', 'CASTILLO', NULL, NULL, '$2y$10$jhOogNa.lXxP/Sv9Beq8i.tkUfL4E9AO5Sj0QHhIUzeFd9eYW/gkW', 4, '127940141288', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
-('127940150223', 'PRINCESS', 'APPLE AMANTE', 'ABRAGAN', NULL, NULL, '$2y$10$lN9POzi2tJJrvzKhuEl9letRqrWRngJ7uSecLLyPlEqYzHD8n.htm', 4, '127940150223', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
-('127940150614', 'LEAH', 'GARCIA', 'SALINGAY', NULL, NULL, '$2y$10$zvf1aioo/3VQB3vCAnaPUOfkmfO0kJhs7quHzVaSfxAXP.4Asud26', 4, '127940150614', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:52', '2025-08-20 14:34:52'),
+('127940141288', 'ARVIN', 'JHON RECIPIDA', 'CASTILLO', NULL, NULL, '$2y$10$jhOogNa.lXxP/Sv9Beq8i.tkUfL4E9AO5Sj0QHhIUzeFd9eYW/gkW', 4, '127940141288', 2, '2008-09-12', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
+('127940150223', 'PRINCESS', 'APPLE AMANTE', 'ABRAGAN', NULL, NULL, '$2y$10$lN9POzi2tJJrvzKhuEl9letRqrWRngJ7uSecLLyPlEqYzHD8n.htm', 4, '127940150223', 2, '2009-04-10', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
+('127940150614', 'LEAH', 'GARCIA', 'SALINGAY', NULL, NULL, '$2y$10$zvf1aioo/3VQB3vCAnaPUOfkmfO0kJhs7quHzVaSfxAXP.4Asud26', 4, '127940150614', 2, '2009-06-23', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:52', '2025-11-01 05:44:26'),
 ('127941130349', 'RAYSHELLE', 'SALARDA', 'REALISTA', NULL, NULL, '$2y$10$57l/o6fciwuyQHxa68.vCumo8gb5lYorgl.BFydGbF/x/qEqXErVG', 4, '127941130349', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
 ('127941140331', 'JUSTINE', 'MAE MENDOZA', 'YANO', NULL, NULL, '$2y$10$J4jlia235zADiYczGneTEu.zOmuXgRJoFFZnNwYJZUpKyIAOIClfS', 4, '127941140331', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
 ('127941140398', 'LEXXY', 'REALISTA', 'PAHUNANG', NULL, NULL, '$2y$10$MBpKhT7tXaxPh089Y5QCnu5Diw9VWrA3SgIM56jHGJXDQm6G226tG', 4, '127941140398', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
-('127941140436', 'XYPRESS', 'ANGELA ESPITAL', 'JABINIAO', NULL, NULL, '$2y$10$toeCtwSCC.nxfikI6jCE2.4Ua949NueJSD1jpb9uCA/a.TL0hTzV6', 4, '127941140436', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
+('127941140436', 'XYPRESS', 'ANGELA ESPITAL', 'JABINIAO', NULL, NULL, '$2y$10$toeCtwSCC.nxfikI6jCE2.4Ua949NueJSD1jpb9uCA/a.TL0hTzV6', 4, '127941140436', 2, '2009-03-22', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
 ('127941140475', 'SHERRY', 'DELA CRUZ', 'YOUNG', NULL, NULL, '$2y$10$1dc5rAzaWKkgpQAboOSC/OCOEQeOuCzy84ffXi9u.oZbiibW5pitC', 4, '127941140475', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
-('127942140395', 'ANDY', 'MIKE BONGCARON', 'ALGA', NULL, NULL, '$2y$10$Eg1gWcWnPqQ4BRhMeGOaKuhfG2bpNdoiDbhTipvU0iCnrNdVCWheu', 4, '127942140395', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
+('127942140395', 'ANDY', 'MIKE BONGCARON', 'ALGA', NULL, NULL, '$2y$10$Eg1gWcWnPqQ4BRhMeGOaKuhfG2bpNdoiDbhTipvU0iCnrNdVCWheu', 4, '127942140395', 2, '2008-10-05', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
 ('127942140607', 'JESSA', 'LASTIMOSO', 'GENTAPA', NULL, NULL, '$2y$10$4VLr3ZeO4U8jeFN8WRZpjuOCNRiaEGm5Ue8VqvpBJ5/QKcdy8x7RS', 4, '127942140607', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
-('127944140444', 'CLEVIN', 'MAR TABACO', 'JENISAN', NULL, NULL, '$2y$10$qhLar2mUxPi0XLzPlxJnvu2VR/OkeI.D7ND6VmISaoaQwrO4dkvLe', 4, '127944140444', 3, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
-('127944140614', 'JED', 'KURVEN TIPDAS', 'GERMANO', NULL, NULL, '$2y$10$krhs1g9BV1SywaZdEAdnLefRt8PUzOb.We0U.l2M4a5bMzi2bqZua', 4, '127944140614', 3, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
-('127954140318', 'LYN', 'SAGISABAL', 'TORRES', NULL, NULL, '$2y$10$svWRkXsUbVqyNd2WVh1G6OJviQG3DP8s3gxGFIw7uyEMHlSzwhCS6', 4, '127954140318', 3, '0000-00-00', '', 19, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:52', '2025-08-20 14:34:52'),
+('127944140444', 'CLEVIN', 'MAR TABACO', 'JENISAN', NULL, NULL, '$2y$10$qhLar2mUxPi0XLzPlxJnvu2VR/OkeI.D7ND6VmISaoaQwrO4dkvLe', 4, '127944140444', 2, '2008-03-10', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
+('127944140614', 'JED', 'KURVEN TIPDAS', 'GERMANO', NULL, NULL, '$2y$10$krhs1g9BV1SywaZdEAdnLefRt8PUzOb.We0U.l2M4a5bMzi2bqZua', 4, '127944140614', 2, '2009-09-17', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
+('127954140318', 'LYN', 'SAGISABAL', 'TORRES', NULL, NULL, '$2y$10$svWRkXsUbVqyNd2WVh1G6OJviQG3DP8s3gxGFIw7uyEMHlSzwhCS6', 4, '127954140318', 2, '2006-02-14', '', 19, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:52', '2025-11-01 05:44:26'),
 ('127955080148', 'NASIFAH', 'BATUA', 'H SAID', NULL, NULL, '$2y$10$uCu1SjkeLsIwptKiXr/QQuTeZ4lIqs/fDLfv60AXOWo3a1B4PBKTe', 4, '127955080148', 2, '0000-00-00', '', 25, 'Islam', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
 ('127955130057', 'KRAM', 'EMPIALES', 'SALAS', NULL, NULL, '$2y$10$pL6eoc5ivgfKyRUJAXhm3O963e2H0yz2wyAl0VGkuNGx0cRO9LL22', 4, '127955130057', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('127955130297', 'ASLANIE', 'ABANTAS', 'ANSARY', NULL, NULL, '$2y$10$sIJiD2JVC7RnXsQ2xsIXlOfviIMSVnxlHkl20VQTflmlrGLkCcQja', 4, '127955130297', 3, '0000-00-00', '', 17, 'Islam', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
+('127955130297', 'ASLANIE', 'ABANTAS', 'ANSARY', NULL, NULL, '$2y$10$sIJiD2JVC7RnXsQ2xsIXlOfviIMSVnxlHkl20VQTflmlrGLkCcQja', 4, '127955130297', 2, '2007-10-24', '', 17, 'Islam', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
 ('127955130399', 'RICKMERS', 'BASLI-AN', 'MINISTER', NULL, NULL, '$2y$10$TPC/KxxSOUv5G3BN/MyKnu6gikcOeNNtIy9ybdusCfs/6BR6HFP7u', 4, '127955130399', 2, '0000-00-00', '', 18, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('127955140083', 'SHIELA', 'MAE BALABA', 'SALONOY', NULL, NULL, '$2y$10$dvPHCTnGCkWzmrCqgsmVa.Mimu.h8t8lktsw0JfemyNTqoPMxpmxq', 4, '127955140083', 3, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:52', '2025-08-20 14:34:52'),
-('127955140138', 'STEPHANIE', 'TUA', 'DIZON', NULL, NULL, '$2y$10$Esb6xWaIiQkfstCXlUKkDuOypTcTEOVigIfjCxqqABi79RLuYnpdK', 4, '127955140138', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
+('127955140083', 'SHIELA', 'MAE BALABA', 'SALONOY', NULL, NULL, '$2y$10$dvPHCTnGCkWzmrCqgsmVa.Mimu.h8t8lktsw0JfemyNTqoPMxpmxq', 4, '127955140083', 2, '2009-09-26', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:52', '2025-11-01 05:44:26'),
+('127955140138', 'STEPHANIE', 'TUA', 'DIZON', NULL, NULL, '$2y$10$Esb6xWaIiQkfstCXlUKkDuOypTcTEOVigIfjCxqqABi79RLuYnpdK', 4, '127955140138', 2, '2009-06-19', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
 ('127955160159', 'JEAMWHELL', 'DINOPOL', 'GENERALAO', NULL, NULL, '$2y$10$H8mJq9PXnpgzRkSwMABH9erj9lUQ9AZQ/u19WoLlV8gfBdcfvCMQW', 4, '127955160159', 2, '0000-00-00', '', 18, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
 ('127956120328', 'MARICEL', '-', 'CABACTULAN', NULL, NULL, '$2y$10$tWP3w1GPQyiqRb/wD30nseEqeZDCR7wZwriRd4ovAZYrAGmJmhidW', 4, '127956120328', 2, '0000-00-00', '', 18, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('127956140332', 'SAMANTHA', 'ABECIA', 'TIBURON', NULL, NULL, '$2y$10$SXr3WcCMdI/.tOLgGi0iCeVFDo0ZAfJCszp0GLRgoqBxibgcxCzb2', 4, '127956140332', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
-('127957140185', 'RONALD', 'CELIS', 'CAIÑA', NULL, NULL, '$2y$10$H2TpuB.J7PSBlja2EWFKv.1sOjCaeQlSg66Mkq3uRPtpia/fOT4AO', 4, '127957140185', 3, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
-('127958140020', 'MABELL', 'NAVARRO', 'TANO', NULL, NULL, '$2y$10$I8b9JFe.BQBZ4Q8VCt8g/eJraTei7fpjB0L69qNLRTxVgv4ynBfYu', 4, '127958140020', 3, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:52', '2025-08-20 14:34:52'),
-('127958140077', 'DAN', 'JOVEN ESPAÑA', 'MINDORO', NULL, NULL, '$2y$10$iW.bQCxn0XFCGrsdHa759Od.lkFpoU5wO5aFPY4B0CCq9HkwDko7O', 4, '127958140077', 3, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
-('127958140100', 'DIVINE', 'LANTAO', 'LABADOR', NULL, NULL, '$2y$10$WVUyKJNygpMvt8LGsHPAROUOMyLPZiaF8Z5kNBZO/hBA3kJeBHYGW', 4, '127958140100', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
-('127962140118', 'JELLANAH', 'CABUGASON', 'DAAMO', NULL, NULL, '$2y$10$f3bGc03ZgW0dtF9ABooviOdC9vyn5MNWs1LDLw.A9YL4mzwj2Kidi', 4, '127962140118', 3, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
-('127962140294', 'ROCHELLE', 'ALUNGAY', 'DATAHAN', NULL, NULL, '$2y$10$Gg5DcRArVdLkAFpWZihnrefvF.hsRzv1nCIj50ZPfaBtD0j1z9y8G', 4, '127962140294', 3, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
-('127963130086', 'LORIE', 'MAE AMAHOY', 'ABAN', NULL, NULL, '$2y$10$nU0HRJmx8pRxpt2YMlj6TeAXRFLgLMUUEoGJ5Ir1kLR2BqW/wVywC', 4, '127963130086', 3, '0000-00-00', '', 17, 'Islam', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-10-08 03:43:31'),
+('127957140185', 'RONALD', 'CELIS', 'CAIÑA', NULL, NULL, '$2y$10$H2TpuB.J7PSBlja2EWFKv.1sOjCaeQlSg66Mkq3uRPtpia/fOT4AO', 4, '127957140185', 2, '2009-08-12', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
+('127958140020', 'MABELL', 'NAVARRO', 'TANO', NULL, NULL, '$2y$10$I8b9JFe.BQBZ4Q8VCt8g/eJraTei7fpjB0L69qNLRTxVgv4ynBfYu', 4, '127958140020', 2, '2008-02-15', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:52', '2025-11-01 05:44:26'),
+('127958140077', 'DAN', 'JOVEN ESPAÑA', 'MINDORO', NULL, NULL, '$2y$10$iW.bQCxn0XFCGrsdHa759Od.lkFpoU5wO5aFPY4B0CCq9HkwDko7O', 4, '127958140077', 2, '2007-07-22', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:25'),
+('127958140100', 'DIVINE', 'LANTAO', 'LABADOR', NULL, NULL, '$2y$10$WVUyKJNygpMvt8LGsHPAROUOMyLPZiaF8Z5kNBZO/hBA3kJeBHYGW', 4, '127958140100', 2, '2009-04-09', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
+('127962140118', 'JELLANAH', 'CABUGASON', 'DAAMO', NULL, NULL, '$2y$10$f3bGc03ZgW0dtF9ABooviOdC9vyn5MNWs1LDLw.A9YL4mzwj2Kidi', 4, '127962140118', 2, '2009-07-05', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
+('127962140294', 'ROCHELLE', 'ALUNGAY', 'DATAHAN', NULL, NULL, '$2y$10$Gg5DcRArVdLkAFpWZihnrefvF.hsRzv1nCIj50ZPfaBtD0j1z9y8G', 4, '127962140294', 2, '2007-08-20', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
+('127963130086', 'LORIE', 'MAE AMAHOY', 'ABAN', NULL, NULL, '$2y$10$nU0HRJmx8pRxpt2YMlj6TeAXRFLgLMUUEoGJ5Ir1kLR2BqW/wVywC', 4, '127963130086', 2, '2008-02-12', '', 17, 'Islam', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
 ('127964120138', 'ULYAR', 'DAIRO', 'ALFANTE', NULL, NULL, '$2y$10$uCngOSfmphr5bmT1Tm.dGOdkBIiPW3qdWYeee2/.tBdKfMWxeJoge', 4, '127964120138', 2, '0000-00-00', '', 19, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
 ('127966120298', 'RAMELLA', 'BONCALES', 'YORDAN', NULL, NULL, '$2y$10$LhT5l1qR2QxJ2SfjAPUZ8u3.GnuKk99/3aLrQY4AdP49qM39cgise', 4, '127966120298', 2, '0000-00-00', '', 18, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
 ('127967140004', 'KING', 'CHANDLER MENDEZ', 'GENTILES', NULL, NULL, '$2y$10$MH.8hnXmWbApgIk13otDF.fsZq4XVJq3a01CQhao/cWb3HD3.RN/O', 4, '127967140004', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
@@ -695,30 +726,30 @@ INSERT INTO `tblstudent` (`id`, `firstname`, `middlename`, `lastname`, `email`, 
 ('127992130267', 'WIN', 'RAPIRAP', 'GO', NULL, NULL, '$2y$10$jtv7M2vMQW19aurQIf45n.gGCAVbMt9fC1ZZWHS1VuCu9xNNQDWuK', 4, '127992130267', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
 ('127993140162', 'JETRRY', 'GABUT', 'SIBOC', NULL, NULL, '$2y$10$culjEL0tvTRAVFa8C9Vuy.G8MzsP8kbN/sNvwsSRGgpBojbDGjwQa', 4, '127993140162', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('127993150140', 'JOHN', 'VINCENT -', 'ESPADILLA', NULL, NULL, '$2y$10$M7Cqr5.ccQSpFUq2CU3d7OhPwM8pS2LRlFrqWGSwVQmsGxVyILAe.', 4, '127993150140', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
-('127995130887', 'JOHN', 'VINCENT JAGUNAP', 'ABARRIENTOS', NULL, NULL, '$2y$10$bh8.EY.jbQG4MpU/miDCROcfeDJguFVuYn60XOvjmxCiXWQvCe.sW', 4, '127995130887', 3, '0000-00-00', '', 18, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:49', '2025-08-20 14:34:49'),
+('127995130887', 'JOHN', 'VINCENT JAGUNAP', 'ABARRIENTOS', NULL, NULL, '$2y$10$bh8.EY.jbQG4MpU/miDCROcfeDJguFVuYn60XOvjmxCiXWQvCe.sW', 4, '127995130887', 2, '2007-04-09', '', 18, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:49', '2025-11-01 05:44:24'),
 ('127995140316', 'RANDY', 'JR CUICO', 'SALVADOR', NULL, NULL, '$2y$10$kevTGwOlHENWLBkSYoIbsuuAgSnJ6tHy.8yRLlmtkR.URnrQlqy2e', 4, '127995140316', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('127995140395', 'MARK', 'SEBASTIAN GALOPE', 'FABRIA', NULL, NULL, '$2y$10$2PC9zpzZp8S6HvmZd6LwxOzEvpScnQ4jPJnzCpIfMJS1tjW5rTZC.', 4, '127995140395', 2, '0000-00-00', '', 19, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
 ('127995140980', 'ELLYZA', 'YASOL', 'PILO', NULL, NULL, '$2y$10$6zCkPkPcdClnFhQCOpIMQeiI/AxKYXHMxeFS3Rwwy7QLhQNsC4GPW', 4, '127995140980', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
-('127995141261', 'DANICA', 'HAZEL JAIN GALOPE', 'FABRIA', NULL, NULL, '$2y$10$1cfepQb2GdgS/.4BSh225.8OTMT2b461HveRtSSn3jbzZEW30.Nn2', 4, '127995141261', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
+('127995141261', 'DANICA', 'HAZEL JAIN GALOPE', 'FABRIA', NULL, NULL, '$2y$10$1cfepQb2GdgS/.4BSh225.8OTMT2b461HveRtSSn3jbzZEW30.Nn2', 4, '127995141261', 2, '2009-03-01', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
 ('127995141346', 'PRINCESS', 'ALTHEA NADELA', 'YAMUT', NULL, NULL, '$2y$10$NOmxZPcoZfAvLt4DO7qaqexc7NKV6Mkzh3OPNZUZSJqJlaiW3znam', 4, '127995141346', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
-('127995141402', 'ZILDJIAN', 'SASUMAN', 'SOLOMON', NULL, NULL, '$2y$10$r2J23s3Z1AB/8FXnBT5ID.NWQ7NJAT3ceTv1Uj/hbvJFqvc8G1yHK', 4, '127995141402', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:52', '2025-08-20 14:34:52'),
+('127995141402', 'ZILDJIAN', 'SASUMAN', 'SOLOMON', NULL, NULL, '$2y$10$r2J23s3Z1AB/8FXnBT5ID.NWQ7NJAT3ceTv1Uj/hbvJFqvc8G1yHK', 4, '127995141402', 2, '2009-01-26', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:52', '2025-11-01 05:44:26'),
 ('128164140135', 'JABEZ', 'YORONG', 'ACAPULCO', NULL, NULL, '$2y$10$lRvufcltdF.DsfqD4AtWPen4G0VQcVTzySeza5ePpFn6Foqyc1L8G', 4, '128164140135', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
-('131260120551', 'RICHARD', 'JR ENTONG', 'MEDIANA', NULL, NULL, '$2y$10$kqLAnnT7gwAvElQJiMvfmOs0a2H71icf1LJLkX0FTpY2oSK3F7ZVm', 4, '131260120551', 3, '0000-00-00', '', 17, 'Islam', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
+('131260120551', 'RICHARD', 'JR ENTONG', 'MEDIANA', NULL, NULL, '$2y$10$kqLAnnT7gwAvElQJiMvfmOs0a2H71icf1LJLkX0FTpY2oSK3F7ZVm', 4, '131260120551', 2, '2007-08-20', '', 17, 'Islam', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
 ('131632140039', 'JOELIE', 'MARIE MARIQUIT', 'RABAGO', NULL, NULL, '$2y$10$j/8snsDOQ9UU/SGCrunE8.avr8RJ47Bpju9k.JFo1POFVWqB39s02', 4, '131632140039', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
-('131662140006', 'SIM', 'GEB HEART ADLAON', 'CEDEÑO', NULL, NULL, '$2y$10$aSTR4oB3CXw7AK.TUrSDk.DDpEySheQT7mhTb/rfaY3BqbaeAmhFK', 4, '131662140006', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
+('131662140006', 'SIM', 'GEB HEART ADLAON', 'CEDEÑO', NULL, NULL, '$2y$10$aSTR4oB3CXw7AK.TUrSDk.DDpEySheQT7mhTb/rfaY3BqbaeAmhFK', 4, '131662140006', 2, '2009-01-03', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
 ('132287150182', 'DANICE', 'ROSS XENIA ESTRELLA', 'GALVAN', NULL, NULL, '$2y$10$8Q1L//dMeo8Lj8u6VCaF/.SE/eN2ftjvQIThRSYnE/L3ur15bWmK2', 4, '132287150182', 2, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
-('132601150002', 'VON', 'CRIZTOFF CABUGA', 'GUINGGUING', NULL, NULL, '$2y$10$ek6CXMuLbj2tJA1l3Lxck.HJx.tBqrvdx8suSp4DxqMXXDH0iG.Wi', 4, '132601150002', 3, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
+('132601150002', 'VON', 'CRIZTOFF CABUGA', 'GUINGGUING', NULL, NULL, '$2y$10$ek6CXMuLbj2tJA1l3Lxck.HJx.tBqrvdx8suSp4DxqMXXDH0iG.Wi', 4, '132601150002', 2, '2009-09-15', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:24'),
 ('133218140022', 'JAPAR', 'DIBA', 'DAUD', NULL, NULL, '$2y$10$/Wp7GSUUTge0vaiXk2QpTeUqHBPZUOEUpvh2Zq1hxEfmD7twU36M.', 4, '133218140022', 2, '0000-00-00', '', 16, 'Islam', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
-('133527150140', 'RYLLE', 'KENT DIZON', 'ZABALA', NULL, NULL, '$2y$10$z8xGShg265v0yReo/f4vXO1UVnWDyVE7nC9I5g5LmZgpZyEbwKYyS', 4, '133527150140', 3, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
+('133527150140', 'RYLLE', 'KENT DIZON', 'ZABALA', NULL, NULL, '$2y$10$z8xGShg265v0yReo/f4vXO1UVnWDyVE7nC9I5g5LmZgpZyEbwKYyS', 4, '133527150140', 2, '2008-04-11', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:51', '2025-11-01 05:44:25'),
 ('136913130093', 'HERMINE', 'GUMBAY', 'DIMASINSIL', NULL, NULL, '$2y$10$DXSODBC8XsmnHXLqvl77aeV2vIxNaEnl58ZD7Im7zWTe0MByn5pdK', 4, '136913130093', 2, '0000-00-00', '', 17, 'Islam', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:31', '2025-08-20 14:21:31'),
 ('18', '<===', 'TOTAL', 'MALE', NULL, NULL, '$2y$10$Bc6Z.jRG26hUOgycmeQBfeB70rNnIO.XdFUTtAFbPExUFgZKOjL8S', 4, '18', 3, '0000-00-00', '', 0, '', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:51', '2025-08-20 14:34:51'),
 ('201511140006', 'CARL', 'KESTER LIGUTOM', 'PELIGRO', NULL, NULL, '$2y$10$5jvHmOKXl1kiIiQjhzOq0.nMX6E3meAjEBynFwbj/ri5asp9MTBrS', 4, '201511140006', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('33333333', 'Patricia', '', 'Aspirass', 'ralp.pelino11@gmail.com', '09056548089', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '33333333', 4, '2003-02-21', 'Cagayan de Oro City', 20, 'Roman Catholic', 'Iponan', '', '', '', '', 3, 4, 1, 1, '2025-08-06 12:42:47', '2025-10-07 09:55:55'),
 ('405155150193', 'MARICEL', 'SIBOLON', 'MANOS', NULL, NULL, '$2y$10$9eET.qQUrtDwOqlf2YnX4Os1lOS8XZUMGUJGUnOouoO8.eu7OArby', 4, '405155150193', 2, '0000-00-00', '', 15, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:33', '2025-08-20 14:21:33'),
-('405176150009', 'BRAD', 'LUNA', 'PADERANGA', NULL, NULL, '$2y$10$IKa07rDnOnyyDRgU9Pld8.ax4NvtqJlrJOAZf2fu455/SfagePJei', 4, '405176150009', 3, '0000-00-00', '', 16, 'Christianity', '', '', '', '', '', 4, 4, 1, 0, '2025-08-20 14:34:50', '2025-08-20 14:34:50'),
+('405176150009', 'BRAD', 'LUNA', 'PADERANGA', NULL, NULL, '$2y$10$IKa07rDnOnyyDRgU9Pld8.ax4NvtqJlrJOAZf2fu455/SfagePJei', 4, '405176150009', 2, '2008-10-02', '', 16, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:34:50', '2025-11-01 05:44:25'),
 ('405241150066', 'ARJAY', 'PALMARES', 'REYES', NULL, NULL, '$2y$10$BTcS0XTgogiC8zaYkwIi7uquX/Vjq/LKBlZa5.NHzS/tWjh5ZWvOe', 4, '405241150066', 2, '0000-00-00', '', 17, 'Christianity', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
 ('510062400004', 'JOHAYVER', 'CALIPAPA', 'MAKI', NULL, NULL, '$2y$10$GsuBHsmmAM5M8uZkjrzrCuxhzuK5FE4ppVUDu1t5D/BGMmh2qsfnu', 4, '510062400004', 2, '0000-00-00', '', 18, 'Islam', '', '', '', '', '', 3, 4, 1, 0, '2025-08-20 14:21:32', '2025-08-20 14:21:32'),
-('99999', 'Edmarlen', '', 'Catid', 'pattyaspiras@gmail.com', '', '$2y$10$Uaa8DoxJGgwn5nXusRp1LuS0MpAfqNWVj2kOc978/bl093Vf85tz2', 4, '99999', 1, '0000-00-00', '', 0, '', '', '', '', '', '', 14, 4, 3, 0, '2025-08-31 14:00:03', '2025-10-19 08:59:34');
+('99999', 'Edmarlen', '', 'Catid', 'pattyaspiras@gmail.com', '09056548089', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 4, '99999', 1, '0000-00-00', '', 0, '', '', '', '', '', '', 14, 4, 2, 1, '2025-08-31 14:00:03', '2025-10-28 12:11:00');
 
 -- --------------------------------------------------------
 
@@ -742,7 +773,13 @@ CREATE TABLE `tblstudentdocument` (
 
 INSERT INTO `tblstudentdocument` (`id`, `studentId`, `fileName`, `documentId`, `gradeLevelId`, `userId`, `createdAt`) VALUES
 (25, '99999', 'SF10 - Patty (2).pdf', 5, 2, '47718333', '2025-09-23 21:18:05'),
-(27, '33333333', '33333333-Grade11-Aspirass.pdf', 5, 1, '4771830', '2025-10-07 20:45:16');
+(27, '33333333', '33333333-Grade11-Aspirass.pdf', 5, 1, '4771830', '2025-10-07 20:45:16'),
+(31, '126340130018', '126340130018-Grade11-REPUELA.pdf', 5, 1, NULL, '2025-10-28 18:00:32'),
+(32, '126340130018', '126340130018-Grade12-REPUELA.pdf', 5, 2, NULL, '2025-10-28 18:00:57'),
+(33, '99999', '00099999-Grade11-Catid.pdf', 5, 1, NULL, '2025-10-28 18:01:26'),
+(34, '128164140135', '128164140135-Grade11-ACAPULCO.pdf', 5, 1, '4771830', '2025-10-28 22:59:19'),
+(35, '127964120138', '127964120138-Grade11-ALFANTE.pdf', 5, 1, '4771830', '2025-10-28 22:59:27'),
+(36, '127940140437', '127940140437-Grade11-AMPER.pdf', 5, 1, '4771830', '2025-10-28 22:59:40');
 
 -- --------------------------------------------------------
 
@@ -792,9 +829,10 @@ CREATE TABLE `tbluser` (
 
 INSERT INTO `tbluser` (`id`, `firstname`, `lastname`, `middlename`, `email`, `password`, `userLevel`, `pinCode`, `gradeLevelId`, `sectionId`, `strandId`, `isActive`, `createdAt`) VALUES
 ('00000000', 'Patty', 'Aspiras', '', 'ralp.pelino11@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL, NULL, 1, NULL),
-('02-1819-01500', 'Patty', 'Aspiras', 'shesh', 'pattyaspiras@gmail.com', '$2y$10$BS75u38Cdo6mzAN/VzhCfufDmRbGV5zjTsVzoxToBZ4gRr1PwdypO', 1, '$2y$10$L2vuWJEuSyf0DslCF7Afb.pVQNPu9HBQtWqlzpMcDE3zFSn2E9HcK', NULL, NULL, NULL, 1, NULL),
+('02-1819-01500', 'Patty', 'Aspiras', 'shesh', 'pattyaspiras@gmail.com', '$2y$10$BS75u38Cdo6mzAN/VzhCfufDmRbGV5zjTsVzoxToBZ4gRr1PwdypO', 1, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', NULL, NULL, NULL, 1, NULL),
 ('02-1819-01509', 'Patty', 'Aspiras', 'wew', 'patty@gmail.com', '$2y$10$bkhlAH8VfrdRfB9Kuu6HverJ2jFJ83a8wCrn9DIiJ0.SFlxvT5u.q', 2, '$2y$10$qpVJSUZ3A.AS90mLWxZH0OdG8y76g1EdAkzcq1Z.tKnrvv/Ztn8R.', NULL, NULL, NULL, 1, NULL),
 ('111111', 'hehe', 'huhu', '', 'rape.gallegos.coc@phinmaed.com', '$2y$10$G1WANLkrMr6VXSs5LF.ng.NfsB1Xv2rF.rem5hq6InsTfX5YeBvXu', 1, '$2y$10$hIvaUDm9IuIZpIVEPGoUvulXzIj46DC/4CHh7GnxXcYSRDmSY5m4e', NULL, NULL, NULL, 0, NULL),
+('123123123', 'rlph', 'rlphjn', '', 'ralphjanpelino@gmail.com', '$2y$10$64OjdFgKx5QrRjutRnJMeuRbu5Zg9Lt0DYiheXoT5c2ih54R9pWee', 3, '$2y$10$pqcWC71dkijmKbNhIVPPF.MZEUWKHSPCp9p/PKqyY6ZX7y.3UgNb6', 1, 6, NULL, 1, NULL),
 ('4771830', 'Maribelle', 'Acas', '', 'aspiraspat13@gmail.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 1, 3, NULL, 1, NULL),
 ('4771833', 'Alexis', 'Gonzaga', 'shesh', 'alex@gmail.com', '$2y$10$JooVcuK3ntZQdiPGcAhvle9y1Q9z0vKeeDJWui0ybvjLgXYcZboNq', 3, '$2y$10$1fd3vmuyD0e6fp.nqOAa8uacpjAuWnlfAKd70uh1wwnawoQeSHAUW', 2, 9, 2, 1, NULL),
 ('47718333', 'Mary', 'Aspiras', 'wew', 'rape.gallegos.coc1@phinmaed.com', '$2y$10$obaOkyOtY84By2tRkIv8Oue9xzy95ixpm9pyTjITO.dKk6O1zxi9K', 3, '$2y$10$hJexLGVB8PmW0khOWYKkA..pBOSB9dYyp34862M8zTk381Zf1vD32', 2, 9, 3, 1, NULL);
@@ -824,6 +862,15 @@ INSERT INTO `tbluserlevel` (`id`, `name`, `createdAt`) VALUES
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `login_attempts`
+--
+ALTER TABLE `login_attempts`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_id` (`user_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_lock_until` (`lock_until`);
 
 --
 -- Indexes for table `tblacademictype`
@@ -899,6 +946,14 @@ ALTER TABLE `tblrequest`
   ADD PRIMARY KEY (`id`),
   ADD KEY `documentId` (`documentId`),
   ADD KEY `studentId` (`studentId`);
+
+--
+-- Indexes for table `tblrequestdocument`
+--
+ALTER TABLE `tblrequestdocument`
+  ADD PRIMARY KEY (`reqD_id`),
+  ADD KEY `requestId` (`requestId`),
+  ADD KEY `documentId` (`documentId`);
 
 --
 -- Indexes for table `tblrequestpurpose`
@@ -1029,6 +1084,12 @@ ALTER TABLE `tbluserlevel`
 --
 
 --
+-- AUTO_INCREMENT for table `login_attempts`
+--
+ALTER TABLE `login_attempts`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `tblacademictype`
 --
 ALTER TABLE `tblacademictype`
@@ -1044,7 +1105,7 @@ ALTER TABLE `tbldocument`
 -- AUTO_INCREMENT for table `tbldocumentrequirement`
 --
 ALTER TABLE `tbldocumentrequirement`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblexpecteddays`
@@ -1056,7 +1117,7 @@ ALTER TABLE `tblexpecteddays`
 -- AUTO_INCREMENT for table `tblforgotlrn`
 --
 ALTER TABLE `tblforgotlrn`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tblgradelevel`
@@ -1068,7 +1129,7 @@ ALTER TABLE `tblgradelevel`
 -- AUTO_INCREMENT for table `tblloginlogs`
 --
 ALTER TABLE `tblloginlogs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `tblpurpose`
@@ -1080,25 +1141,31 @@ ALTER TABLE `tblpurpose`
 -- AUTO_INCREMENT for table `tblreleaseschedule`
 --
 ALTER TABLE `tblreleaseschedule`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `tblrequest`
 --
 ALTER TABLE `tblrequest`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblrequestdocument`
+--
+ALTER TABLE `tblrequestdocument`
+  MODIFY `reqD_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblrequestpurpose`
 --
 ALTER TABLE `tblrequestpurpose`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblrequeststatus`
 --
 ALTER TABLE `tblrequeststatus`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblrequirementcomments`
@@ -1152,7 +1219,7 @@ ALTER TABLE `tblstrand`
 -- AUTO_INCREMENT for table `tblstudentdocument`
 --
 ALTER TABLE `tblstudentdocument`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `tbltrack`
@@ -1223,6 +1290,13 @@ ALTER TABLE `tblreleaseschedule`
 ALTER TABLE `tblrequest`
   ADD CONSTRAINT `tblrequest_ibfk_1` FOREIGN KEY (`documentId`) REFERENCES `tbldocument` (`id`),
   ADD CONSTRAINT `tblrequest_ibfk_2` FOREIGN KEY (`studentId`) REFERENCES `tblstudent` (`id`);
+
+--
+-- Constraints for table `tblrequestdocument`
+--
+ALTER TABLE `tblrequestdocument`
+  ADD CONSTRAINT `tblrequestdocument_ibfk_1` FOREIGN KEY (`requestId`) REFERENCES `tblrequest` (`id`),
+  ADD CONSTRAINT `tblrequestdocument_ibfk_2` FOREIGN KEY (`documentId`) REFERENCES `tbldocument` (`id`);
 
 --
 -- Constraints for table `tblrequestpurpose`

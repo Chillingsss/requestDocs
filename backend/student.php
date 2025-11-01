@@ -63,12 +63,11 @@ class User {
         }
       }
 
-      $sql = "INSERT INTO tblrequest (studentId, documentId, purpose, createdAt) 
-              VALUES (:userId, :documentId, :purpose, :datetime)";
+      $sql = "INSERT INTO tblrequest (studentId, purpose, createdAt) 
+              VALUES (:userId, :purpose, :datetime)";
 
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':userId', $json['userId']);
-      $stmt->bindParam(':documentId', $json['documentId']);
       
       // Set purpose field - if predefined purposes exist, set to NULL since purposes are stored in tblrequestpurpose
       if ($hasPredefinedPurposes) {
@@ -82,6 +81,16 @@ class User {
 
       if ($stmt->execute()) {
         $requestId = $conn->lastInsertId();
+        
+        // Insert document into tblrequestdocument
+        $docSql = "INSERT INTO tblrequestdocument (requestId, documentId) VALUES (:requestId, :documentId)";
+        $docStmt = $conn->prepare($docSql);
+        $docStmt->bindParam(':requestId', $requestId);
+        $docStmt->bindParam(':documentId', $json['documentId']);
+        
+        if (!$docStmt->execute()) {
+          throw new PDOException("Failed to save document to request");
+        }
         
         // Insert purposes into tblrequestpurpose if predefined purposes exist
         if ($hasPredefinedPurposes && isset($json['purposeIds'])) {
@@ -235,6 +244,164 @@ class User {
     }
   }
 
+  function addMultipleDocumentRequest($json)
+  {
+    include "connection.php";
+
+    $json = json_decode($json, true);
+
+    try {
+      $conn->beginTransaction();
+
+      // Set Philippine timezone and get current datetime
+      date_default_timezone_set('Asia/Manila');
+      $philippineDateTime = date('Y-m-d H:i:s');
+
+      // First, get the status ID for "Pending" status
+      $statusSql = "SELECT id FROM tblstatus WHERE name = 'Pending' LIMIT 1";
+      $statusStmt = $conn->prepare($statusSql);
+      $statusStmt->execute();
+      $statusResult = $statusStmt->fetch(PDO::FETCH_ASSOC);
+
+      if (!$statusResult) {
+        throw new PDOException("Pending status not found in status request table");
+      }
+
+      $pendingStatusId = $statusResult['id'];
+
+      // Validate required fields
+      if (!isset($json['userId']) || !isset($json['documentIds']) || empty($json['documentIds'])) {
+        throw new PDOException("Missing required fields: userId and documentIds");
+      }
+
+      // Create a single request record for the transaction
+      $requestSql = "INSERT INTO tblrequest (studentId, purpose, createdAt) VALUES (:userId, :purpose, :datetime)";
+      $requestStmt = $conn->prepare($requestSql);
+      $requestStmt->bindParam(':userId', $json['userId']);
+      
+      // Use the purpose from the request
+      $purpose = isset($json['purpose']) && !empty(trim($json['purpose'])) ? $json['purpose'] : null;
+      $requestStmt->bindParam(':purpose', $purpose);
+      $requestStmt->bindParam(':datetime', $philippineDateTime);
+
+      if (!$requestStmt->execute()) {
+        throw new PDOException("Failed to create request record");
+      }
+
+      $requestId = $conn->lastInsertId();
+
+      // Insert each document into tblrequestdocument (multiple rows for multiple copies)
+      foreach ($json['documentIds'] as $documentId) {
+        $quantity = isset($json['documentQuantities'][$documentId]) ? $json['documentQuantities'][$documentId] : 1;
+        
+        // Insert multiple rows for each copy of the document
+        for ($i = 0; $i < $quantity; $i++) {
+          $docSql = "INSERT INTO tblrequestdocument (requestId, documentId) VALUES (:requestId, :documentId)";
+          $docStmt = $conn->prepare($docSql);
+          $docStmt->bindParam(':requestId', $requestId);
+          $docStmt->bindParam(':documentId', $documentId);
+          
+          if (!$docStmt->execute()) {
+            throw new PDOException("Failed to save document copy " . ($i + 1) . " to request");
+          }
+        }
+      }
+
+      // Handle purposes if provided
+      if (isset($json['purposeIds']) && !empty($json['purposeIds'])) {
+        foreach ($json['purposeIds'] as $purposeId) {
+          $purposeSql = "INSERT INTO tblrequestpurpose (requestId, purposeId) VALUES (:requestId, :purposeId)";
+          $purposeStmt = $conn->prepare($purposeSql);
+          $purposeStmt->bindParam(':requestId', $requestId);
+          $purposeStmt->bindParam(':purposeId', $purposeId);
+          
+          if (!$purposeStmt->execute()) {
+            throw new PDOException("Failed to save purpose information to database");
+          }
+        }
+      }
+
+      // Handle file uploads if attachments exist
+      if (isset($_FILES['attachments'])) {
+        $uploadDir = 'requirements/';
+        
+        // Create directory if it doesn't exist
+        if (!file_exists($uploadDir)) {
+          mkdir($uploadDir, 0777, true);
+        }
+
+        $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+        $fileCount = count($_FILES['attachments']['name']);
+        
+        for ($i = 0; $i < $fileCount; $i++) {
+          // Skip if no file or error
+          if ($_FILES['attachments']['error'][$i] !== UPLOAD_ERR_OK) {
+            continue;
+          }
+
+          $originalFileName = $_FILES['attachments']['name'][$i];
+          $fileTmpName = $_FILES['attachments']['tmp_name'][$i];
+          $fileSize = $_FILES['attachments']['size'][$i];
+          
+          $fileExtension = pathinfo($originalFileName, PATHINFO_EXTENSION);
+          
+          // Validate file type
+          if (!in_array(strtolower($fileExtension), $allowedTypes)) {
+            throw new PDOException("Invalid file type for '$originalFileName'. Only JPG, PNG, GIF, and PDF files are allowed.");
+          }
+
+          // Check file size (max 5MB per file)
+          if ($fileSize > 5 * 1024 * 1024) {
+            throw new PDOException("File size too large for '$originalFileName'. Maximum size is 5MB per file.");
+          }
+
+          $filePath = $uploadDir . $originalFileName;
+
+          if (move_uploaded_file($fileTmpName, $filePath)) {
+            // Get the corresponding typeId for this file
+            $currentTypeId = isset($json['typeIds'][$i]) ? $json['typeIds'][$i] : null;
+            
+            if (!$currentTypeId) {
+              throw new PDOException("Missing requirement type for file '$originalFileName'");
+            }
+
+            // Insert into tblrequirements
+            $reqSql = "INSERT INTO tblrequirements (requestId, filepath, typeId, createdAt) VALUES (:requestId, :filepath, :typeId, :datetime)";
+            $reqStmt = $conn->prepare($reqSql);
+            $reqStmt->bindParam(':requestId', $requestId);
+            $reqStmt->bindParam(':filepath', $originalFileName);
+            $reqStmt->bindParam(':typeId', $currentTypeId);
+            $reqStmt->bindParam(':datetime', $philippineDateTime);
+            
+            if (!$reqStmt->execute()) {
+              throw new PDOException("Failed to save file information for '$originalFileName' to database");
+            }
+          } else {
+            throw new PDOException("Failed to upload file '$originalFileName'");
+          }
+        }
+      }
+      
+      // Insert into tblrequeststatus with the correct pending status ID
+      $statusSql = "INSERT INTO tblrequeststatus (requestId, statusId, createdAt) VALUES (:requestId, :statusId, :datetime)";
+      $statusStmt = $conn->prepare($statusSql);
+      $statusStmt->bindParam(':requestId', $requestId);
+      $statusStmt->bindParam(':statusId', $pendingStatusId);
+      $statusStmt->bindParam(':datetime', $philippineDateTime);
+      
+      if (!$statusStmt->execute()) {
+        throw new PDOException("Failed to set request status");
+      }
+
+      $conn->commit();
+      return json_encode(["success" => true, "message" => "Multiple document request submitted successfully", "requestId" => $requestId]);
+      
+    } catch (PDOException $e) {
+      $conn->rollBack();
+      return json_encode(["success" => false, "message" => $e->getMessage()]);
+    }
+  }
+
   function addCombinedRequestDocument($json)
   {
     include "connection.php";
@@ -300,12 +467,11 @@ class User {
       }
 
       // First, create request for the secondary document (e.g., Diploma)
-      $sql = "INSERT INTO tblrequest (studentId, documentId, purpose, createdAt) 
-              VALUES (:userId, :documentId, :purpose, :datetime)";
+      $sql = "INSERT INTO tblrequest (studentId, purpose, createdAt) 
+              VALUES (:userId, :purpose, :datetime)";
 
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':userId', $json['userId']);
-      $stmt->bindParam(':documentId', $json['secondaryDocumentId']);
       
       // Set purpose field - if any document has predefined purposes, set to NULL since purposes are stored in tblrequestpurpose
       if ($documentWithPurposes) {
@@ -319,6 +485,16 @@ class User {
 
       if ($stmt->execute()) {
         $secondaryRequestId = $conn->lastInsertId();
+        
+        // Insert secondary document into tblrequestdocument
+        $docSql = "INSERT INTO tblrequestdocument (requestId, documentId) VALUES (:requestId, :documentId)";
+        $docStmt = $conn->prepare($docSql);
+        $docStmt->bindParam(':requestId', $secondaryRequestId);
+        $docStmt->bindParam(':documentId', $json['secondaryDocumentId']);
+        
+        if (!$docStmt->execute()) {
+          throw new PDOException("Failed to save secondary document to request");
+        }
         
         // Insert purposes into tblrequestpurpose ONLY if the secondary document has predefined purposes
         if ($documentWithPurposes === 'secondary' && !empty($purposeIds)) {
@@ -412,12 +588,20 @@ class User {
         // Now create request for the primary document (e.g., CAV)
         $stmt2 = $conn->prepare($sql);
         $stmt2->bindParam(':userId', $json['userId']);
-        $stmt2->bindParam(':documentId', $json['primaryDocumentId']);
         $stmt2->bindParam(':purpose', $purpose);
         $stmt2->bindParam(':datetime', $philippineDateTime);
 
         if ($stmt2->execute()) {
           $primaryRequestId = $conn->lastInsertId();
+          
+          // Insert primary document into tblrequestdocument
+          $docStmt2 = $conn->prepare($docSql);
+          $docStmt2->bindParam(':requestId', $primaryRequestId);
+          $docStmt2->bindParam(':documentId', $json['primaryDocumentId']);
+          
+          if (!$docStmt2->execute()) {
+            throw new PDOException("Failed to save primary document to request");
+          }
           
           // Insert purposes into tblrequestpurpose ONLY if the primary document has predefined purposes
           if ($documentWithPurposes === 'primary' && !empty($purposeIds)) {
@@ -470,10 +654,9 @@ class User {
       // Set Philippine timezone for calculations
       date_default_timezone_set('Asia/Manila');
       
+      // First get all requests for the user
       $sql = "SELECT 
                 r.id,
-                r.documentId,
-                d.name as document,
                 r.purpose,
                 DATE(r.createdAt) as dateRequested,
                 r.createdAt as dateRequestedFull,
@@ -484,7 +667,6 @@ class User {
                 DATE_FORMAT(rs_schedule.dateSchedule, '%M %d, %Y') as releaseDateFormatted,
                 ed.days as expectedDays
               FROM tblrequest r
-              INNER JOIN tbldocument d ON r.documentId = d.id
               INNER JOIN tblrequeststatus rs ON r.id = rs.requestId
               INNER JOIN tblstatus s ON rs.statusId = s.id
               LEFT JOIN tblreleaseschedule rs_schedule ON r.id = rs_schedule.requestId
@@ -504,8 +686,70 @@ class User {
       if ($stmt->rowCount() > 0) {
         $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Calculate expected release date and days remaining for each request
+        // For each request, get the associated documents from tblrequestdocument
         foreach ($requests as &$request) {
+          // Get documents from tblrequestdocument (works for both single and multiple document requests)
+          $docSql = "SELECT d.name, COUNT(*) as quantity 
+                    FROM tblrequestdocument rd 
+                    INNER JOIN tbldocument d ON rd.documentId = d.id 
+                    WHERE rd.requestId = :requestId 
+                    GROUP BY d.id, d.name 
+                    ORDER BY d.name";
+          $docStmt = $conn->prepare($docSql);
+          $docStmt->bindParam(':requestId', $request['id']);
+          $docStmt->execute();
+          
+          if ($docStmt->rowCount() > 0) {
+            $documents = $docStmt->fetchAll(PDO::FETCH_ASSOC);
+            $documentNames = [];
+            $totalCopies = 0;
+            
+            foreach ($documents as $doc) {
+              if ($doc['quantity'] > 1) {
+                $documentNames[] = $doc['name'] . ' (' . $doc['quantity'] . ' copies)';
+              } else {
+                $documentNames[] = $doc['name'];
+              }
+              $totalCopies += $doc['quantity'];
+            }
+            
+            $request['document'] = implode(', ', $documentNames); // For display
+            $request['documents'] = $documentNames; // Array format
+            $request['documentCount'] = count($documents);
+            $request['totalCopies'] = $totalCopies;
+            $request['isMultipleDocument'] = count($documents) > 1 || $totalCopies > count($documents);
+          } else {
+            // Fallback: check if this is an old request with documentId in tblrequest
+            if (isset($request['documentId']) && $request['documentId']) {
+              $docSql = "SELECT name FROM tbldocument WHERE id = :documentId";
+              $docStmt = $conn->prepare($docSql);
+              $docStmt->bindParam(':documentId', $request['documentId']);
+              $docStmt->execute();
+              
+              if ($docStmt->rowCount() > 0) {
+                $docData = $docStmt->fetch(PDO::FETCH_ASSOC);
+                $request['document'] = $docData['name'];
+                $request['documents'] = [$docData['name']];
+                $request['documentCount'] = 1;
+                $request['totalCopies'] = 1;
+                $request['isMultipleDocument'] = false;
+              } else {
+                $request['document'] = 'Unknown Document';
+                $request['documents'] = ['Unknown Document'];
+                $request['documentCount'] = 0;
+                $request['totalCopies'] = 0;
+                $request['isMultipleDocument'] = false;
+              }
+            } else {
+              $request['document'] = 'Unknown Document';
+              $request['documents'] = ['Unknown Document'];
+              $request['documentCount'] = 0;
+              $request['totalCopies'] = 0;
+              $request['isMultipleDocument'] = false;
+            }
+          }
+          
+          // Calculate expected release date and days remaining
           if ($request['expectedDays']) {
             // For completed requests, show actual completion date from the status record
             if (strtolower($request['status']) === 'completed') {
@@ -1160,6 +1404,9 @@ switch ($operation) {
     break;
   case "addRequestDocument":
     echo $user->addRequestDocument($json);
+    break;
+  case "addMultipleDocumentRequest":
+    echo $user->addMultipleDocumentRequest($json);
     break;
   case "addCombinedRequestDocument":
     echo $user->addCombinedRequestDocument($json);

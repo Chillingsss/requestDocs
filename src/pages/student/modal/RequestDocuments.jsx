@@ -9,6 +9,7 @@ import {
 	getDocumentPurposes,
 	addRequestDocument,
 	addCombinedRequestDocument,
+	addMultipleDocumentRequest,
 	getExpectedDays,
 } from "../../../utils/student";
 import toast from "react-hot-toast";
@@ -22,6 +23,9 @@ export default function RequestDocuments({
 	userRequests = [], // Add userRequests prop to check for duplicates
 }) {
 	const [selectedDocument, setSelectedDocument] = useState("");
+	const [selectedDocuments, setSelectedDocuments] = useState([]);
+	const [documentQuantities, setDocumentQuantities] = useState({}); // Store quantities for each document
+	const [isMultipleSelection, setIsMultipleSelection] = useState(false);
 	const [purpose, setPurpose] = useState("");
 	const [selectedPurposeIds, setSelectedPurposeIds] = useState([]);
 	const [documents, setDocuments] = useState([]);
@@ -82,17 +86,34 @@ export default function RequestDocuments({
 		}
 	}, [isOpen]);
 
-	// Check for duplicates when documents are loaded and a document is selected
+	// Check for duplicates when documents are loaded and documents are selected
 	React.useEffect(() => {
-		if (selectedDocument && documents.length > 0 && userRequests.length > 0) {
-			console.log("Re-checking for duplicates after documents loaded");
-			const duplicateInfo = checkForDuplicateRequest(selectedDocument);
-			if (duplicateInfo) {
-				console.log("Found duplicate after documents loaded:", duplicateInfo);
-				setDuplicateWarning(duplicateInfo);
+		if (documents.length > 0 && userRequests.length > 0) {
+			let duplicateInfo = null;
+			
+			if (isMultipleSelection && selectedDocuments.length > 0) {
+				// Check for duplicates in multiple selection mode
+				for (const docId of selectedDocuments) {
+					duplicateInfo = checkForDuplicateRequest(docId);
+					if (duplicateInfo) {
+						console.log("Found duplicate in multiple mode:", duplicateInfo);
+						break; // Stop at first duplicate found
+					}
+				}
+			} else if (selectedDocument) {
+				// Check for duplicates in single selection mode
+				console.log("Re-checking for duplicates after documents loaded");
+				duplicateInfo = checkForDuplicateRequest(selectedDocument);
+				if (duplicateInfo) {
+					console.log("Found duplicate after documents loaded:", duplicateInfo);
+				}
 			}
+			
+			setDuplicateWarning(duplicateInfo);
+		} else {
+			setDuplicateWarning(null);
 		}
-	}, [selectedDocument, documents, userRequests]);
+	}, [selectedDocument, selectedDocuments, isMultipleSelection, documents, userRequests]);
 
 	// Handle clicking outside dropdown to close it
 	React.useEffect(() => {
@@ -223,14 +244,24 @@ export default function RequestDocuments({
 	const isSubmitDisabled = () => {
 		console.log("=== isSubmitDisabled Debug ===");
 		console.log("selectedDocument:", selectedDocument);
+		console.log("selectedDocuments:", selectedDocuments);
+		console.log("isMultipleSelection:", isMultipleSelection);
 		console.log("purpose:", purpose);
 		console.log("selectedPurposeIds:", selectedPurposeIds);
 		console.log("selectedFiles:", selectedFiles);
 		console.log("duplicateWarning:", duplicateWarning);
 
-		if (!selectedDocument) {
-			console.log("Missing document");
-			return true;
+		// Check document selection based on mode
+		if (isMultipleSelection) {
+			if (selectedDocuments.length === 0) {
+				console.log("No documents selected in multiple mode");
+				return true;
+			}
+		} else {
+			if (!selectedDocument) {
+				console.log("Missing document in single mode");
+				return true;
+			}
 		}
 
 		// Disable submit if there's a duplicate warning
@@ -540,6 +571,53 @@ export default function RequestDocuments({
 		setSelectedPurposeIds([]);
 	};
 
+	// Handle multiple document selection
+	const handleDocumentToggle = (documentId) => {
+		setSelectedDocuments(prev => {
+			if (prev.includes(documentId)) {
+				// Remove document and its quantity
+				setDocumentQuantities(prevQty => {
+					const newQty = { ...prevQty };
+					delete newQty[documentId];
+					return newQty;
+				});
+				return prev.filter(id => id !== documentId);
+			} else {
+				// Add document with default quantity of 1
+				setDocumentQuantities(prevQty => ({
+					...prevQty,
+					[documentId]: 1
+				}));
+				return [...prev, documentId];
+			}
+		});
+	};
+
+	// Handle quantity change for a specific document
+	const handleQuantityChange = (documentId, quantity) => {
+		const qty = Math.max(1, Math.min(10, parseInt(quantity) || 1)); // Limit between 1-10
+		setDocumentQuantities(prev => ({
+			...prev,
+			[documentId]: qty
+		}));
+	};
+
+	// Toggle between single and multiple selection modes
+	const handleSelectionModeToggle = () => {
+		setIsMultipleSelection(prev => !prev);
+		// Clear selections when switching modes
+		setSelectedDocument("");
+		setSelectedDocuments([]);
+		setDocumentQuantities({});
+		setSelectedPurposeIds([]);
+		setPurpose("");
+		setSelectedFiles([]);
+		setDocumentRequirements([]);
+		setSecondaryRequirements([]);
+		setDocumentPurposes([]);
+		setDuplicateWarning(null);
+	};
+
 	const handleRequestSubmit = async (e) => {
 		e.preventDefault();
 
@@ -565,9 +643,16 @@ export default function RequestDocuments({
 
 		// Use the centralized validation
 		if (isSubmitDisabled()) {
-			if (!selectedDocument) {
-				toast.error("Please select a document type");
-				return;
+			if (isMultipleSelection) {
+				if (selectedDocuments.length === 0) {
+					toast.error("Please select at least one document");
+					return;
+				}
+			} else {
+				if (!selectedDocument) {
+					toast.error("Please select a document type");
+					return;
+				}
 			}
 
 			// Check purpose validation
@@ -618,47 +703,65 @@ export default function RequestDocuments({
 				return;
 			}
 
-			// Check if this is a combined CAV + Diploma request
-			const isCavDocument = getSelectedDocumentName()
-				.toLowerCase()
-				.includes("cav");
-			if (isCavDocument && requestBothDocuments) {
-				// Find Diploma document ID
-				const diplomaDocument = documents.find((doc) =>
-					doc.name.toLowerCase().includes("diploma")
-				);
-
-				if (!diplomaDocument) {
-					toast.error("Diploma document type not found");
-					return;
-				}
-
-				await addCombinedRequestDocument({
+			// Handle multiple document requests
+			if (isMultipleSelection && selectedDocuments.length > 0) {
+				const totalCopies = Object.values(documentQuantities).reduce((sum, qty) => sum + qty, 0);
+				await addMultipleDocumentRequest({
 					userId,
-					primaryDocumentId: selectedDocument, // CAV
-					secondaryDocumentId: diplomaDocument.id, // Diploma
+					documentIds: selectedDocuments,
+					documentQuantities: documentQuantities,
 					purpose: hasPredefinedPurposes() ? "" : purpose,
 					purposeIds: hasPredefinedPurposes() ? selectedPurposeIds : [],
 					attachments: attachments,
 					typeIds: typeIds,
 				});
-				toast.success(
-					"Combined request for Diploma and CAV submitted successfully!"
-				);
+				toast.success(`Request for ${selectedDocuments.length} document types (${totalCopies} total copies) submitted successfully!`);
 			} else {
-				await addRequestDocument({
-					userId,
-					documentId: selectedDocument,
-					purpose: hasPredefinedPurposes() ? "" : purpose,
-					purposeIds: hasPredefinedPurposes() ? selectedPurposeIds : [],
-					attachments: attachments,
-					typeIds: typeIds, // Send array of typeIds
-				});
-				toast.success("Request submitted successfully!");
+				// Check if this is a combined CAV + Diploma request
+				const isCavDocument = getSelectedDocumentName()
+					.toLowerCase()
+					.includes("cav");
+				if (isCavDocument && requestBothDocuments) {
+					// Find Diploma document ID
+					const diplomaDocument = documents.find((doc) =>
+						doc.name.toLowerCase().includes("diploma")
+					);
+
+					if (!diplomaDocument) {
+						toast.error("Diploma document type not found");
+						return;
+					}
+
+					await addCombinedRequestDocument({
+						userId,
+						primaryDocumentId: selectedDocument, // CAV
+						secondaryDocumentId: diplomaDocument.id, // Diploma
+						purpose: hasPredefinedPurposes() ? "" : purpose,
+						purposeIds: hasPredefinedPurposes() ? selectedPurposeIds : [],
+						attachments: attachments,
+						typeIds: typeIds,
+					});
+					toast.success(
+						"Combined request for Diploma and CAV submitted successfully!"
+					);
+				} else {
+					await addRequestDocument({
+						userId,
+						documentId: selectedDocument,
+						purpose: hasPredefinedPurposes() ? "" : purpose,
+						purposeIds: hasPredefinedPurposes() ? selectedPurposeIds : [],
+						attachments: attachments,
+						typeIds: typeIds, // Send array of typeIds
+					});
+					toast.success("Request submitted successfully!");
+				}
 			}
 
 			// Reset form
 			setSelectedDocument("");
+			setSelectedDocuments([]);
+			setDocumentQuantities({});
+			setIsMultipleSelection(false);
 			setPurpose("");
 			setSelectedPurposeIds([]);
 			setSelectedFiles([]);
@@ -666,6 +769,7 @@ export default function RequestDocuments({
 			setDocumentRequirements([]);
 			setSecondaryRequirements([]);
 			setDocumentPurposes([]);
+			setDuplicateWarning(null);
 			// Reset file inputs
 			const fileInput = document.getElementById("file-upload");
 			const addMoreInput = document.getElementById("add-more-files");
@@ -683,7 +787,11 @@ export default function RequestDocuments({
 	const handleClose = () => {
 		// Reset form when closing
 		setSelectedDocument("");
+		setSelectedDocuments([]);
+		setDocumentQuantities({});
+		setIsMultipleSelection(false);
 		setPurpose("");
+		setSelectedPurposeIds([]);
 		setSelectedFiles([]);
 		setRequestBothDocuments(false);
 		setDocumentRequirements([]);
@@ -739,6 +847,26 @@ export default function RequestDocuments({
 		return selectedDocName.includes("certificate");
 	};
 
+	// Check if any selected documents require attachments (for multiple selection)
+	const anyDocumentRequiresAttachments = () => {
+		if (!isMultipleSelection) {
+			// For single selection, use existing logic
+			return !isCertificateOfEnrollment() && !isSF10Document();
+		}
+
+		// For multiple selection, check if any selected document requires attachments
+		return selectedDocuments.some(docId => {
+			const doc = documents.find(d => d.id === docId);
+			if (!doc) return false;
+			
+			const docName = doc.name.toLowerCase();
+			// Return true if document is NOT Certificate and NOT SF10 (meaning it requires attachments)
+			return !docName.includes("certificate") && 
+			       !docName.includes("sf10") && 
+			       !docName.includes("sf-10");
+		});
+	};
+
 	const filteredPurposes = documentPurposes.filter((purpose) =>
 		purpose.name.toLowerCase().includes(purposeSearchTerm.toLowerCase())
 	);
@@ -766,12 +894,27 @@ export default function RequestDocuments({
 		const existingRequest = userRequests.find((request) => {
 			console.log("Checking request:", request);
 			console.log("request.document:", request.document);
+			console.log("request.documents:", request.documents);
 			console.log("selectedDoc.name:", selectedDoc.name);
 			console.log("request.status:", request.status);
 
-			const isSameDocument =
-				request.document &&
-				request.document.toLowerCase() === selectedDoc.name.toLowerCase();
+			let isSameDocument = false;
+
+			// Check if this is a multiple document request
+			if (request.isMultipleDocument && request.documents && Array.isArray(request.documents)) {
+				// For multiple document requests, check if any of the documents match
+				isSameDocument = request.documents.some(docName => {
+					// Remove quantity info like "(2 copies)" from document name
+					const cleanDocName = docName.replace(/\s*\(\d+\s+copies?\)/, '').trim();
+					return cleanDocName.toLowerCase() === selectedDoc.name.toLowerCase();
+				});
+			} else {
+				// For single document requests, compare directly but handle formatted strings
+				const cleanRequestDoc = request.document ? 
+					request.document.replace(/\s*\(\d+\s+copies?\)/, '').trim() : '';
+				isSameDocument = cleanRequestDoc.toLowerCase() === selectedDoc.name.toLowerCase();
+			}
+
 			const isPending =
 				request.status &&
 				!["completed", "cancelled"].includes(request.status.toLowerCase());
@@ -786,7 +929,7 @@ export default function RequestDocuments({
 
 		if (existingRequest) {
 			return {
-				documentName: existingRequest.document, // Use the actual document name from the request
+				documentName: selectedDoc.name, // Use the clean document name
 				existingStatus: existingRequest.status,
 				requestDate: existingRequest.dateRequested,
 				requestId: existingRequest.id,
@@ -829,12 +972,39 @@ export default function RequestDocuments({
 					onSubmit={handleRequestSubmit}
 					className="overflow-y-auto flex-1 px-6 py-6 space-y-5"
 				>
+					{/* Selection Mode Toggle */}
+					<div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg dark:bg-gray-800">
+						<div>
+							<h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+								Request Multiple Documents
+							</h3>
+							<p className="text-xs text-gray-500 dark:text-gray-400">
+								{isMultipleSelection 
+									? "Select multiple documents for a single request" 
+									: "Select one document at a time"}
+							</p>
+						</div>
+						<button
+							type="button"
+							onClick={handleSelectionModeToggle}
+							className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+								isMultipleSelection ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+							}`}
+						>
+							<span
+								className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+									isMultipleSelection ? 'translate-x-6' : 'translate-x-1'
+								}`}
+							/>
+						</button>
+					</div>
+
 					<div>
 						<Label
 							htmlFor="document-type"
 							className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-500"
 						>
-							Document Type
+							{isMultipleSelection ? "Select Documents" : "Document Type"}
 						</Label>
 
 						{/* Grade-based document restrictions notice */}
@@ -880,23 +1050,101 @@ export default function RequestDocuments({
 								</div>
 							</div>
 						)}
-						<select
-							id="document-type"
-							value={selectedDocument}
-							onChange={(e) => handleDocumentChange(e.target.value)}
-							className="block px-3 py-2 w-full rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
-							required
-							disabled={loadingDocs}
-						>
-							<option value="">
-								{loadingDocs ? "Loading..." : "Select a document"}
-							</option>
-							{getFilteredDocuments().map((doc) => (
-								<option key={doc.id} value={doc.id}>
-									{doc.name}
+						{isMultipleSelection ? (
+							// Multiple document selection with checkboxes
+							<div className="space-y-2 max-h-48 overflow-y-auto border border-slate-300 rounded-lg p-3 bg-slate-50 dark:bg-slate-700 dark:border-slate-600">
+								{loadingDocs ? (
+									<div className="text-center py-4 text-slate-500">Loading...</div>
+								) : getFilteredDocuments().length === 0 ? (
+									<div className="text-center py-4 text-slate-500">No documents available</div>
+								) : (
+									getFilteredDocuments().map((doc) => (
+										<div
+											key={doc.id}
+											className="flex items-center justify-between p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-600"
+										>
+											<label className="flex items-center space-x-3 cursor-pointer flex-1">
+												<input
+													type="checkbox"
+													checked={selectedDocuments.includes(doc.id)}
+													onChange={() => handleDocumentToggle(doc.id)}
+													className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+												/>
+												<span className="text-sm text-slate-900 dark:text-slate-100">
+													{doc.name}
+												</span>
+											</label>
+											{selectedDocuments.includes(doc.id) && (
+												<div className="flex items-center space-x-2">
+													<label className="text-xs text-slate-600 dark:text-slate-400">
+														Qty:
+													</label>
+													<input
+														type="number"
+														min="1"
+														max="10"
+														value={documentQuantities[doc.id] || 1}
+														onChange={(e) => handleQuantityChange(doc.id, e.target.value)}
+														className="w-16 px-2 py-1 text-xs border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-600 dark:border-slate-500 dark:text-slate-100"
+													/>
+												</div>
+											)}
+										</div>
+									))
+								)}
+							</div>
+						) : (
+							// Single document selection with dropdown
+							<select
+								id="document-type"
+								value={selectedDocument}
+								onChange={(e) => handleDocumentChange(e.target.value)}
+								className="block px-3 py-2 w-full rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
+								required
+								disabled={loadingDocs}
+							>
+								<option value="">
+									{loadingDocs ? "Loading..." : "Select a document"}
 								</option>
-							))}
-						</select>
+								{getFilteredDocuments().map((doc) => (
+									<option key={doc.id} value={doc.id}>
+										{doc.name}
+									</option>
+								))}
+							</select>
+						)}
+
+						{/* Selected Documents Summary for Multiple Selection */}
+						{isMultipleSelection && selectedDocuments.length > 0 && (
+							<div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
+								<h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+									Selected Documents ({selectedDocuments.length} types, {Object.values(documentQuantities).reduce((sum, qty) => sum + qty, 0)} total copies)
+								</h4>
+								<div className="flex flex-wrap gap-2">
+									{selectedDocuments.map((docId) => {
+										const doc = documents.find(d => d.id === docId);
+										const quantity = documentQuantities[docId] || 1;
+										return doc ? (
+											<span
+												key={docId}
+												className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100"
+											>
+												{doc.name} ({quantity} {quantity === 1 ? 'copy' : 'copies'})
+												<button
+													type="button"
+													onClick={() => handleDocumentToggle(docId)}
+													className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200 dark:hover:bg-blue-700"
+												>
+													<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+													</svg>
+												</button>
+											</span>
+										) : null;
+									})}
+								</div>
+							</div>
+						)}
 					</div>
 
 					{/* Duplicate Request Warning */}
@@ -1013,7 +1261,7 @@ export default function RequestDocuments({
 					)}
 
 					{/* Only show Purpose and Attachments when a document is selected */}
-					{selectedDocument && (
+					{(selectedDocument || (isMultipleSelection && selectedDocuments.length > 0)) && (
 						<>
 							<div>
 								<Label
@@ -1251,8 +1499,8 @@ export default function RequestDocuments({
 								)}
 							</div>
 							<div>
-								{/* Only show Document Attachments section if not SF10 or Certificate */}
-								{!isCertificateOfEnrollment() && !isSF10Document() && (
+								{/* Only show Document Attachments section if any document requires attachments */}
+								{anyDocumentRequiresAttachments() && (
 									<div>
 										<Label
 											htmlFor="file-upload"
