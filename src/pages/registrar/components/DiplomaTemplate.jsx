@@ -11,6 +11,7 @@ export default function DiplomaTemplate({
 	studentInfo,
 	onSave,
 	isEditable = true,
+	request,
 }) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -184,11 +185,132 @@ export default function DiplomaTemplate({
 			toast.error("Please complete all fields before printing.");
 			return;
 		}
+
+		// Calculate number of copies needed
+		const getDiplomaCopies = () => {
+			if (!request) return 1;
+
+			// For multiple document requests, find diploma quantity
+			if (request.isMultipleDocument && request.documents) {
+				for (const docName of request.documents) {
+					if (docName.toLowerCase().includes("diploma")) {
+						// Extract quantity from format like "Diploma (2 copies)"
+						const match = docName.match(/\((\d+)\s+copies?\)/);
+						return match ? parseInt(match[1]) : 1;
+					}
+				}
+			}
+
+			// For single document requests or if no specific quantity found
+			return 1;
+		};
+
+		const totalCopies = getDiplomaCopies();
+
+		// Create the diploma content template
+		const createDiplomaContent = (copyNumber) => `
+			<div class="diploma-container">
+				${
+					copyNumber > 1
+						? `<div class="copy-indicator">Copy ${copyNumber} of ${totalCopies}</div>`
+						: ""
+				}
+				<div class="diploma-content">
+					<div class="decorative-border"></div>
+					
+					<!-- Header with logos -->
+					<div class="header-logos">
+						<img src="/images/logo.png" alt="MOGCHS" class="logo" />
+						
+						<div class="header-center">
+							<h1>Republika ng Pilipinas</h1>
+							<p class="italic small">Republic of the Philippines</p>
+							<h1 class="medium">Kagawaran ng Edukasyon</h1>
+							<p class="italic small">Department of Education</p>
+							<h2 class="small" style="font-weight: 600; margin-top: 1px;">REHIYON 10</h2>
+							<p class="small">REGION X</p>
+							<h2 class="small" style="font-weight: 600; margin-top: 1px;">SANGAY NG MISAMIS ORIENTAL</h2>
+							<p class="italic small">DIVISION OF MISAMIS ORIENTAL</p>
+						</div>
+						
+						<img src="/images/deped.png" alt="DEPED" class="logo" />
+					</div>
+
+					<!-- School name -->
+					<h1 class="school-name">MISAMIS ORIENTAL GENERAL COMPREHENSIVE HIGH SCHOOL</h1>
+
+					<p class="certifies">Pinatutunayan nito na si</p>
+					<p class="certifies-small">This certifies that</p>
+
+					<!-- Student Name -->
+					<h2 class="student-name">${diplomaData.fullName || "PATTY ASPIRAS"}</h2>
+
+					<!-- LRN -->
+					<p class="lrn">Learners Reference Number (LRN): <span class="lrn-number">${
+						diplomaData.lrn || "127995090705"
+					}</span></p>
+
+					<!-- Completion text -->
+					<p class="completion-text">ay kasiya-siyang nakatupad sa mga kinakailangan sa pagtatapos ng Senior High School</p>
+					<p class="completion-text-small">has satisfactorily completed the requirements for graduation in Senior High School</p>
+
+					<!-- Track and Strand -->
+					<div class="track-strand">
+						<div class="track-item">
+							<p class="track-value">${diplomaData.track || "SPORTS"}</p>
+							<p class="track-label">TRACK</p>
+						</div>
+						<div class="strand-item">
+							<p class="strand-value">${diplomaData.strand || "ABM"}</p>
+							<p class="strand-label">STRAND</p>
+						</div>
+					</div>
+
+					<!-- Additional text -->
+					<p class="additional-text">na itinakda para sa Mataas na Paaralan ng Kagawaran ng Edukasyon noong kaya pinagkalooban siya nitong</p>
+					<p class="additional-text-small">prescribed for Secondary Schools of the Department of Education and is therefore awarded this</p>
+
+					<!-- Diploma title -->
+					<h1 class="diploma-title">KATIBAYAN</h1>
+					<p class="diploma-subtitle">DIPLOMA</p>
+					<p class="diploma-issuance">(Second Issuance)</p>
+
+					<!-- Date and location -->
+					<p class="date-location">Nilagdaan sa Lungsod ng Cagayan de Oro, Pilipinas nitong ika-24 ng Hunyo 2022.</p>
+					<p class="date-location-small">Signed in Cagayan de Oro City, Philippines on the 24th day of June 2022.</p>
+
+					<!-- Signatures -->
+					<div class="signatures">
+						<div class="signature-item">
+							<div class="signature-line"></div>
+							<p class="signature-name">${principalName}</p>
+							<p class="signature-title">Punong Guro</p>
+							<p class="signature-title-italic">(Principal)</p>
+						</div>
+						<div class="signature-item">
+							<div class="signature-line"></div>
+							<p class="signature-name">${superintendentName}</p>
+							<p class="signature-title">Pansangay na Tagapamahala ng mga Paaralan</p>
+							<p class="signature-title-italic">Schools Division Superintendent</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		`;
+
+		// Generate all copies
+		let allDiplomas = "";
+		for (let i = 1; i <= totalCopies; i++) {
+			allDiplomas += createDiplomaContent(i);
+		}
+
 		const printWindow = window.open("", "_blank");
 		printWindow.document.write(`
         <html>
           <head>
-            <title>Diploma - ${diplomaData.fullName}</title>
+            <title>Diploma - ${diplomaData.fullName} - ${totalCopies} ${
+			totalCopies === 1 ? "Copy" : "Copies"
+		}</title>
             <style>
               @page { 
                 size: A4 landscape; 
@@ -215,10 +337,6 @@ export default function DiplomaTemplate({
                 background: white; 
                 margin: 0; 
                 padding: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
               }
               .diploma-container {
                 max-width: 275mm;
@@ -228,19 +346,32 @@ export default function DiplomaTemplate({
                 text-align: center;
                 font-family: serif;
                 color: black;
+                page-break-after: always;
+                position: relative;
+              }
+              .diploma-container:last-child {
+                page-break-after: auto;
+              }
+              .copy-indicator {
+                position: absolute;
+                top: 5mm;
+                right: 5mm;
+                font-size: 8pt;
+                color: #666;
+                z-index: 10;
               }
               .diploma-content {
                 position: relative;
                 padding: 12px;
-                height: 100%;
+                height: 97%;
                 border: 3px solid #2563eb;
               }
               .decorative-border {
                 position: absolute;
-                top: 4px;
-                left: 4px;
-                right: 4px;
-                bottom: 4px;
+                top: 3px;
+                left: 3px;
+                right: 3px;
+                height: 100%;
                 border: 1px solid #2563eb;
                 pointer-events: none;
               }
@@ -377,18 +508,18 @@ export default function DiplomaTemplate({
                 text-align: center;
               }
               .diploma-issuance {
-                margin-bottom: 6px;
+                margin-bottom: 3px;
                 font-size: 10px;
                 font-style: italic;
                 text-align: center;
               }
               .date-location {
-                margin-bottom: 2px;
+                margin-bottom: 1px;
                 text-align: center;
                 font-size: 10px;
               }
               .date-location-small {
-                margin-bottom: 8px;
+                margin-bottom: 1px;
                 font-size: 9px;
                 font-style: italic;
                 text-align: center;
@@ -396,7 +527,7 @@ export default function DiplomaTemplate({
               .signatures {
                 display: flex;
                 justify-content: space-between;
-                margin-top: 15px;
+                margin-top: 5px;
               }
               .signature-item {
                 text-align: center;
@@ -423,89 +554,7 @@ export default function DiplomaTemplate({
             </style>
           </head>
           <body>
-            <div class="diploma-container">
-              <div class="diploma-content">
-                
-                <!-- Header with logos -->
-                <div class="header-logos">
-                  <img src="/images/logo.png" alt="MOGCHS" class="logo" />
-                  
-                  <div class="header-center">
-                    <h1>Republika ng Pilipinas</h1>
-                    <p class="italic small">Republic of the Philippines</p>
-                    <h1 class="medium">Kagawaran ng Edukasyon</h1>
-                    <p class="italic small">Department of Education</p>
-                    <h2 class="small" style="font-weight: 600; margin-top: 1px;">REHIYON 10</h2>
-                    <p class="small">REGION X</p>
-                    <h2 class="small" style="font-weight: 600; margin-top: 1px;">SANGAY NG MISAMIS ORIENTAL</h2>
-                    <p class="italic small">DIVISION OF MISAMIS ORIENTAL</p>
-                  </div>
-                  
-                  <img src="/images/deped.png" alt="DEPED" class="logo" />
-                </div>
-
-                <!-- School name -->
-                <h1 class="school-name">MISAMIS ORIENTAL GENERAL COMPREHENSIVE HIGH SCHOOL</h1>
-
-                <p class="certifies">Pinatutunayan nito na si</p>
-                <p class="certifies-small">This certifies that</p>
-
-                <!-- Student Name -->
-                <h2 class="student-name">${
-									diplomaData.fullName || "PATTY ASPIRAS"
-								}</h2>
-
-                <!-- LRN -->
-                <p class="lrn">Learners Reference Number (LRN): <span class="lrn-number">${
-									diplomaData.lrn || "127995090705"
-								}</span></p>
-
-                <!-- Completion text -->
-                <p class="completion-text">ay kasiya-siyang nakatupad sa mga kinakailangan sa pagtatapos ng Senior High School</p>
-                <p class="completion-text-small">has satisfactorily completed the requirements for graduation in Senior High School</p>
-
-                <!-- Track and Strand -->
-                <div class="track-strand">
-                  <div class="track-item">
-                    <p class="track-value">${diplomaData.track || "SPORTS"}</p>
-                    <p class="track-label">TRACK</p>
-                  </div>
-                  <div class="strand-item">
-                    <p class="strand-value">${diplomaData.strand || "ABM"}</p>
-                    <p class="strand-label">STRAND</p>
-                  </div>
-                </div>
-
-                <!-- Additional text -->
-                <p class="additional-text">na itinakda para sa Mataas na Paaralan ng Kagawaran ng Edukasyon noong kaya pinagkalooban siya nitong</p>
-                <p class="additional-text-small">prescribed for Secondary Schools of the Department of Education and is therefore awarded this</p>
-
-                <!-- Diploma title -->
-                <h1 class="diploma-title">KATIBAYAN</h1>
-                <p class="diploma-subtitle">DIPLOMA</p>
-                <p class="diploma-issuance">(Second Issuance)</p>
-
-                <!-- Date and location -->
-                <p class="date-location">Nilagdaan sa Lungsod ng Cagayan de Oro, Pilipinas nitong ika-24 ng Hunyo 2022.</p>
-                <p class="date-location-small">Signed in Cagayan de Oro City, Philippines on the 24th day of June 2022.</p>
-
-                <!-- Signatures -->
-                <div class="signatures">
-                  <div class="signature-item">
-                    <div class="signature-line"></div>
-                    <p class="signature-name">${principalName}</p>
-                    <p class="signature-title">Punong Guro</p>
-                    <p class="signature-title-italic">(Principal)</p>
-                  </div>
-                  <div class="signature-item">
-                    <div class="signature-line"></div>
-                    <p class="signature-name">${superintendentName}</p>
-                    <p class="signature-title">Pansangay na Tagapamahala ng mga Paaralan</p>
-                    <p class="signature-title-italic">Schools Division Superintendent</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            ${allDiplomas}
           </body>
         </html>
       `);
