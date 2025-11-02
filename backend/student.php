@@ -778,9 +778,26 @@ class User {
               $request['daysRemaining'] = null;
               $request['isOverdue'] = false;
             } else {
-              // For non-completed requests, calculate expected release date normally
-              $requestDate = new DateTime($request['dateRequestedFull']);
-              $expectedReleaseDate = clone $requestDate;
+              // For non-completed requests, calculate expected release date
+              // Check if there are any requirements uploaded for this request
+              $requirementSql = "SELECT MAX(createdAt) as latestRequirementDate 
+                               FROM tblrequirements 
+                               WHERE requestId = :requestId";
+              $requirementStmt = $conn->prepare($requirementSql);
+              $requirementStmt->bindParam(':requestId', $request['id']);
+              $requirementStmt->execute();
+              
+              $startDate = new DateTime($request['dateRequestedFull']); // Default to request date
+              
+              if ($requirementStmt->rowCount() > 0) {
+                $requirementData = $requirementStmt->fetch(PDO::FETCH_ASSOC);
+                if ($requirementData['latestRequirementDate']) {
+                  // Use the latest requirement upload date as starting point
+                  $startDate = new DateTime($requirementData['latestRequirementDate']);
+                }
+              }
+              
+              $expectedReleaseDate = clone $startDate;
               $expectedReleaseDate->add(new DateInterval('P' . $request['expectedDays'] . 'D'));
               
               $request['expectedReleaseDate'] = $expectedReleaseDate->format('Y-m-d');

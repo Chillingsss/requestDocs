@@ -82,6 +82,11 @@ export default function ProcessedRequest({
 		return currentRequest?.document?.toLowerCase().includes("cav");
 	};
 
+	// Check if this is an SF10 request
+	const isSf10Request = () => {
+		return currentRequest?.document?.toLowerCase().includes("sf10");
+	};
+
 	// Function to get file extension
 	const getFileExtension = (filename) => {
 		return filename.split(".").pop().toLowerCase();
@@ -120,13 +125,18 @@ export default function ProcessedRequest({
 		console.log("fetchStudentInfo called for request:", currentRequest?.id);
 		console.log("Document type:", currentRequest?.document);
 		console.log("Is certificate request:", isCertificateRequest());
-		
-		if (isDiplomaRequest() || isCertificateRequest() || isCavRequest()) {
+
+		if (
+			isDiplomaRequest() ||
+			isCertificateRequest() ||
+			isCavRequest() ||
+			isSf10Request()
+		) {
 			try {
 				console.log("Fetching student info for request ID:", currentRequest.id);
 				const studentData = await getStudentInfo(currentRequest.id);
 				console.log("Student data received:", studentData);
-				
+
 				if (studentData && !studentData.error) {
 					setStudentInfo(studentData);
 					console.log("Student info set successfully:", studentData);
@@ -137,7 +147,9 @@ export default function ProcessedRequest({
 				console.error("Failed to fetch student info:", error);
 			}
 		} else {
-			console.log("Not a diploma/certificate/CAV request, skipping student info fetch");
+			console.log(
+				"Not a diploma/certificate/CAV/SF10 request, skipping student info fetch"
+			);
 		}
 	};
 
@@ -284,21 +296,23 @@ export default function ProcessedRequest({
 		if (!currentRequest) return;
 
 		// Create a new window for printing
-		const printWindow = window.open('', '_blank');
-		
+		const printWindow = window.open("", "_blank");
+
 		// Get document information
-		const documentInfo = currentRequest.isMultipleDocument 
+		const documentInfo = currentRequest.isMultipleDocument
 			? `Documents: ${currentRequest.document} (Total: ${currentRequest.totalCopies} copies)`
 			: `Document: ${currentRequest.document}`;
-		
+
 		// Calculate how many times to repeat the content based on total copies
 		const totalCopies = currentRequest.totalCopies || 1;
-		
+
 		// Generate print content
-		let printContent = '';
+		let printContent = "";
 		for (let i = 1; i <= totalCopies; i++) {
 			printContent += `
-				<div class="print-page" style="page-break-after: ${i < totalCopies ? 'always' : 'auto'}; padding: 20px; margin-bottom: 20px;">
+				<div class="print-page" style="page-break-after: ${
+					i < totalCopies ? "always" : "auto"
+				}; padding: 20px; margin-bottom: 20px;">
 					<div style="text-align: center; margin-bottom: 30px;">
 						<h1 style="margin: 0; font-size: 24px; color: #333;">Document Request</h1>
 						<p style="margin: 5px 0; color: #666;">Copy ${i} of ${totalCopies}</p>
@@ -308,27 +322,41 @@ export default function ProcessedRequest({
 						<table style="width: 100%; border-collapse: collapse;">
 							<tr>
 								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold; width: 30%;">Student:</td>
-								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${currentRequest.student}</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${
+									currentRequest.student
+								}</td>
 							</tr>
 							<tr>
 								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">Document(s):</td>
-								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${currentRequest.document}</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${
+									currentRequest.document
+								}</td>
 							</tr>
 							<tr>
 								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">Purpose:</td>
-								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${currentRequest.displayPurpose || currentRequest.purpose || 'Not specified'}</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${
+									currentRequest.displayPurpose ||
+									currentRequest.purpose ||
+									"Not specified"
+								}</td>
 							</tr>
 							<tr>
 								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">Date Requested:</td>
-								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${new Date(currentRequest.dateRequested).toLocaleDateString()}</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${new Date(
+									currentRequest.dateRequested
+								).toLocaleDateString()}</td>
 							</tr>
 							<tr>
 								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">Status:</td>
-								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${currentRequest.status}</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">${
+									currentRequest.status
+								}</td>
 							</tr>
 							<tr>
 								<td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">Request ID:</td>
-								<td style="padding: 8px; border-bottom: 1px solid #ddd;">#${currentRequest.id}</td>
+								<td style="padding: 8px; border-bottom: 1px solid #ddd;">#${
+									currentRequest.id
+								}</td>
 							</tr>
 						</table>
 					</div>
@@ -369,17 +397,21 @@ export default function ProcessedRequest({
 			</body>
 			</html>
 		`);
-		
+
 		printWindow.document.close();
-		
+
 		// Wait a bit for content to load, then print
 		setTimeout(() => {
 			printWindow.print();
 			printWindow.close();
 		}, 500);
-		
+
 		// Show success message
-		toast.success(`Print dialog opened for ${totalCopies} ${totalCopies === 1 ? 'copy' : 'copies'}`);
+		toast.success(
+			`Print dialog opened for ${totalCopies} ${
+				totalCopies === 1 ? "copy" : "copies"
+			}`
+		);
 	};
 
 	const handleProcess = async () => {
@@ -917,7 +949,9 @@ export default function ProcessedRequest({
 									<div className="flex gap-3 items-center mb-3">
 										<FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
 										<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-											{currentRequest.isMultipleDocument ? "Documents Requested" : "Document"}
+											{currentRequest.isMultipleDocument
+												? "Documents Requested"
+												: "Document"}
 										</span>
 									</div>
 									<div className="space-y-2">
@@ -927,7 +961,8 @@ export default function ProcessedRequest({
 										{currentRequest.isMultipleDocument && (
 											<div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
 												<span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-													📋 {currentRequest.documentCount} types, {currentRequest.totalCopies} total copies
+													📋 {currentRequest.documentCount} types,{" "}
+													{currentRequest.totalCopies} total copies
 												</span>
 											</div>
 										)}
@@ -1201,14 +1236,15 @@ export default function ProcessedRequest({
 								)}
 
 							{/* Student Documents */}
-							{!isDiplomaRequest() &&
+							{(!isDiplomaRequest() &&
 								!isCertificateRequest() &&
-								!isCavRequest() && (
-									<StudentDocumentsSection
-										studentDocuments={studentDocuments}
-										request={currentRequest}
-									/>
-								)}
+								!isCavRequest()) ||
+							isSf10Request() ? (
+								<StudentDocumentsSection
+									studentDocuments={studentDocuments}
+									request={currentRequest}
+								/>
+							) : null}
 
 							{/* Diploma Template Info - Show for diploma requests */}
 							{isDiplomaRequest() && (
@@ -1403,17 +1439,6 @@ export default function ProcessedRequest({
 						)}
 
 						<div className="flex flex-col gap-3 w-full sm:flex-row">
-							{/* Print Button - Show for processed, signatory, release, or completed status */}
-							{currentRequest?.status && 
-								["processed", "signatory", "release", "completed"].includes(currentRequest.status.toLowerCase()) && (
-								<Button
-									onClick={() => handlePrint()}
-									className="w-full sm:w-auto py-3 text-base font-medium text-white bg-purple-600 hover:bg-purple-700"
-								>
-									🖨️ Print {currentRequest.isMultipleDocument ? `(${currentRequest.totalCopies} copies)` : "Document"}
-								</Button>
-							)}
-							
 							<Button
 								onClick={handleProcess}
 								disabled={buttonConfig.disabled}

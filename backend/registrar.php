@@ -128,13 +128,25 @@ class User {
                 CASE 
                   WHEN s.name = 'Completed' THEN DATE(rs.createdAt)
                   WHEN s.name = 'Release' AND rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
-                  ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
+                  ELSE DATE_ADD(
+                    COALESCE(
+                      (SELECT MAX(DATE(createdAt)) FROM tblrequirements WHERE requestId = r.id),
+                      DATE(r.createdAt)
+                    ), 
+                    INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY
+                  )
                 END as expectedReleaseDate,
                 DATE_FORMAT(
                   CASE 
                     WHEN s.name = 'Completed' THEN DATE(rs.createdAt)
                     WHEN s.name = 'Release' AND rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
-                    ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
+                    ELSE DATE_ADD(
+                      COALESCE(
+                        (SELECT MAX(DATE(createdAt)) FROM tblrequirements WHERE requestId = r.id),
+                        DATE(r.createdAt)
+                      ), 
+                      INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY
+                    )
                   END, 
                   '%M %d, %Y'
                 ) as expectedReleaseDateFormatted,
@@ -144,7 +156,13 @@ class User {
                   ELSE DATEDIFF(
                     CASE 
                       WHEN s.name = 'Release' AND rs_schedule.dateSchedule IS NOT NULL THEN rs_schedule.dateSchedule
-                      ELSE DATE_ADD(DATE(r.createdAt), INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY)
+                      ELSE DATE_ADD(
+                        COALESCE(
+                          (SELECT MAX(DATE(createdAt)) FROM tblrequirements WHERE requestId = r.id),
+                          DATE(r.createdAt)
+                        ), 
+                        INTERVAL (SELECT COALESCE(days, 7) FROM tblexpecteddays WHERE id = 1 LIMIT 1) DAY
+                      )
                     END,
                     CURDATE()
                   )
@@ -1873,7 +1891,15 @@ function processLrnRequest($json)
                            INNER JOIN tblpurpose p ON rp.purposeId = p.id 
                            WHERE rp.requestId = r.id)
                         ELSE 'No purpose specified'
-                      END as displayPurpose
+                      END as displayPurpose,
+                      CASE 
+                        WHEN EXISTS (SELECT 1 FROM tblrequestdocument rd WHERE rd.requestId = r.id) THEN 
+                          (SELECT GROUP_CONCAT(d.name SEPARATOR ', ') 
+                           FROM tblrequestdocument rd 
+                           INNER JOIN tbldocument d ON rd.documentId = d.id 
+                           WHERE rd.requestId = r.id)
+                        ELSE 'Unknown Document'
+                      END as documentName
                     FROM tblrequest r
                     INNER JOIN tblstudent s ON r.studentId = s.id
                     WHERE r.id = :requestId";

@@ -47,6 +47,8 @@ export default function RequestDocuments({
 	const [expectedDays, setExpectedDays] = useState(null);
 	const [loadingExpectedDays, setLoadingExpectedDays] = useState(false);
 	const [duplicateWarning, setDuplicateWarning] = useState(null);
+	const [multipleDocumentRequirements, setMultipleDocumentRequirements] = useState({}); // Store requirements for each selected document
+	const [multipleDocumentFiles, setMultipleDocumentFiles] = useState({}); // Store files for each document
 
 	// Fetch documents and request types when modal opens
 	React.useEffect(() => {
@@ -227,12 +229,68 @@ export default function RequestDocuments({
 
 		// Fallback to old logic for documents without requirements in database
 		const selectedDocName = getSelectedDocumentName().toLowerCase();
-		return (
-			selectedDocName.includes("diploma") || selectedDocName.includes("cav")
-		);
+
+		if (selectedDocName.includes("diploma")) {
+			return true; // Diploma requires Affidavit of Loss
+		} else if (selectedDocName.includes("cav")) {
+			return true; // CAV requires Diploma
+		}
+
+		return false;
 	};
 
-	// Check if selected document is SF10
+	// Check if any selected documents in multiple mode require attachments
+	const requiresAttachmentsMultiple = () => {
+		if (!isMultipleSelection || selectedDocuments.length === 0) {
+			return false;
+		}
+
+		return selectedDocuments.some(docId => {
+			const doc = documents.find(d => String(d.id) === String(docId));
+			if (!doc) return false;
+
+			// Check if this document has requirements in our state
+			if (multipleDocumentRequirements[docId] && multipleDocumentRequirements[docId].length > 0) {
+				return true;
+			}
+
+			// Fallback to old logic
+			const docName = doc.name.toLowerCase();
+			return docName.includes("diploma") || docName.includes("cav");
+		});
+	};
+
+	// Fetch document requirements for multiple documents
+	const fetchMultipleDocumentRequirements = async (docId) => {
+		try {
+			const requirements = await getDocumentRequirements(docId);
+			setMultipleDocumentRequirements(prev => ({
+				...prev,
+				[docId]: Array.isArray(requirements) ? requirements : []
+			}));
+		} catch (error) {
+			console.error(`Failed to fetch requirements for document ${docId}:`, error);
+			setMultipleDocumentRequirements(prev => ({
+				...prev,
+				[docId]: []
+			}));
+		}
+	};
+
+	// Fetch document purposes for multiple document mode
+	const fetchDocumentPurposesForMultiple = async (docId) => {
+		try {
+			const purposes = await getDocumentPurposes(docId);
+			if (Array.isArray(purposes) && purposes.length > 0) {
+				// If this document has purposes, set it as the main documentPurposes
+				// This will make the dropdown appear for multiple document mode
+				setDocumentPurposes(purposes);
+			}
+		} catch (error) {
+			console.error(`Failed to fetch purposes for document ${docId}:`, error);
+		}
+	};
+
 	const isSF10Document = () => {
 		const selectedDocName = getSelectedDocumentName().toLowerCase();
 		return (
@@ -240,331 +298,24 @@ export default function RequestDocuments({
 		);
 	};
 
-	// Check if submit button should be disabled
-	const isSubmitDisabled = () => {
-		console.log("=== isSubmitDisabled Debug ===");
-		console.log("selectedDocument:", selectedDocument);
-		console.log("selectedDocuments:", selectedDocuments);
-		console.log("isMultipleSelection:", isMultipleSelection);
-		console.log("purpose:", purpose);
-		console.log("selectedPurposeIds:", selectedPurposeIds);
-		console.log("selectedFiles:", selectedFiles);
-		console.log("duplicateWarning:", duplicateWarning);
-
-		// Check document selection based on mode
-		if (isMultipleSelection) {
-			if (selectedDocuments.length === 0) {
-				console.log("No documents selected in multiple mode");
-				return true;
-			}
-		} else {
-			if (!selectedDocument) {
-				console.log("Missing document in single mode");
-				return true;
-			}
-		}
-
-		// Disable submit if there's a duplicate warning
-		if (duplicateWarning) {
-			console.log("Duplicate request detected - button disabled");
-			return true;
-		}
-
-		// Check purpose validation
-		if (hasPredefinedPurposes()) {
-			// If document has predefined purposes, at least one must be selected
-			if (selectedPurposeIds.length === 0) {
-				console.log("No predefined purposes selected");
-				return true;
-			}
-		} else {
-			// If no predefined purposes, custom purpose is required
-			if (!purpose || purpose.trim() === "") {
-				console.log("Missing custom purpose");
-				return true;
-			}
-		}
-
-		if (isSF10Document()) {
-			console.log("SF10 document - no file validation needed");
-			return false;
-		}
-
-		// Special case: CAV with combined request doesn't need attachments
-		const isCavDocument = getSelectedDocumentName()
-			.toLowerCase()
-			.includes("cav");
-		if (isCavDocument && requestBothDocuments) {
-			console.log("CAV combined request - no attachment validation");
-			return false; // No attachment validation needed for combined requests
-		}
-
-		// For Diploma and CAV (without combined request), require attachments
-		if (requiresAttachments() && selectedFiles.length === 0) {
-			console.log("Requires attachments but no files selected");
-			return true;
-		}
-
-		// If files are selected, require all files to have a requirement type
-		if (selectedFiles.length > 0) {
-			const filesWithoutType = selectedFiles.filter(
-				(fileObj) => !fileObj.typeId
-			);
-			console.log("Files without typeId:", filesWithoutType);
-			if (filesWithoutType.length > 0) {
-				console.log("Some files don't have typeId - button disabled");
-				return true;
-			}
-		}
-
-		console.log("All validations passed - button enabled");
-		return false;
+	const handleFileChange = (event) => {
+		const files = Array.from(event.target.files);
+		setSelectedFiles(files);
 	};
 
-	// Handle document type change
-	const handleDocumentChange = async (documentId) => {
-		console.log("=== handleDocumentChange Debug ===");
-		console.log("documentId:", documentId);
-		console.log("userRequests length:", userRequests?.length);
-
-		// Clear any existing duplicate warning
-		setDuplicateWarning(null);
-
-		// Check for duplicate requests first (only if documents are loaded)
-		if (documentId && documents.length > 0) {
-			const duplicateInfo = checkForDuplicateRequest(documentId);
-			console.log("duplicateInfo result:", duplicateInfo);
-			if (duplicateInfo) {
-				console.log("Setting duplicate warning:", duplicateInfo);
-				setDuplicateWarning(duplicateInfo);
-				// Don't return here - let user see the warning but still allow selection
-			}
-		} else if (documentId && documents.length === 0) {
-			console.log("Skipping duplicate check - documents not loaded yet");
-		}
-
-		// Validate document selection based on grade level
-		if (studentGradeLevel && documentId) {
-			const selectedDoc = documents.find(
-				(doc) => String(doc.id) === String(documentId)
-			);
-			if (selectedDoc && studentGradeLevel.toLowerCase().includes("grade 11")) {
-				const allowedDocs = ["certificate", "sf10", "sf-10"];
-				const isAllowed = allowedDocs.some((allowed) =>
-					selectedDoc.name.toLowerCase().includes(allowed)
-				);
-
-				if (!isAllowed) {
-					toast.error(
-						"Grade 11 students can only request Certificate and SF10 documents."
-					);
-					return;
-				}
-			}
-		}
-
-		setSelectedDocument(documentId);
-		setPurpose("");
-		setSelectedPurposeIds([]);
-		setSelectedFiles([]);
-		setDocumentRequirements([]);
-		setSecondaryRequirements([]);
-		setDocumentPurposes([]);
-		setRequestBothDocuments(false);
-
-		// Reset file inputs
-		const fileInput = document.getElementById("file-upload");
-		const addMoreInput = document.getElementById("add-more-files");
-		if (fileInput) fileInput.value = "";
-		if (addMoreInput) addMoreInput.value = "";
-
-		// Fetch document requirements and purposes dynamically
-		if (documentId) {
-			setLoadingDocumentRequirements(true);
-			setLoadingDocumentPurposes(true);
-			try {
-				const [requirements, purposes] = await Promise.all([
-					getDocumentRequirements(documentId),
-					getDocumentPurposes(documentId),
-				]);
-
-				setDocumentRequirements(
-					Array.isArray(requirements) ? requirements : []
-				);
-				setDocumentPurposes(Array.isArray(purposes) ? purposes : []);
-			} catch (error) {
-				console.error(
-					"Failed to fetch document requirements or purposes:",
-					error
-				);
-				setDocumentRequirements([]);
-				setDocumentPurposes([]);
-			} finally {
-				setLoadingDocumentRequirements(false);
-				setLoadingDocumentPurposes(false);
-			}
-		}
+	// Handle file selection for multiple documents
+	const handleMultipleFileChange = (docId, event) => {
+		const files = Array.from(event.target.files);
+		setMultipleDocumentFiles(prev => ({
+			...prev,
+			[docId]: files
+		}));
 	};
 
-	const handleFileChange = (e) => {
-		if (isSF10Document()) return;
-		const files = Array.from(e.target.files);
-		if (files.length > 0) {
-			// Validate file type
-			const allowedTypes = [
-				"image/jpeg",
-				"image/jpg",
-				"image/png",
-				"image/gif",
-				"application/pdf",
-			];
-			const invalidFiles = files.filter(
-				(file) => !allowedTypes.includes(file.type)
-			);
-			if (invalidFiles.length > 0) {
-				toast.error(
-					"Invalid file type. Only JPG, PNG, GIF, and PDF files are allowed."
-				);
-				e.target.value = "";
-				return;
-			}
-
-			// Validate file size (5MB max)
-			const largeFiles = files.filter((file) => file.size > 5 * 1024 * 1024);
-			if (largeFiles.length > 0) {
-				toast.error("File size too large. Maximum size is 5MB.");
-				e.target.value = "";
-				return;
-			}
-
-			// Use dynamic requirements if available, otherwise fallback to old logic
-			const fileObjects = files.map((file, index) => {
-				let typeId = "";
-
-				const activeReqs = getActiveRequirements();
-				if (activeReqs && activeReqs.length > 0) {
-					// If we have multiple requirements, assign them in order
-					// If more files than requirements, use the first requirement as default
-					const requirementIndex = Math.min(index, activeReqs.length - 1);
-					typeId = activeReqs[requirementIndex]?.requirementId || "";
-				} else {
-					// Fallback to old logic
-					const isDiploma = getSelectedDocumentName()
-						.toLowerCase()
-						.includes("diploma");
-					const isCAV = getSelectedDocumentName().toLowerCase().includes("cav");
-					const affidavitTypeId = getAffidavitTypeId();
-					const diplomaTypeId = getRequiredTypeForCAVId();
-					typeId = isDiploma ? affidavitTypeId : isCAV ? diplomaTypeId : "";
-				}
-
-				return {
-					file: file,
-					typeId: typeId,
-				};
-			});
-
-			console.log(
-				"Created fileObjects with dynamic requirements:",
-				fileObjects
-			);
-			setSelectedFiles(fileObjects);
-		}
-	};
-
-	const handleAddMoreFiles = (e) => {
-		if (isSF10Document()) return;
-		const newFiles = Array.from(e.target.files);
-		if (newFiles.length > 0) {
-			// Validate file type
-			const allowedTypes = [
-				"image/jpeg",
-				"image/jpg",
-				"image/png",
-				"image/gif",
-				"application/pdf",
-			];
-			const invalidFiles = newFiles.filter(
-				(file) => !allowedTypes.includes(file.type)
-			);
-			if (invalidFiles.length > 0) {
-				toast.error(
-					"Invalid file type. Only JPG, PNG, GIF, and PDF files are allowed."
-				);
-				e.target.value = "";
-				return;
-			}
-
-			// Validate file size (5MB max)
-			const largeFiles = newFiles.filter((file) => file.size > 5 * 1024 * 1024);
-			if (largeFiles.length > 0) {
-				toast.error("File size too large. Maximum size is 5MB.");
-				e.target.value = "";
-				return;
-			}
-
-			// Use dynamic requirements if available, otherwise fallback to old logic
-			const newFileObjects = newFiles.map((file, index) => {
-				let typeId = "";
-
-				const activeReqs = getActiveRequirements();
-				if (activeReqs && activeReqs.length > 0) {
-					// For additional files, cycle through available requirements
-					const currentFileCount = selectedFiles.length;
-					const requirementIndex =
-						(currentFileCount + index) % activeReqs.length;
-					typeId = activeReqs[requirementIndex]?.requirementId || "";
-				} else {
-					// Fallback to old logic
-					const isDiploma = getSelectedDocumentName()
-						.toLowerCase()
-						.includes("diploma");
-					const isCAV = getSelectedDocumentName().toLowerCase().includes("cav");
-					const affidavitTypeId = getAffidavitTypeId();
-					const diplomaTypeId = getRequiredTypeForCAVId();
-					typeId = isDiploma ? affidavitTypeId : isCAV ? diplomaTypeId : "";
-				}
-
-				return {
-					file: file,
-					typeId: typeId,
-				};
-			});
-
-			setSelectedFiles((prev) => [...prev, ...newFileObjects]);
-			e.target.value = "";
-		}
-	};
-
-	const removeFile = (indexToRemove) => {
-		setSelectedFiles((prev) => {
-			const newFiles = prev.filter((_, index) => index !== indexToRemove);
-			return newFiles;
-		});
-	};
-
-	const updateFileTypeId = (index, typeId) => {
-		setSelectedFiles((prev) => {
-			const newFiles = [...prev];
-			newFiles[index].typeId = typeId;
-			return newFiles;
-		});
-	};
-
-	const handlePurposeCheckboxChange = (purposeId, checked) => {
-		if (checked) {
-			setSelectedPurposeIds((prev) => [...prev, purposeId]);
-		} else {
-			setSelectedPurposeIds((prev) => prev.filter((id) => id !== purposeId));
-		}
-	};
-
-	const hasPredefinedPurposes = () => {
-		return documentPurposes && documentPurposes.length > 0;
-	};
-
-	const selectAllPurposes = () => {
-		setSelectedPurposeIds(documentPurposes.map((p) => p.id));
+	// Get document name by ID
+	const getDocumentNameById = (docId) => {
+		const doc = documents.find(d => String(d.id) === String(docId));
+		return doc ? doc.name : 'Unknown Document';
 	};
 
 	const clearAllPurposes = () => {
@@ -572,196 +323,76 @@ export default function RequestDocuments({
 	};
 
 	// Handle multiple document selection
-	const handleDocumentToggle = (documentId) => {
-		setSelectedDocuments(prev => {
-			if (prev.includes(documentId)) {
+	const handleDocumentToggle = (docId) => {
+		setSelectedDocuments((prev) => {
+			if (prev.includes(docId)) {
 				// Remove document and its quantity
-				setDocumentQuantities(prevQty => {
+				setDocumentQuantities((prevQty) => {
 					const newQty = { ...prevQty };
-					delete newQty[documentId];
+					delete newQty[docId];
 					return newQty;
 				});
-				return prev.filter(id => id !== documentId);
+				// Remove document requirements and files
+				setMultipleDocumentRequirements(prev => {
+					const newReqs = { ...prev };
+					delete newReqs[docId];
+					return newReqs;
+				});
+				setMultipleDocumentFiles(prev => {
+					const newFiles = { ...prev };
+					delete newFiles[docId];
+					return newFiles;
+				});
+				
+				// Check if the removed document was the one with predefined purposes
+				const removedDoc = documents.find(d => String(d.id) === String(docId));
+				if (removedDoc && removedDoc.name.toLowerCase().includes("cav")) {
+					// If CAV was removed, clear the predefined purposes
+					const remainingDocs = prev.filter((id) => id !== docId);
+					const stillHasCav = remainingDocs.some(id => {
+						const doc = documents.find(d => String(d.id) === String(id));
+						return doc && doc.name.toLowerCase().includes("cav");
+					});
+					
+					if (!stillHasCav) {
+						setDocumentPurposes([]);
+						setSelectedPurposeIds([]);
+					}
+				}
+				
+				return prev.filter((id) => id !== docId);
 			} else {
 				// Add document with default quantity of 1
-				setDocumentQuantities(prevQty => ({
+				setDocumentQuantities((prevQty) => ({
 					...prevQty,
-					[documentId]: 1
+					[docId]: 1,
 				}));
-				return [...prev, documentId];
+				// Fetch requirements for this document
+				fetchMultipleDocumentRequirements(docId);
+				
+				// Fetch purposes for this document (for documents like CAV that have predefined purposes)
+				fetchDocumentPurposesForMultiple(docId);
+				
+				return [...prev, docId];
 			}
 		});
 	};
 
 	// Handle quantity change for a specific document
-	const handleQuantityChange = (documentId, quantity) => {
+	const handleQuantityChange = (docId, quantity) => {
 		const qty = Math.max(1, Math.min(10, parseInt(quantity) || 1)); // Limit between 1-10
 		setDocumentQuantities(prev => ({
 			...prev,
-			[documentId]: qty
+			[docId]: qty
 		}));
 	};
 
-	// Toggle between single and multiple selection modes
-	const handleSelectionModeToggle = () => {
-		setIsMultipleSelection(prev => !prev);
-		// Clear selections when switching modes
-		setSelectedDocument("");
-		setSelectedDocuments([]);
-		setDocumentQuantities({});
-		setSelectedPurposeIds([]);
-		setPurpose("");
-		setSelectedFiles([]);
-		setDocumentRequirements([]);
-		setSecondaryRequirements([]);
-		setDocumentPurposes([]);
-		setDuplicateWarning(null);
-	};
-
-	const handleRequestSubmit = async (e) => {
-		e.preventDefault();
-
-		// Additional grade-based validation
-		if (studentGradeLevel && selectedDocument) {
-			const selectedDoc = documents.find(
-				(doc) => String(doc.id) === String(selectedDocument)
-			);
-			if (selectedDoc && studentGradeLevel.toLowerCase().includes("grade 11")) {
-				const allowedDocs = ["certificate", "sf10", "sf-10"];
-				const isAllowed = allowedDocs.some((allowed) =>
-					selectedDoc.name.toLowerCase().includes(allowed)
-				);
-
-				if (!isAllowed) {
-					toast.error(
-						"Grade 11 students can only request Certificate and SF10 documents."
-					);
-					return;
-				}
-			}
-		}
-
-		// Use the centralized validation
-		if (isSubmitDisabled()) {
-			if (isMultipleSelection) {
-				if (selectedDocuments.length === 0) {
-					toast.error("Please select at least one document");
-					return;
-				}
-			} else {
-				if (!selectedDocument) {
-					toast.error("Please select a document type");
-					return;
-				}
-			}
-
-			// Check purpose validation
-			if (hasPredefinedPurposes()) {
-				if (selectedPurposeIds.length === 0) {
-					toast.error("Please select at least one purpose");
-					return;
-				}
-			} else {
-				if (!purpose || purpose.trim() === "") {
-					toast.error("Please enter a purpose");
-					return;
-				}
-			}
-
-			// Special handling for CAV combined requests
-			const isCavDocument = getSelectedDocumentName()
-				.toLowerCase()
-				.includes("cav");
-			if (isCavDocument && requestBothDocuments) {
-				// No attachment validation needed for combined requests
-			} else if (requiresAttachments() && selectedFiles.length === 0) {
-				toast.error("This document type requires file attachments");
-				return;
-			}
-
-			if (selectedFiles.length > 0) {
-				const filesWithoutType = selectedFiles.filter(
-					(fileObj) => !fileObj.typeId
-				);
-				if (filesWithoutType.length > 0) {
-					toast.error("Please select a requirement type for all attachments");
-					return;
-				}
-			}
-
-			return;
-		}
-
-		try {
-			// Extract just the files for the API call
-			const attachments = selectedFiles.map((fileObj) => fileObj.file);
-			const typeIds = selectedFiles.map((fileObj) => fileObj.typeId);
-
-			// Validate that we have matching files and typeIds
-			if (attachments.length !== typeIds.length) {
-				toast.error("Mismatch between files and requirement types");
-				return;
-			}
-
-			// Handle multiple document requests
-			if (isMultipleSelection && selectedDocuments.length > 0) {
-				const totalCopies = Object.values(documentQuantities).reduce((sum, qty) => sum + qty, 0);
-				await addMultipleDocumentRequest({
-					userId,
-					documentIds: selectedDocuments,
-					documentQuantities: documentQuantities,
-					purpose: hasPredefinedPurposes() ? "" : purpose,
-					purposeIds: hasPredefinedPurposes() ? selectedPurposeIds : [],
-					attachments: attachments,
-					typeIds: typeIds,
-				});
-				toast.success(`Request for ${selectedDocuments.length} document types (${totalCopies} total copies) submitted successfully!`);
-			} else {
-				// Check if this is a combined CAV + Diploma request
-				const isCavDocument = getSelectedDocumentName()
-					.toLowerCase()
-					.includes("cav");
-				if (isCavDocument && requestBothDocuments) {
-					// Find Diploma document ID
-					const diplomaDocument = documents.find((doc) =>
-						doc.name.toLowerCase().includes("diploma")
-					);
-
-					if (!diplomaDocument) {
-						toast.error("Diploma document type not found");
-						return;
-					}
-
-					await addCombinedRequestDocument({
-						userId,
-						primaryDocumentId: selectedDocument, // CAV
-						secondaryDocumentId: diplomaDocument.id, // Diploma
-						purpose: hasPredefinedPurposes() ? "" : purpose,
-						purposeIds: hasPredefinedPurposes() ? selectedPurposeIds : [],
-						attachments: attachments,
-						typeIds: typeIds,
-					});
-					toast.success(
-						"Combined request for Diploma and CAV submitted successfully!"
-					);
-				} else {
-					await addRequestDocument({
-						userId,
-						documentId: selectedDocument,
-						purpose: hasPredefinedPurposes() ? "" : purpose,
-						purposeIds: hasPredefinedPurposes() ? selectedPurposeIds : [],
-						attachments: attachments,
-						typeIds: typeIds, // Send array of typeIds
-					});
-					toast.success("Request submitted successfully!");
-				}
-			}
-
-			// Reset form
+	const handleClose = () => {
+		// Reset form when modal closes or mode changes
+		const resetForm = () => {
 			setSelectedDocument("");
 			setSelectedDocuments([]);
 			setDocumentQuantities({});
-			setIsMultipleSelection(false);
 			setPurpose("");
 			setSelectedPurposeIds([]);
 			setSelectedFiles([]);
@@ -769,37 +400,13 @@ export default function RequestDocuments({
 			setDocumentRequirements([]);
 			setSecondaryRequirements([]);
 			setDocumentPurposes([]);
+			setIsPurposeDropdownOpen(false);
+			setPurposeSearchTerm("");
 			setDuplicateWarning(null);
-			// Reset file inputs
-			const fileInput = document.getElementById("file-upload");
-			const addMoreInput = document.getElementById("add-more-files");
-			if (fileInput) fileInput.value = "";
-			if (addMoreInput) addMoreInput.value = "";
+			setMultipleDocumentRequirements({});
+			setMultipleDocumentFiles({});
+		};
 
-			// Close modal and call success callback
-			onClose();
-			if (onSuccess) onSuccess();
-		} catch (err) {
-			toast.error("Failed to submit request");
-		}
-	};
-
-	const handleClose = () => {
-		// Reset form when closing
-		setSelectedDocument("");
-		setSelectedDocuments([]);
-		setDocumentQuantities({});
-		setIsMultipleSelection(false);
-		setPurpose("");
-		setSelectedPurposeIds([]);
-		setSelectedFiles([]);
-		setRequestBothDocuments(false);
-		setDocumentRequirements([]);
-		setSecondaryRequirements([]);
-		setDocumentPurposes([]);
-		setIsPurposeDropdownOpen(false);
-		setPurposeSearchTerm("");
-		setDuplicateWarning(null);
 		// Reset file inputs
 		const fileInput = document.getElementById("file-upload");
 		const addMoreInput = document.getElementById("add-more-files");
@@ -937,6 +544,277 @@ export default function RequestDocuments({
 		}
 
 		return null;
+	};
+
+	// Validation function for submit button
+	const isSubmitDisabled = () => {
+		if (isMultipleSelection) {
+			// Multiple selection validation
+			if (selectedDocuments.length === 0) return true;
+			
+			// Purpose validation for multiple documents
+			const hasPredefined = hasPredefinedPurposes();
+			const hasNonPredefined = hasDocumentsWithoutPredefinedPurposes();
+			
+			if (hasPredefined && hasNonPredefined) {
+				// Both types: need either predefined purposes OR custom text
+				if (selectedPurposeIds.length === 0 && !purpose.trim()) return true;
+			} else if (hasPredefined) {
+				// Only predefined: need selected purposes
+				if (selectedPurposeIds.length === 0) return true;
+			} else if (hasNonPredefined) {
+				// Only custom: need custom text
+				if (!purpose.trim()) return true;
+			}
+			
+			// Check if any selected document requires attachments and validate them
+			for (const docId of selectedDocuments) {
+				const requirements = multipleDocumentRequirements[docId] || [];
+				if (requirements.length > 0) {
+					const files = multipleDocumentFiles[docId] || [];
+					if (files.length === 0) return true; // Missing required attachments
+				}
+			}
+			
+			return false;
+		} else {
+			// Single selection validation
+			if (!selectedDocument) return true;
+			if (selectedPurposeIds.length === 0 && !purpose) return true;
+			if (requiresAttachments() && selectedFiles.length === 0) return true;
+			return false;
+		}
+	};
+
+	// Submit handler
+	const handleRequestSubmit = async (e) => {
+		e.preventDefault();
+		
+		try {
+			if (isMultipleSelection) {
+				// Handle multiple document submission
+				// Send documentIds as simple array of IDs
+				const documentIds = selectedDocuments;
+
+				// Prepare files for multiple documents
+				const allFiles = [];
+				const typeIds = [];
+				for (const docId of selectedDocuments) {
+					const files = multipleDocumentFiles[docId] || [];
+					const doc = documents.find(d => String(d.id) === String(docId));
+					
+					files.forEach(file => {
+						allFiles.push(file);
+						
+						// Get requirement type ID
+						let typeId = "";
+						const requirements = multipleDocumentRequirements[docId] || [];
+						
+						if (requirements.length > 0) {
+							// Use database requirements
+							typeId = requirements[0].requirementId;
+						} else if (doc) {
+							// Use fallback logic for documents like CAV
+							const docName = doc.name.toLowerCase();
+							if (docName.includes("cav")) {
+								// For CAV, find the "Diploma" requirement type
+								const diplomaType = requestTypes.find(type => 
+									type.nameType && type.nameType.toLowerCase().includes("diploma")
+								);
+								typeId = diplomaType ? diplomaType.id : "";
+							} else if (docName.includes("diploma")) {
+								// For Diploma, find the "Affidavit of Loss" requirement type
+								const affidavitType = requestTypes.find(type => 
+									type.nameType && type.nameType.toLowerCase().includes("affidavit of loss")
+								);
+								typeId = affidavitType ? affidavitType.id : "";
+							}
+						}
+						
+						typeIds.push(typeId || "");
+					});
+				}
+
+				// Prepare document quantities object
+				const quantitiesObj = {};
+				selectedDocuments.forEach(docId => {
+					quantitiesObj[docId] = documentQuantities[docId] || 1;
+				});
+
+				const response = await addMultipleDocumentRequest({
+					userId: userId,
+					documentIds: documentIds,
+					documentQuantities: quantitiesObj,
+					purpose: purpose || null,
+					purposeIds: selectedPurposeIds.length > 0 ? selectedPurposeIds : null,
+					attachments: allFiles,
+					typeIds: typeIds
+				});
+				
+				if (response.success) {
+					toast.success("Multiple document request submitted successfully!");
+					onSuccess();
+					handleClose();
+				} else {
+					toast.error(response.message || "Failed to submit request");
+				}
+			} else {
+				// Handle single document submission
+				const attachments = selectedFiles.map(fileObj => fileObj.file);
+				const typeIds = selectedFiles.map(fileObj => fileObj.typeId || "");
+
+				// Check if this is a CAV request with both documents
+				if (requestBothDocuments) {
+					const response = await addCombinedRequestDocument({
+						userId: userId,
+						documentId: selectedDocument,
+						purpose: purpose || null,
+						purposeIds: selectedPurposeIds.length > 0 ? selectedPurposeIds : null,
+						attachments: attachments,
+						typeIds: typeIds
+					});
+					if (response.success) {
+						toast.success("Combined document request submitted successfully!");
+						onSuccess();
+						handleClose();
+					} else {
+						toast.error(response.message || "Failed to submit request");
+					}
+				} else {
+					const response = await addRequestDocument({
+						userId: userId,
+						documentId: selectedDocument,
+						purpose: purpose || null,
+						purposeIds: selectedPurposeIds.length > 0 ? selectedPurposeIds : null,
+						attachments: attachments,
+						typeIds: typeIds
+					});
+					if (response.success) {
+						toast.success("Document request submitted successfully!");
+						onSuccess();
+						handleClose();
+					} else {
+						toast.error(response.message || "Failed to submit request");
+					}
+				}
+			}
+		} catch (error) {
+			console.error("Submit error:", error);
+			toast.error("Failed to submit request. Please try again.");
+		}
+	};
+
+	// Handle selection mode toggle
+	const handleSelectionModeToggle = () => {
+		setIsMultipleSelection(!isMultipleSelection);
+		// Reset selections when switching modes
+		setSelectedDocument("");
+		setSelectedDocuments([]);
+		setDocumentQuantities({});
+		setMultipleDocumentRequirements({});
+		setMultipleDocumentFiles({});
+		setSelectedFiles([]);
+		// Clear single document related states
+		setDocumentPurposes([]); // Clear purposes so they can be fetched fresh for selected documents
+		setDocumentRequirements([]);
+		setPurpose("");
+		setSelectedPurposeIds([]);
+	};
+
+	// Handle purpose checkbox change
+	const handlePurposeCheckboxChange = (purposeId, checked) => {
+		if (checked) {
+			setSelectedPurposeIds(prev => [...prev, purposeId]);
+		} else {
+			setSelectedPurposeIds(prev => prev.filter(id => id !== purposeId));
+		}
+	};
+
+	// Select all purposes
+	const selectAllPurposes = () => {
+		setSelectedPurposeIds(documentPurposes.map(p => p.id));
+	};
+
+	// Handle file removal for single mode
+	const removeFile = (index) => {
+		setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+	};
+
+	// Handle adding more files for single mode
+	const handleAddMoreFiles = (event) => {
+		const newFiles = Array.from(event.target.files);
+		setSelectedFiles(prev => [...prev, ...newFiles.map(file => ({ file, typeId: "" }))]);
+	};
+
+	// Update file type ID for single mode
+	const updateFileTypeId = (index, typeId) => {
+		setSelectedFiles(prev => prev.map((fileObj, i) => 
+			i === index ? { ...fileObj, typeId } : fileObj
+		));
+	};
+
+	// Handle document change for single selection mode
+	const handleDocumentChange = async (documentId) => {
+		setSelectedDocument(documentId);
+		
+		if (documentId) {
+			// Fetch document requirements when document is selected
+			setLoadingDocumentRequirements(true);
+			try {
+				const requirements = await getDocumentRequirements(documentId);
+				setDocumentRequirements(Array.isArray(requirements) ? requirements : []);
+			} catch (error) {
+				console.error("Failed to fetch document requirements:", error);
+				setDocumentRequirements([]);
+			} finally {
+				setLoadingDocumentRequirements(false);
+			}
+
+			// Fetch document purposes
+			setLoadingDocumentPurposes(true);
+			try {
+				const purposes = await getDocumentPurposes(documentId);
+				setDocumentPurposes(Array.isArray(purposes) ? purposes : []);
+			} catch (error) {
+				console.error("Failed to fetch document purposes:", error);
+				setDocumentPurposes([]);
+			} finally {
+				setLoadingDocumentPurposes(false);
+			}
+		} else {
+			setDocumentRequirements([]);
+			setDocumentPurposes([]);
+		}
+	};
+
+	// Check if document has predefined purposes
+	const hasPredefinedPurposes = () => {
+		if (!isMultipleSelection) {
+			// Single document mode - check if current document has purposes
+			return documentPurposes && documentPurposes.length > 0;
+		} else {
+			// Multiple document mode - check if any selected document has purposes
+			return documentPurposes && documentPurposes.length > 0;
+		}
+	};
+
+	// Check if any selected documents in multiple mode don't have predefined purposes
+	const hasDocumentsWithoutPredefinedPurposes = () => {
+		if (!isMultipleSelection || selectedDocuments.length === 0) {
+			return false;
+		}
+		
+		// Check if any selected document doesn't have predefined purposes
+		// For simplicity, we'll assume documents other than CAV don't have predefined purposes
+		// This could be enhanced to check each document individually
+		return selectedDocuments.some(docId => {
+			const doc = documents.find(d => String(d.id) === String(docId));
+			if (!doc) return false;
+			
+			// Check if this is a document type that typically doesn't have predefined purposes
+			const docName = doc.name.toLowerCase();
+			return !docName.includes("cav"); // Assume non-CAV documents don't have predefined purposes
+		});
 	};
 
 	return (
@@ -1272,9 +1150,31 @@ export default function RequestDocuments({
 									<span className="text-red-500 dark:text-red-500">*</span>
 								</Label>
 
-								{/* Show predefined purposes as checkboxes if they exist */}
-								{hasPredefinedPurposes() ? (
+								{/* Show predefined purposes dropdown if any selected document has them */}
+								{hasPredefinedPurposes() && (
 									<div className="space-y-2">
+										{isMultipleSelection && (
+											<div className="mb-2">
+												<p className="text-xs text-slate-600 dark:text-slate-400">
+													Select purposes for documents that have predefined options:
+												</p>
+												<div className="flex flex-wrap gap-1 mt-1">
+													{selectedDocuments.map(docId => {
+														const doc = documents.find(d => String(d.id) === String(docId));
+														if (!doc) return null;
+														const docName = doc.name.toLowerCase();
+														if (docName.includes("cav")) {
+															return (
+																<span key={docId} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+																	{doc.name}
+																</span>
+															);
+														}
+														return null;
+													})}
+												</div>
+											</div>
+										)}
 										{/* Multi-select dropdown */}
 										<div className="relative purpose-dropdown">
 											<button
@@ -1486,64 +1386,252 @@ export default function RequestDocuments({
 											Select one or more purposes for your request
 										</p>
 									</div>
-								) : (
-									/* Show custom purpose input field */
-									<Input
-										id="purpose"
-										placeholder="Enter the purpose of your request"
-										className="px-3 py-2 w-full rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
-										value={purpose}
-										onChange={(e) => setPurpose(e.target.value)}
-										required
-									/>
+								)}
+
+								{/* Show custom purpose input field for documents without predefined purposes or in single mode when no predefined purposes */}
+								{((!isMultipleSelection && !hasPredefinedPurposes()) || (isMultipleSelection && hasDocumentsWithoutPredefinedPurposes())) && (
+									<div className={hasPredefinedPurposes() && isMultipleSelection ? "mt-4" : ""}>
+										{isMultipleSelection && (
+											<div className="mb-2">
+												<p className="text-xs text-slate-600 dark:text-slate-400">
+													{hasPredefinedPurposes() ? "Enter custom purpose for other documents:" : "Enter the purpose of your request:"}
+												</p>
+												<div className="flex flex-wrap gap-1 mt-1">
+													{selectedDocuments.map(docId => {
+														const doc = documents.find(d => String(d.id) === String(docId));
+														if (!doc) return null;
+														const docName = doc.name.toLowerCase();
+														if (!docName.includes("cav")) {
+															return (
+																<span key={docId} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+																	{doc.name}
+																</span>
+															);
+														}
+														return null;
+													})}
+												</div>
+											</div>
+										)}
+										<Input
+											id="purpose"
+											placeholder="Enter the purpose of your request"
+											className="px-3 py-2 w-full rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
+											value={purpose}
+											onChange={(e) => setPurpose(e.target.value)}
+											required={!hasPredefinedPurposes() || (isMultipleSelection && hasDocumentsWithoutPredefinedPurposes() && selectedPurposeIds.length === 0)}
+										/>
+									</div>
 								)}
 							</div>
 							<div>
-								{/* Only show Document Attachments section if any document requires attachments */}
-								{anyDocumentRequiresAttachments() && (
+								{/* Show Document Attachments section based on selection mode */}
+								{((!isMultipleSelection && requiresAttachments()) || (isMultipleSelection && requiresAttachmentsMultiple())) && (
 									<div>
 										<Label
 											htmlFor="file-upload"
 											className="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-500"
 										>
 											Document Attachments
-											{!isSF10Document() &&
-												(requiresAttachments() ? (
-													<span className="text-red-500 dark:text-red-500">
-														*
-													</span>
-												) : (
-													" (Optional)"
-												))}
-										</Label>
-										{getActiveRequirements() &&
-											getActiveRequirements().length > 0 && (
-												<div className="p-2 mb-2 bg-green-50 rounded border border-green-200 dark:bg-green-900 dark:border-green-800">
-													<p className="text-xs text-green-800 dark:text-green-200">
-														Required document(s):{" "}
-														<b>
-															{getActiveRequirements()
-																.map((req) => req.requirementName)
-																.join(", ")}
-														</b>
-													</p>
-												</div>
+											{((!isMultipleSelection && requiresAttachments()) || (isMultipleSelection && requiresAttachmentsMultiple())) && (
+												<span className="text-red-500 dark:text-red-500">
+													*
+												</span>
 											)}
-										{/* Only show file input and file management for non-SF10 */}
-										<Input
-											type="file"
-											id="file-upload"
-											accept=".jpg, .jpeg, .png, .gif, .pdf"
-											onChange={handleFileChange}
-											className="block w-full text-sm rounded-lg border cursor-pointer text-slate-900 border-slate-300 bg-slate-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:text-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:file:bg-blue-600 dark:file:text-white dark:hover:file:bg-blue-700"
-											multiple
-										/>
-										<p className="mt-1 text-xs text-slate-500">
-											You can select multiple files (JPG, PNG, GIF, PDF). Max
-											5MB per file.
-										</p>
-										{/* Show message when no files selected for required documents */}
-										{requiresAttachments() && selectedFiles.length === 0 && (
+										</Label>
+										{/* Show requirements for single document mode */}
+										{!isMultipleSelection && getActiveRequirements() && getActiveRequirements().length > 0 && (
+											<div className="p-2 mb-2 bg-green-50 rounded border border-green-200 dark:bg-green-900 dark:border-green-800">
+												<p className="text-xs text-green-800 dark:text-green-200">
+													Required document(s):{" "}
+													<b>
+														{getActiveRequirements()
+															.map((req) => req.requirementName)
+															.join(", ")}
+													</b>
+												</p>
+											</div>
+										)}
+
+										{/* Show requirements for multiple document mode */}
+										{isMultipleSelection && selectedDocuments.length > 0 && (
+											<div className="space-y-2 mb-3">
+												{selectedDocuments.map(docId => {
+													const doc = documents.find(d => String(d.id) === String(docId));
+													const requirements = multipleDocumentRequirements[docId] || [];
+													
+													if (!doc) return null;
+													
+													// Check if document requires attachments (either from DB or fallback logic)
+													const docName = doc.name.toLowerCase();
+													const requiresAttachmentsForDoc = requirements.length > 0 || 
+														docName.includes("diploma") || docName.includes("cav");
+													
+													if (!requiresAttachmentsForDoc) return null;
+													
+													// Get required document name
+													let requiredDocName = "";
+													if (requirements.length > 0) {
+														requiredDocName = requirements.map(req => req.requirementName).join(", ");
+													} else if (docName.includes("diploma")) {
+														requiredDocName = getRequiredTypeForDiploma();
+													} else if (docName.includes("cav")) {
+														requiredDocName = getRequiredTypeForCAV();
+													}
+													
+													return (
+														<div key={docId} className="p-2 bg-green-50 rounded border border-green-200 dark:bg-green-900 dark:border-green-800">
+															<p className="text-xs text-green-800 dark:text-green-200">
+																<strong>{doc.name}</strong> requires:{" "}
+																<b>{requiredDocName}</b>
+															</p>
+														</div>
+													);
+												})}
+											</div>
+										)}
+
+										{/* File input - single mode */}
+										{!isMultipleSelection && (
+											<>
+												<Input
+													type="file"
+													id="file-upload"
+													accept=".jpg, .jpeg, .png, .gif, .pdf"
+													onChange={handleFileChange}
+													className="block w-full text-sm rounded-lg border cursor-pointer text-slate-900 border-slate-300 bg-slate-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:text-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:file:bg-blue-600 dark:file:text-white dark:hover:file:bg-blue-700"
+													multiple
+												/>
+												<p className="mt-1 text-xs text-slate-500">
+													You can select multiple files (JPG, PNG, GIF, PDF). Max 5MB per file.
+												</p>
+											</>
+										)}
+
+										{/* File inputs for multiple documents */}
+										{isMultipleSelection && selectedDocuments.length > 0 && (
+											<div className="space-y-4">
+												{selectedDocuments.map(docId => {
+													const doc = documents.find(d => String(d.id) === String(docId));
+													const requirements = multipleDocumentRequirements[docId] || [];
+													
+													if (!doc) return null;
+													
+													// Check if document requires attachments (either from DB or fallback logic)
+													const docName = doc.name.toLowerCase();
+													const requiresAttachmentsForDoc = requirements.length > 0 || 
+														docName.includes("diploma") || docName.includes("cav");
+													
+													if (!requiresAttachmentsForDoc) return null;
+													
+													return (
+														<div key={docId} className="p-3 border rounded-lg border-slate-200 dark:border-slate-600">
+															<Label className="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+																Attachments for {doc.name}
+																<span className="text-red-500 dark:text-red-500"> *</span>
+															</Label>
+															<Input
+																type="file"
+																id={`file-upload-${docId}`}
+																accept=".jpg, .jpeg, .png, .gif, .pdf"
+																onChange={(e) => handleMultipleFileChange(docId, e)}
+																className="block w-full text-sm rounded-lg border cursor-pointer text-slate-900 border-slate-300 bg-slate-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:text-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:file:bg-blue-600 dark:file:text-white dark:hover:file:bg-blue-700"
+																multiple
+															/>
+															<p className="mt-1 text-xs text-slate-500">
+																Required: {
+																	requirements.length > 0 
+																		? requirements.map(req => req.requirementName).join(", ")
+																		: docName.includes("diploma")
+																			? getRequiredTypeForDiploma()
+																			: docName.includes("cav")
+																				? getRequiredTypeForCAV()
+																				: "Required documents"
+																}
+															</p>
+															{multipleDocumentFiles[docId] && multipleDocumentFiles[docId].length > 0 && (
+																<div className="mt-2">
+																	<p className="text-xs font-medium text-slate-600 dark:text-slate-400">
+																		Selected files ({multipleDocumentFiles[docId].length}):
+																	</p>
+																	<div className="mt-1 space-y-1">
+																		{multipleDocumentFiles[docId].map((file, index) => (
+																			<div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded border dark:bg-slate-700">
+																				<span className="text-xs text-slate-700 dark:text-slate-300 truncate">
+																					{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+																				</span>
+																				<button
+																					type="button"
+																					onClick={() => {
+																						const newFiles = [...multipleDocumentFiles[docId]];
+																						newFiles.splice(index, 1);
+																						setMultipleDocumentFiles(prev => ({
+																							...prev,
+																							[docId]: newFiles
+																						}));
+																					}}
+																					className="text-red-500 hover:text-red-700 text-xs ml-2"
+																				>
+																					✕
+																				</button>
+																			</div>
+																		))}
+																	</div>
+																</div>
+															)}
+														</div>
+													);
+												})}
+											</div>
+										)}
+
+										{/* Show warning messages for multiple document mode */}
+										{isMultipleSelection && selectedDocuments.length > 0 && (
+											<div className="space-y-2 mt-3">
+												{selectedDocuments.map(docId => {
+													const doc = documents.find(d => String(d.id) === String(docId));
+													const requirements = multipleDocumentRequirements[docId] || [];
+													const files = multipleDocumentFiles[docId] || [];
+													
+													if (!doc) return null;
+													
+													// Check if document requires attachments (either from DB or fallback logic)
+													const docName = doc.name.toLowerCase();
+													const requiresAttachmentsForDoc = requirements.length > 0 || 
+														docName.includes("diploma") || docName.includes("cav");
+													
+													if (!requiresAttachmentsForDoc) return null;
+													
+													// Show warning if no files uploaded for this document
+													if (files.length === 0) {
+														// Get required document name
+														let requiredDocName = "";
+														if (requirements.length > 0) {
+															requiredDocName = requirements.map(req => req.requirementName).join(", ");
+														} else if (docName.includes("diploma")) {
+															requiredDocName = getRequiredTypeForDiploma();
+														} else if (docName.includes("cav")) {
+															requiredDocName = getRequiredTypeForCAV();
+														}
+														
+														return (
+															<div key={docId} className="p-2 bg-red-50 rounded border border-red-200 dark:bg-red-900 dark:border-red-800">
+																<p className="text-xs text-red-600 dark:text-red-400">
+																	⚠️ <strong>{doc.name}</strong> requires file attachments.
+																	Please upload the required documents:{" "}
+																	<b>{requiredDocName}</b>.
+																</p>
+															</div>
+														);
+													}
+													
+													return null;
+												})}
+											</div>
+										)}
+
+										{/* Show message when no files selected for required documents - Single mode */}
+										{!isMultipleSelection && requiresAttachments() && selectedFiles.length === 0 && (
 											<div className="p-2 mt-2 bg-red-50 rounded border border-red-200 dark:bg-red-900 dark:border-red-800">
 												<p className="text-xs text-red-600 dark:text-red-400">
 													⚠️ This document type requires file attachments.
