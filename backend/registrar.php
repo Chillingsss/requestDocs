@@ -1847,6 +1847,62 @@ function processLrnRequest($json)
   }
 }
 
+function rejectLrnRequest($json)
+{
+  include "connection.php";
+  
+  $json = json_decode($json, true);
+  $requestId = $json['requestId'];
+  $userId = $json['userId'];
+  $reason = isset($json['reason']) ? $json['reason'] : null;
+  
+  try {
+    $conn->beginTransaction();
+    
+    // Get the request details
+    $sql = "SELECT f.* 
+            FROM tblforgotlrn f
+            WHERE f.id = :requestId";
+            
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':requestId', $requestId);
+    $stmt->execute();
+    
+    if ($stmt->rowCount() == 0) {
+      $conn->rollBack();
+      return json_encode(['error' => 'Request not found']);
+    }
+    
+    $requestData = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Update request status to rejected (is_processed = 2)
+    $updateSql = "UPDATE tblforgotlrn 
+                  SET is_processed = 2, 
+                      processed_by = :userId,
+                      processed_at = NOW()
+                  WHERE id = :requestId";
+                  
+    $updateStmt = $conn->prepare($updateSql);
+    $updateStmt->bindParam(':userId', $userId);
+    $updateStmt->bindParam(':requestId', $requestId);
+    
+    if (!$updateStmt->execute()) {
+      $conn->rollBack();
+      return json_encode(['error' => 'Failed to update request status']);
+    }
+    
+    $conn->commit();
+    return json_encode([
+      'success' => true,
+      'message' => 'Request rejected successfully',
+      'requestData' => $requestData
+    ]);
+    
+  } catch (PDOException $e) {
+    $conn->rollBack();
+    return json_encode(['error' => 'Database error occurred: ' . $e->getMessage()]);
+  }
+}
 
   // Add requirement comment
   function addRequirementComment($json)
@@ -2550,6 +2606,9 @@ switch ($operation) {
     break;
   case "processLrnRequest":
     echo $user->processLrnRequest($json);
+  break;
+  case "rejectLrnRequest":
+    echo $user->rejectLrnRequest($json);
   break;
   case "addRequirementComment":
     echo $user->addRequirementComment($json);

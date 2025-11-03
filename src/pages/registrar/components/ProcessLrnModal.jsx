@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from "react";
+import {
+	getForgotLrnRequests,
+	processLrnRequest,
+	rejectLrnRequest,
+	sendLrnEmail,
+} from "../../../utils/registrar";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Search, X } from "lucide-react";
@@ -22,6 +28,7 @@ export default function ProcessLrnModal({
 	onClose,
 	request,
 	onProcess,
+	onReject,
 	students,
 }) {
 	const [loading, setLoading] = useState(false);
@@ -84,6 +91,19 @@ export default function ProcessLrnModal({
 		} catch (error) {
 			console.error("Failed to process request:", error);
 			toast.error("Failed to process request");
+		} finally {
+			setLoadingType(null);
+		}
+	};
+
+	const handleRejectRequest = async () => {
+		setLoadingType("rejecting");
+		try {
+			await onReject(request.id);
+			onClose();
+		} catch (error) {
+			console.error("Failed to reject request:", error);
+			toast.error("Failed to reject request");
 		} finally {
 			setLoadingType(null);
 		}
@@ -227,6 +247,14 @@ export default function ProcessLrnModal({
 
 					{/* Footer */}
 					<div className="flex gap-2 justify-end pt-4 border-t dark:border-slate-700">
+						<Button 
+							variant="outline" 
+							onClick={handleRejectRequest}
+							disabled={loadingType === "rejecting"}
+							className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+						>
+							{loadingType === "rejecting" ? "Rejecting..." : "Reject"}
+						</Button>
 						<Button variant="outline" onClick={onClose}>
 							Cancel
 						</Button>

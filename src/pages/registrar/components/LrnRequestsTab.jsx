@@ -3,6 +3,7 @@ import { Card, CardContent } from "../../../components/ui/card";
 import {
 	getForgotLrnRequests,
 	processLrnRequest,
+	rejectLrnRequest,
 	sendLrnEmail,
 } from "../../../utils/registrar";
 import toast from "react-hot-toast";
@@ -79,6 +80,21 @@ export default function LrnRequestsTab({ userId, students }) {
 		}
 	};
 
+	const handleReject = async (requestId) => {
+		try {
+			const response = await rejectLrnRequest(requestId, userId);
+			if (response.success) {
+				toast.success("LRN request rejected successfully");
+				fetchRequests(); // Refresh the list
+			} else {
+				toast.error(response.error || "Failed to reject request");
+			}
+		} catch (error) {
+			console.error("Failed to reject request:", error);
+			toast.error("Failed to reject request");
+		}
+	};
+
 	const handleRowClick = (request) => {
 		setSelectedRequest(request);
 		setShowProcessModal(true);
@@ -117,10 +133,10 @@ export default function LrnRequestsTab({ userId, students }) {
 									<tr
 										key={request.id}
 										onClick={() =>
-											!request.is_processed && handleRowClick(request)
+											request.is_processed === 0 && handleRowClick(request)
 										}
 										className={`border-b dark:border-slate-700 ${
-											!request.is_processed
+											request.is_processed === 0
 												? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
 												: ""
 										}`}
@@ -133,16 +149,20 @@ export default function LrnRequestsTab({ userId, students }) {
 											{formatDate(request.birthDate)}
 										</td>
 										<td className="px-4 py-2">
-											{request.is_processed ? (
-												<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900/20 dark:text-green-400">
-													Processed
-												</span>
-											) : (
-												<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
-													Pending
-												</span>
-											)}
-										</td>
+										{request.is_processed === 1 ? (
+											<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900/20 dark:text-green-400">
+												Processed
+											</span>
+										) : request.is_processed === 2 ? (
+											<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-red-800 bg-red-100 rounded-full dark:bg-red-900/20 dark:text-red-400">
+												Rejected
+											</span>
+										) : (
+											<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full dark:bg-yellow-900/20 dark:text-yellow-400">
+												Pending
+											</span>
+										)}
+									</td>
 										<td className="px-4 py-2">
 											{formatDate(request.created_at)}
 										</td>
@@ -163,6 +183,7 @@ export default function LrnRequestsTab({ userId, students }) {
 				}}
 				request={selectedRequest}
 				onProcess={handleProcess}
+				onReject={handleReject}
 				students={students}
 			/>
 		</Card>

@@ -10,6 +10,8 @@ import {
 	AlertTriangle,
 	Upload,
 	CheckCircle,
+	Info,
+	IdCard,
 } from "lucide-react";
 import {
 	getRequestTracking,
@@ -302,7 +304,9 @@ export default function RequestDetailsModal({
 										<div className="flex gap-3 items-center mb-3">
 											<FileText className="w-5 h-5 text-blue-600" />
 											<span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-												{request.isMultipleDocument ? "Documents Requested" : "Document"}
+												{request.isMultipleDocument
+													? "Documents Requested"
+													: "Document"}
 											</span>
 										</div>
 										<div className="space-y-2">
@@ -312,7 +316,8 @@ export default function RequestDetailsModal({
 											{request.isMultipleDocument && (
 												<div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
 													<span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-														📋 {request.documentCount} types, {request.totalCopies} total copies
+														📋 {request.documentCount} types,{" "}
+														{request.totalCopies} total copies
 													</span>
 												</div>
 											)}
@@ -565,7 +570,9 @@ export default function RequestDetailsModal({
 																		{comment.registrarLastName}
 																	</span>
 																	<span className="text-xs text-amber-600 dark:text-amber-400">
-																		{new Date(comment.createdAt).toLocaleString()}
+																		{new Date(
+																			comment.createdAt
+																		).toLocaleString()}
 																	</span>
 																</div>
 																<span
@@ -597,128 +604,233 @@ export default function RequestDetailsModal({
 										</div>
 									)}
 
-								{/* Upload New Requirements - Hide when status is Release or Completed */}
-							{request.status?.toLowerCase() !== "release" &&
-								request.status?.toLowerCase() !== "completed" && (
-									<div className="p-4 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
+								{/* Claiming Rules - Show only when status is Release */}
+								{request.status?.toLowerCase() === "release" && (
+									<div className="p-4 bg-green-50 rounded-lg border border-green-200 dark:bg-green-900/20 dark:border-green-700">
 										<div className="flex gap-3 items-center mb-4">
-											<Upload className="w-5 h-5 text-blue-600" />
-											<h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
-												Upload New Requirements
+											<Info className="w-5 h-5 text-green-600" />
+											<h3 className="text-lg font-semibold text-green-800 dark:text-green-200">
+												Document Claiming Rules
 											</h3>
 										</div>
 
-										{!showUploadForm ? (
-											<div className="mb-4 text-sm text-blue-700 dark:text-blue-300">
-												<p>
-													If you need to upload additional requirements or respond
-													to registrar comments, click the button below.
+										<div className="space-y-4">
+											{/* Office Hours */}
+											<div className="p-3 bg-white rounded-lg border border-green-200 dark:bg-slate-800 dark:border-green-600">
+												<div className="flex gap-2 items-center mb-2">
+													<Clock className="w-4 h-4 text-green-600" />
+													<span className="text-sm font-medium text-green-800 dark:text-green-200">
+														Office Hours
+													</span>
+												</div>
+												<p className="text-sm text-green-700 dark:text-green-300">
+													<strong>8:00 AM - 5:00 PM</strong> (Monday to Friday)
 												</p>
-												{attachments.length > 0 ? (
-													<p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-														Requirement type:{" "}
-														<strong>{attachments[0].requirementType}</strong>
-													</p>
-												) : documentRequirements.length > 0 ? (
-													<p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-														Requirement type:{" "}
-														<strong>
-															{documentRequirements[0].requirementName}
-														</strong>
-													</p>
-												) : (
-													<p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
-														No requirements configured for this document type.
-													</p>
-												)}
+												<p className="text-xs text-green-600 dark:text-green-400 mt-1">
+													Registrar Office - MOGCHS
+												</p>
 											</div>
-										) : (
-											<div className="space-y-4">
-												{attachments.length > 0 ? (
-													<div className="p-3 bg-blue-100 rounded-md dark:bg-blue-900/30">
-														<p className="text-sm text-blue-800 dark:text-blue-200">
-															<strong>Requirement Type:</strong>{" "}
-															{attachments[0].requirementType}
-														</p>
-														<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
-															This will be automatically set based on your
-															original request.
-														</p>
-													</div>
-												) : documentRequirements.length > 0 ? (
-													<div className="p-3 bg-blue-100 rounded-md dark:bg-blue-900/30">
-														<p className="text-sm text-blue-800 dark:text-blue-200">
-															<strong>Requirement Type:</strong>{" "}
-															{documentRequirements[0].requirementName}
-														</p>
-														<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
-															This will be automatically set based on your
-															document type.
-														</p>
-													</div>
-												) : (
-													<div className="p-3 bg-orange-100 rounded-md dark:bg-orange-900/30">
-														<p className="text-sm text-orange-800 dark:text-orange-200">
-															<strong>No Requirement Types Available</strong>
-														</p>
-														<p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
-															Please contact support to configure requirement
-															types for this document.
-														</p>
-													</div>
-												)}
 
-												<div>
-													<label className="block mb-2 text-sm font-medium text-blue-800 dark:text-blue-200">
-														File
-													</label>
-													<input
-														type="file"
-														onChange={handleFileChange}
-														accept=".jpg,.jpeg,.png,.gif,.pdf"
-														className="p-2 w-full bg-white rounded-md border border-blue-300 dark:bg-slate-800 text-slate-900 dark:text-white"
-													/>
-													<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
-														Max file size: 5MB. Allowed types: JPG, PNG, GIF, PDF
-													</p>
+											{/* Requirements */}
+											<div className="p-3 bg-white rounded-lg border border-green-200 dark:bg-slate-800 dark:border-green-600">
+												<div className="flex gap-2 items-center mb-2">
+													<IdCard className="w-4 h-4 text-green-600" />
+													<span className="text-sm font-medium text-green-800 dark:text-green-200">
+														Required for Claiming
+													</span>
 												</div>
-
-												<div className="flex gap-2">
-													<Button
-														onClick={handleUpload}
-														disabled={!selectedFile || uploading}
-														className="text-white bg-blue-600 hover:bg-blue-700"
-													>
-														{uploading
-															? "Uploading..."
-															: "Upload New Requirement"}
-													</Button>
-													<Button
-														onClick={() => setShowUploadForm(false)}
-														variant="outline"
-														className="text-blue-700 border-blue-300 hover:bg-blue-50"
-													>
-														Cancel
-													</Button>
-												</div>
+												<ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
+													<li className="flex items-start gap-2">
+														<span className="text-green-600 mt-0.5">•</span>
+														<span>
+															Valid government-issued ID (Original and
+															Photocopy)
+														</span>
+													</li>
+													<li className="flex items-start gap-2">
+														<span className="text-green-600 mt-0.5">•</span>
+														<span>
+															If claiming on behalf of someone else, bring
+															authorization letter
+														</span>
+													</li>
+												</ul>
 											</div>
-										)}
 
-										{!showUploadForm && (
-											<Button
-												onClick={() => setShowUploadForm(true)}
-												disabled={
-													attachments.length === 0 &&
-													documentRequirements.length === 0
-												}
-												className="text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-											>
-												<Upload className="mr-2 w-4 h-4" />
-												Upload New Requirement
-											</Button>
-										)}
+											{/* Important Notes */}
+											<div className="p-3 bg-amber-50 rounded-lg border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700">
+												<div className="flex gap-2 items-center mb-2">
+													<AlertTriangle className="w-4 h-4 text-amber-600" />
+													<span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+														Important Notes
+													</span>
+												</div>
+												<ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
+													<li className="flex items-start gap-2">
+														<span className="text-amber-600 mt-0.5">⚠️</span>
+														<span>
+															Documents not claimed within{" "}
+															<strong>30 days</strong> may be disposed of
+														</span>
+													</li>
+													<li className="flex items-start gap-2">
+														<span className="text-amber-600 mt-0.5">📞</span>
+														<span>
+															If you cannot claim on the scheduled date, please
+															contact the registrar office
+														</span>
+													</li>
+													<li className="flex items-start gap-2">
+														<span className="text-amber-600 mt-0.5">🕐</span>
+														<span>
+															Please arrive at least 30 minutes before office
+															closing time
+														</span>
+													</li>
+												</ul>
+											</div>
+
+											{/* Contact Information */}
+											<div className="p-3 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
+												<div className="flex gap-2 items-center mb-2">
+													<MessageSquare className="w-4 h-4 text-blue-600" />
+													<span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+														Need Help?
+													</span>
+												</div>
+												<p className="text-sm text-blue-700 dark:text-blue-300">
+													Contact the MOGCHS Registrar Office for any questions
+													or concerns about claiming your documents.
+												</p>
+											</div>
+										</div>
 									</div>
 								)}
+
+								{/* Upload New Requirements - Hide when status is Release or Completed */}
+								{request.status?.toLowerCase() !== "release" &&
+									request.status?.toLowerCase() !== "completed" && (
+										<div className="p-4 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700">
+											<div className="flex gap-3 items-center mb-4">
+												<Upload className="w-5 h-5 text-blue-600" />
+												<h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
+													Upload New Requirements
+												</h3>
+											</div>
+
+											{!showUploadForm ? (
+												<div className="mb-4 text-sm text-blue-700 dark:text-blue-300">
+													<p>
+														If you need to upload additional requirements or
+														respond to registrar comments, click the button
+														below.
+													</p>
+													{attachments.length > 0 ? (
+														<p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+															Requirement type:{" "}
+															<strong>{attachments[0].requirementType}</strong>
+														</p>
+													) : documentRequirements.length > 0 ? (
+														<p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+															Requirement type:{" "}
+															<strong>
+																{documentRequirements[0].requirementName}
+															</strong>
+														</p>
+													) : (
+														<p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
+															No requirements configured for this document type.
+														</p>
+													)}
+												</div>
+											) : (
+												<div className="space-y-4">
+													{attachments.length > 0 ? (
+														<div className="p-3 bg-blue-100 rounded-md dark:bg-blue-900/30">
+															<p className="text-sm text-blue-800 dark:text-blue-200">
+																<strong>Requirement Type:</strong>{" "}
+																{attachments[0].requirementType}
+															</p>
+															<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+																This will be automatically set based on your
+																original request.
+															</p>
+														</div>
+													) : documentRequirements.length > 0 ? (
+														<div className="p-3 bg-blue-100 rounded-md dark:bg-blue-900/30">
+															<p className="text-sm text-blue-800 dark:text-blue-200">
+																<strong>Requirement Type:</strong>{" "}
+																{documentRequirements[0].requirementName}
+															</p>
+															<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+																This will be automatically set based on your
+																document type.
+															</p>
+														</div>
+													) : (
+														<div className="p-3 bg-orange-100 rounded-md dark:bg-orange-900/30">
+															<p className="text-sm text-orange-800 dark:text-orange-200">
+																<strong>No Requirement Types Available</strong>
+															</p>
+															<p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
+																Please contact support to configure requirement
+																types for this document.
+															</p>
+														</div>
+													)}
+
+													<div>
+														<label className="block mb-2 text-sm font-medium text-blue-800 dark:text-blue-200">
+															File
+														</label>
+														<input
+															type="file"
+															onChange={handleFileChange}
+															accept=".jpg,.jpeg,.png,.gif,.pdf"
+															className="p-2 w-full bg-white rounded-md border border-blue-300 dark:bg-slate-800 text-slate-900 dark:text-white"
+														/>
+														<p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+															Max file size: 5MB. Allowed types: JPG, PNG, GIF,
+															PDF
+														</p>
+													</div>
+
+													<div className="flex gap-2">
+														<Button
+															onClick={handleUpload}
+															disabled={!selectedFile || uploading}
+															className="text-white bg-blue-600 hover:bg-blue-700"
+														>
+															{uploading
+																? "Uploading..."
+																: "Upload New Requirement"}
+														</Button>
+														<Button
+															onClick={() => setShowUploadForm(false)}
+															variant="outline"
+															className="text-blue-700 border-blue-300 hover:bg-blue-50"
+														>
+															Cancel
+														</Button>
+													</div>
+												</div>
+											)}
+
+											{!showUploadForm && (
+												<Button
+													onClick={() => setShowUploadForm(true)}
+													disabled={
+														attachments.length === 0 &&
+														documentRequirements.length === 0
+													}
+													className="text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+												>
+													<Upload className="mr-2 w-4 h-4" />
+													Upload New Requirement
+												</Button>
+											)}
+										</div>
+									)}
 							</div>
 						)}
 					</div>

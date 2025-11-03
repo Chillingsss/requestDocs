@@ -501,6 +501,30 @@ export async function processLrnRequest(requestId, userId, studentId, lrn) {
 	}
 }
 
+export async function rejectLrnRequest(requestId, userId, reason = null) {
+	const formData = new FormData();
+	formData.append("operation", "rejectLrnRequest");
+	formData.append(
+		"json",
+		JSON.stringify({
+			requestId,
+			userId,
+			reason,
+		})
+	);
+
+	const apiUrl = getDecryptedApiUrl();
+
+	try {
+		const response = await axios.post(`${apiUrl}/registrar.php`, formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+}
+
 // Add requirement comment
 export async function addRequirementComment(
 	requirementId,
